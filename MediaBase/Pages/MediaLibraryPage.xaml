@@ -1,0 +1,320 @@
+﻿<Page x:Class="MediaBase.MediaLibraryPage"
+	  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+	  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+	  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+	  xmlns:toolkit="using:Microsoft.Toolkit.Uwp.UI.Controls"
+	  xmlns:interactivity="using:Microsoft.Xaml.Interactivity"
+	  xmlns:core="using:Microsoft.Xaml.Interactions.Core"
+	  xmlns:mediaBase="using:MediaBase"
+	  mc:Ignorable="d"
+	  MinWidth="1024"
+	  MinHeight="768"
+	  Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+	  Loaded="Page_Loaded">
+
+	<Page.Resources>
+		<mediaBase:ObjectToFriendlyTypeStringConverter x:Key="FriendlyTypeStringConverter"/>
+		<mediaBase:RatingAdjustmentConverter x:Key="RatingAdjustmentConverter"/>
+
+		<mediaBase:MediaItemTemplateSelector x:Key="MediaItemTemplateSelector"
+											 FolderTemplate="{StaticResource FolderDataTemplate}"
+											 ImageFileTemplate="{StaticResource ImageFileDataTemplate}"
+											 VideoFileTemplate="{StaticResource VideoFileDataTemplate}"/>
+
+		<MenuFlyout x:Key="MenuFlyoutFolderDataTemplate">
+			<MenuFlyoutItem x:Name="FlyoutItemMediaLibraryFolderNewFolder"/>
+			<MenuFlyoutItem x:Name="FlyoutItemMediaLibraryFolderRename"/>
+			<MenuFlyoutSubItem Text="Import"
+							   Icon="Add">
+				<MenuFlyoutItem x:Name="FlyoutItemMediaLibraryFolderImportFiles"/>
+				<MenuFlyoutItem x:Name="FlyoutItemMediaLibraryFolderImportFolder"/>
+			</MenuFlyoutSubItem>
+			<MenuFlyoutSubItem Text="Remove"
+							   Icon="Remove">
+				<MenuFlyoutItem x:Name="FlyoutItemMediaLibraryFolderRemove"/>
+				<MenuFlyoutItem x:Name="FlyoutItemMediaLibraryFolderRemoveSelected"/>
+				<MenuFlyoutItem x:Name="FlyoutItemMediaLibraryFolderRemoveAll"/>
+			</MenuFlyoutSubItem>
+		</MenuFlyout>
+
+		<MenuFlyout x:Key="MenuFlyoutFileDataTemplate">
+			<MenuFlyoutItem x:Name="FlyoutItemMediaLibraryItemRename"/>
+			<MenuFlyoutSubItem Text="Remove"
+							   Icon="Remove">
+				<MenuFlyoutItem x:Name="FlyoutItemMediaLibraryItemRemove"/>
+				<MenuFlyoutItem x:Name="FlyoutItemMediaLibraryItemRemoveSelected"/>
+				<MenuFlyoutItem x:Name="FlyoutItemMediaLibraryItemRemoveAll"/>
+			</MenuFlyoutSubItem>
+		</MenuFlyout>
+
+		<MenuFlyout x:Key="MenuFlyoutMediaDataTemplate">
+			<MenuFlyoutItem x:Name="FlyoutItemMediaLibraryNewFolder"/>
+			<MenuFlyoutSubItem Text="Import"
+							   Icon="MoveToFolder">
+				<MenuFlyoutItem x:Name="FlyoutItemMediaLibraryImportFiles"/>
+				<MenuFlyoutItem x:Name="FlyoutItemMediaLibraryImportFolder"/>
+			</MenuFlyoutSubItem>
+			<MenuFlyoutSubItem Text="Remove"
+							   Icon="Remove">
+				<MenuFlyoutItem x:Name="FlyoutItemMediaLibraryRemoveSelected"/>
+				<MenuFlyoutItem x:Name="FlyoutItemMediaLibraryRemoveAll"/>
+			</MenuFlyoutSubItem>
+		</MenuFlyout>
+
+		<DataTemplate x:Key="FolderDataTemplate"
+					  x:DataType="mediaBase:MediaTreeFolder">
+			<TreeViewItem x:Name="Item"
+						  ItemsSource="{x:Bind Children}"
+						  ContextFlyout="{StaticResource MenuFlyoutFolderDataTemplate}"
+						  RightTapped="TreeViewMediaLibrary_RightTapped">
+				<TreeViewItem.Content>
+					<StackPanel Orientation="Horizontal">
+						<FontIcon x:Name="Symbol"
+								  FontFamily="Segoe MDL2 Assets"
+								  Margin="0,0,10,0">
+							<interactivity:Interaction.Behaviors>
+								<core:DataTriggerBehavior Binding="{Binding ElementName=Item, Path=IsExpanded}"
+														  Value="True">
+									<core:ChangePropertyAction TargetObject="{Binding ElementName=Symbol}"
+															   PropertyName="Glyph"
+															   Value="&#xE838;"/>
+								</core:DataTriggerBehavior>
+								<core:DataTriggerBehavior Binding="{Binding ElementName=Item, Path=IsExpanded}"
+														  Value="False">
+									<core:ChangePropertyAction TargetObject="{Binding ElementName=Symbol}"
+															   PropertyName="Glyph"
+															   Value="&#xE8B7;"/>
+								</core:DataTriggerBehavior>
+							</interactivity:Interaction.Behaviors>
+						</FontIcon>
+						<TextBlock HorizontalAlignment="Left"
+								   VerticalAlignment="Center"
+								   Text="{x:Bind Name, Mode=OneWay}"/>
+					</StackPanel>
+				</TreeViewItem.Content>
+			</TreeViewItem>
+		</DataTemplate>
+
+		<DataTemplate x:Key="ImageFileDataTemplate"
+					  x:DataType="mediaBase:MediaTreeFile">
+			<TreeViewItem ContextFlyout="{StaticResource MenuFlyoutFileDataTemplate}"
+						  RightTapped="TreeViewMediaLibrary_RightTapped">
+				<TreeViewItem.Content>
+					<StackPanel Orientation="Horizontal">
+						<SymbolIcon Symbol="Important"
+									Foreground="Red"
+									Margin="0,0,10,0"
+									Visibility="{x:Bind StorageFile, Converter={StaticResource EmptyObjectToVisibilityConverter}, Mode=OneWay}"/>
+						<FontIcon FontFamily="Segoe MDL2 Assets"
+								  Glyph="&#xEB9F;"
+								  Margin="0,0,10,0"/>
+						<TextBlock HorizontalAlignment="Left"
+								   VerticalAlignment="Center"
+								   Text="{x:Bind Name, Mode=OneWay}"/>
+					</StackPanel>
+				</TreeViewItem.Content>
+			</TreeViewItem>
+		</DataTemplate>
+
+		<DataTemplate x:Key="VideoFileDataTemplate"
+					  x:DataType="mediaBase:MediaTreeFile">
+			<TreeViewItem ContextFlyout="{StaticResource MenuFlyoutFileDataTemplate}"
+						  RightTapped="TreeViewMediaLibrary_RightTapped">
+				<TreeViewItem.Content>
+					<StackPanel Orientation="Horizontal">
+						<SymbolIcon Symbol="Important"
+									Foreground="Red"
+									Margin="0,0,10,0"
+									Visibility="{x:Bind StorageFile, Converter={StaticResource EmptyObjectToVisibilityConverter}, Mode=OneWay}"/>
+						<FontIcon FontFamily="Segoe MDL2 Assets"
+								  Glyph="&#xE116;"
+								  Margin="0,0,10,0"/>
+						<TextBlock HorizontalAlignment="Left"
+								   VerticalAlignment="Center"
+								   Text="{x:Bind Name, Mode=OneWay}"/>
+					</StackPanel>
+				</TreeViewItem.Content>
+			</TreeViewItem>
+		</DataTemplate>
+	</Page.Resources>
+
+	<!-- Main Grid -->
+	<Grid>
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="Auto"/>
+			<ColumnDefinition Width="*"
+							  MinWidth="400"/>
+			<ColumnDefinition Width="Auto"/>
+		</Grid.ColumnDefinitions>
+
+		<!-- Content Frame -->
+		<Frame x:Name="ContentFrame"
+			   Grid.Column="1"/>
+
+		<!-- Media Library -->
+		<toolkit:Expander Grid.Column="0"
+						  Header="Media Files"
+						  IsExpanded="False"
+						  ExpandDirection="Right"
+						  HorizontalContentAlignment="Stretch"
+						  VerticalContentAlignment="Stretch">
+			<Grid>
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition MinWidth="250"
+									  Width="350"
+									  MaxWidth="1000"/>
+					<ColumnDefinition Width="5"/>
+				</Grid.ColumnDefinitions>
+
+				<TreeView x:Name="TreeViewMediaLibrary"
+						  Grid.Column="0"
+						  SelectionMode="Multiple"
+						  ItemTemplateSelector="{StaticResource MediaItemTemplateSelector}"
+						  ContextFlyout="{StaticResource MenuFlyoutMediaDataTemplate}"
+						  RightTapped="TreeViewMediaLibrary_RightTapped"
+						  ItemInvoked="TreeViewMediaLibrary_ItemInvoked"/>
+
+				<toolkit:GridSplitter Grid.Column="1"
+									  ResizeDirection="Columns"
+									  ResizeBehavior="PreviousAndCurrent"
+									  CursorBehavior="ChangeOnSplitterHover"
+									  GripperCursor="SizeWestEast"/>
+			</Grid>
+		</toolkit:Expander>
+
+		<!-- Properties -->
+		<toolkit:Expander Grid.Column="2"
+						  Header="Properties"
+						  IsExpanded="False"
+						  ExpandDirection="Left"
+						  HorizontalAlignment="Right"
+						  HorizontalContentAlignment="Stretch"
+						  VerticalContentAlignment="Stretch">
+
+			<Grid Width="300">
+				<Grid.RowDefinitions>
+					<RowDefinition Height="2*"
+								   MinHeight="300"/>
+					<RowDefinition Height="5"/>
+					<RowDefinition Height="*"
+								   MinHeight="200"/>
+				</Grid.RowDefinitions>
+
+				<!-- Marker List -->
+				<ListView x:Name="ListViewMarkers"
+						  Grid.Row="0">
+					<ListView.Header>
+						<Border BorderThickness="0"
+								Background="#303030">
+							<TextBlock Foreground="#C0C0C0"
+									   Padding="0,0,0,5"
+									   TextAlignment="Center"
+									   FontSize="24"
+									   FontWeight="Bold"
+									   Text="Markers"/>
+						</Border>
+					</ListView.Header>
+				</ListView>
+
+				<!-- Item Properties -->
+				<Grid Grid.Row="2">
+					<Grid.RowDefinitions>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="*"/>
+					</Grid.RowDefinitions>
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="Auto"/>
+						<ColumnDefinition Width="*"/>
+					</Grid.ColumnDefinitions>
+
+					<!-- General Properties -->
+					<Grid Grid.Row="0"
+						  Grid.Column="0"
+						  Grid.ColumnSpan="2"
+						  Background="#101010">
+						<Grid.RowDefinitions>
+							<RowDefinition Height="45"/>
+							<RowDefinition Height="Auto"/>
+						</Grid.RowDefinitions>
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="0.333*"/>
+							<ColumnDefinition Width="0.666*"/>
+						</Grid.ColumnDefinitions>
+
+						<!-- Item Type Label -->
+						<Viewbox Grid.Row="0"
+								 Grid.Column="0"
+								 HorizontalAlignment="Left"
+								 Margin="5,0,0,0"
+								 Stretch="Uniform"
+								 Visibility="{x:Bind ActiveDescriptor, Converter={StaticResource ObjectToVisibilityConverter}, Mode=OneWay}">
+							<TextBlock x:Name="TextBlockItemType"
+									   Foreground="White"
+									   TextAlignment="Center"
+									   FontWeight="Light"
+									   Text="{x:Bind ActiveDescriptor, Converter={StaticResource FriendlyTypeStringConverter}, Mode=OneWay}"/>
+						</Viewbox>
+
+						<!-- Item Name Label -->
+						<TextBlock x:Name="TextBlockItemName"
+								   Grid.Row="1"
+								   Grid.Column="0"
+								   Grid.ColumnSpan="2"
+								   TextAlignment="Left"
+								   Margin="5,0,0,2"
+								   Text="{x:Bind ActiveDescriptor.Name, Mode=OneWay}"
+								   Visibility="{x:Bind ActiveDescriptor, Converter={StaticResource ObjectToVisibilityConverter}, Mode=OneWay}"/>
+
+						<!-- Rating Control -->
+						<Viewbox Grid.Row="0"
+								 Grid.Column="1"
+								 Margin="3,0"
+								 Stretch="Uniform"
+								 Visibility="{x:Bind ActiveDescriptor, Converter={StaticResource ObjectToVisibilityConverter}, Mode=OneWay}">
+							<RatingControl x:Name="RatingControl"
+										   InitialSetValue="0"
+										   MaxRating="10"
+										   IsClearEnabled="True"
+										   Value="{x:Bind ActiveDescriptor.Rating, Converter={StaticResource RatingAdjustmentConverter}, Mode=TwoWay}"/>
+						</Viewbox>
+					</Grid>
+
+					<!-- Tag List Header-->
+					<toolkit:LayoutTransformControl Grid.Row="1"
+													Grid.Column="0">
+						<toolkit:LayoutTransformControl.Transform>
+							<TransformGroup>
+								<RotateTransform Angle="-90"/>
+								<ScaleTransform ScaleX="1"
+												ScaleY="1"/>
+							</TransformGroup>
+						</toolkit:LayoutTransformControl.Transform>
+
+						<Border Background="#303030">
+							<TextBlock Foreground="#C0C0C0"
+									   Padding="0,0,0,5"
+									   TextAlignment="Center"
+									   FontSize="18"
+									   FontWeight="Bold"
+									   Text="Tags"/>
+						</Border>
+					</toolkit:LayoutTransformControl>
+
+					<!-- Tag List -->
+					<ListView x:Name="ListViewTags"
+							  Grid.Row="1"
+							  Grid.Column="1"
+							  SelectionMode="Extended"/>
+				</Grid>
+
+				<!-- Row Splitter -->
+				<toolkit:GridSplitter Grid.Row="1"
+									  ResizeDirection="Rows"
+									  ResizeBehavior="PreviousAndNext"
+									  CursorBehavior="ChangeOnSplitterHover"
+									  GripperCursor="SizeNorthSouth"/>
+			</Grid>
+		</toolkit:Expander>
+	</Grid>
+</Page>

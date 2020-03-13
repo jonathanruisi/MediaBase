@@ -1,7 +1,19 @@
-﻿<Application
-    x:Class="MediaBase.App"
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:MediaBase">
+﻿<Application x:Class="MediaBase.App"
+			 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:converters="using:Microsoft.Toolkit.Uwp.UI.Converters">
 
+	<Application.Resources>
+		<converters:EmptyObjectToObjectConverter x:Key="ObjectToVisibilityConverter"
+												 EmptyValue="Collapsed"
+												 NotEmptyValue="Visible"/>
+
+		<converters:EmptyObjectToObjectConverter x:Key="EmptyObjectToVisibilityConverter"
+												 EmptyValue="Visible"
+												 NotEmptyValue="Collapsed"/>
+
+		<converters:EmptyObjectToObjectConverter x:Key="NullToBooleanConverter"
+												 EmptyValue="False"
+												 NotEmptyValue="True"/>
+	</Application.Resources>
 </Application>
