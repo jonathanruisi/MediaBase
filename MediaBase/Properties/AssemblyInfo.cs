@@ -6,9 +6,9 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("MediaBase")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("A utility for editing and organizing images and video in unconventional ways")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyCompany("JLR")]
 [assembly: AssemblyProduct("MediaBase")]
 [assembly: AssemblyCopyright("Copyright ©  2020")]
 [assembly: AssemblyTrademark("")]
