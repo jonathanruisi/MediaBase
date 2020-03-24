@@ -366,6 +366,48 @@ namespace MediaBase
 				});
 			}
 		}
+
+		public static class PlayerRateIncreaseCommand
+		{
+			public static XamlUICommand PlayerRateIncrease { get; }
+
+			static PlayerRateIncreaseCommand()
+			{
+				PlayerRateIncrease = new XamlUICommand
+				{
+					Label       = "Rate +",
+					Description = "Increase playback rate",
+					IconSource  = new SymbolIconSource {Symbol = Symbol.Add}
+				};
+
+				PlayerRateIncrease.KeyboardAccelerators.Add(new KeyboardAccelerator
+				{
+					Key       = VirtualKey.Up,
+					IsEnabled = true
+				});
+			}
+		}
+
+		public static class PlayerRateDecreaseCommand
+		{
+			public static XamlUICommand PlayerRateDecrease { get; }
+
+			static PlayerRateDecreaseCommand()
+			{
+				PlayerRateDecrease = new XamlUICommand
+				{
+					Label       = "Rate -",
+					Description = "Decrease playback rate",
+					IconSource  = new SymbolIconSource {Symbol = Symbol.Remove}
+				};
+
+				PlayerRateDecrease.KeyboardAccelerators.Add(new KeyboardAccelerator
+				{
+					Key       = VirtualKey.Down,
+					IsEnabled = true
+				});
+			}
+		}
 		#endregion
 	}
 }

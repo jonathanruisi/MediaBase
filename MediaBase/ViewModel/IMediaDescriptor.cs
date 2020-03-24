@@ -1,4 +1,7 @@
 ﻿using System.Collections.ObjectModel;
+using System.Threading.Tasks;
+
+using Windows.Media.Core;
 
 namespace MediaBase
 {
@@ -11,7 +14,7 @@ namespace MediaBase
 		/// Gets or sets the name of this item
 		/// </summary>
 		string Name { get; set; }
-
+		
 		/// <summary>
 		/// Gets or sets a rating for this item.
 		/// Valid range is between 1 (worst) and 10 (best).

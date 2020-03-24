@@ -137,6 +137,17 @@
 				</TreeViewItem.Content>
 			</TreeViewItem>
 		</DataTemplate>
+
+		<DataTemplate x:Key="MarkerTemplate"
+					  x:DataType="mediaBase:Marker">
+			<ListViewItem>
+				<ListViewItem.Content>
+					<TextBlock HorizontalAlignment="Left"
+							   VerticalAlignment="Center"
+							   Text="{x:Bind Name, Mode=OneWay}"/>
+				</ListViewItem.Content>
+			</ListViewItem>
+		</DataTemplate>
 	</Page.Resources>
 
 	<!-- Main Grid -->
@@ -203,7 +214,8 @@
 
 				<!-- Marker List -->
 				<ListView x:Name="ListViewMarkers"
-						  Grid.Row="0">
+						  Grid.Row="0"
+						  ItemTemplate="{StaticResource MarkerTemplate}">
 					<ListView.Header>
 						<Border BorderThickness="0"
 								Background="#303030">

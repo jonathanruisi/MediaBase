@@ -34,7 +34,7 @@ namespace MediaBase
 		public StorageFile StorageFile
 		{
 			get => _storageFile;
-			protected set => Set(ref _storageFile, value);
+			private set => Set(ref _storageFile, value);
 		}
 
 		public int Rating

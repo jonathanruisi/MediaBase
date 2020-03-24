@@ -11,7 +11,7 @@ namespace MediaBase
 	/// <summary>
 	/// Represents a specific time and duration (in seconds) within a media file.
 	/// </summary>
-	public sealed class Marker : NodeViewModel, IMediaDescriptor
+	public sealed class Marker : XmlViewModel, IMediaDescriptor
 	{
 		#region Fields
 		private string  _name;

@@ -1,6 +1,7 @@
-﻿using System;
+﻿using System.IO;
 
-using Windows.Media.Editing;
+using Windows.Media.Core;
+using Windows.Storage.Streams;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Input;
@@ -73,50 +74,45 @@ namespace MediaBase
 				return;
 		}
 
-		private static async void ActiveDescriptorChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		private static void ActiveDescriptorChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
 		{
 			if (!(d is MediaLibraryPage page))
 				return;
 
-			/*if (e.NewValue is IMediaDescriptor descriptor)
+			if (e.NewValue is IMediaDescriptor descriptor)
 			{
-				if (descriptor is MediaTreeFile mediaFile)
+				// Set the content frame's contents to a MediaPlayerPage (if not already)
+				if (!(page.ContentFrame.Content is MediaPlayerPage))
 				{
-					// Set the content frame's contents to a CompositionPlayerPage (if not already)
-					if (!(page.ContentFrame.Content is CompositionPlayerPage))
+					var navOptions = new FrameNavigationOptions
 					{
-						var navOptions = new FrameNavigationOptions
-						{
-							IsNavigationStackEnabled = false,
-							TransitionInfoOverride   = new SuppressNavigationTransitionInfo()
-						};
+						IsNavigationStackEnabled = false,
+						TransitionInfoOverride   = new SuppressNavigationTransitionInfo()
+					};
 
-						page.ContentFrame.NavigateToType(typeof(CompositionPlayerPage), null, navOptions);
-					}
-
-					// Create clip from media file
-					MediaClip clip = null;
-					if (mediaFile is ImageFile)
-						clip = await MediaClip.CreateFromImageFileAsync(mediaFile.StorageFile, TimeSpan.FromSeconds(5));
-					else if (mediaFile is VideoFile)
-						clip = await MediaClip.CreateFromFileAsync(mediaFile.StorageFile);
-
-					// Create media composition
-					var comp = new MediaComposition();
-					comp.Clips.Add(clip);
-
-					// Set the composition player page's active composition
-					if (page.ContentFrame.Content is CompositionPlayerPage playerPage)
-						playerPage.ActiveComposition = comp;
+					page.ContentFrame.NavigateToType(typeof(MediaPlayerPage), null, navOptions);
+				}
+				
+				// Set the media player's PlayableSource
+				if (descriptor is IPlayable playable && page.ContentFrame.Content is MediaPlayerPage playerPage)
+				{
+					playerPage.PlayableSource = playable;
 				}
 
+				// Set ListView item sources
 				page.ListViewTags.ItemsSource = descriptor.Tags;
+
+				if (descriptor is IMarkable markable)
+				{
+					page.ListViewMarkers.ItemsSource = markable.Markers;
+				}
 			}
 			else
 			{
 				page.ContentFrame.NavigateToType(typeof(StartPage), null, null);
-				page.ListViewTags.ItemsSource = null;
-			}*/
+				page.ListViewTags.ItemsSource    = null;
+				page.ListViewMarkers.ItemsSource = null;
+			}
 		}
 		#endregion
 

@@ -4,16 +4,25 @@
 			 xmlns:converters="using:Microsoft.Toolkit.Uwp.UI.Converters">
 
 	<Application.Resources>
-		<converters:EmptyObjectToObjectConverter x:Key="ObjectToVisibilityConverter"
-												 EmptyValue="Collapsed"
-												 NotEmptyValue="Visible"/>
+		<ResourceDictionary>
+			<ResourceDictionary.MergedDictionaries>
+				<ResourceDictionary Source="JLR.Utility.UWP\Themes\MediaSlider.xaml"/>
+				<ResourceDictionary Source="JLR.Utility.UWP\Themes\TransportElement.xaml"/>
 
-		<converters:EmptyObjectToObjectConverter x:Key="EmptyObjectToVisibilityConverter"
-												 EmptyValue="Visible"
-												 NotEmptyValue="Collapsed"/>
+				<ResourceDictionary>
+					<converters:EmptyObjectToObjectConverter x:Key="ObjectToVisibilityConverter"
+															 EmptyValue="Collapsed"
+															 NotEmptyValue="Visible"/>
 
-		<converters:EmptyObjectToObjectConverter x:Key="NullToBooleanConverter"
-												 EmptyValue="False"
-												 NotEmptyValue="True"/>
+					<converters:EmptyObjectToObjectConverter x:Key="EmptyObjectToVisibilityConverter"
+															 EmptyValue="Visible"
+															 NotEmptyValue="Collapsed"/>
+
+					<converters:EmptyObjectToObjectConverter x:Key="NullToBooleanConverter"
+															 EmptyValue="False"
+															 NotEmptyValue="True"/>
+				</ResourceDictionary>
+			</ResourceDictionary.MergedDictionaries>
+		</ResourceDictionary>
 	</Application.Resources>
 </Application>
