@@ -56,8 +56,8 @@ namespace MediaBase
 			var source = MediaSource.CreateFromStream(stream, stream.ContentType);
 			source.CustomProperties.Add("FPS", frameRate);
 			return source;
-
-			/*var       stream     = new InMemoryRandomAccessStream();
+			
+			/*var stream = new InMemoryRandomAccessStream();
 			using var fileStream = await StorageFile.OpenStreamForReadAsync();
 			await fileStream.CopyToAsync(stream.AsStreamForWrite(), 102400);
 

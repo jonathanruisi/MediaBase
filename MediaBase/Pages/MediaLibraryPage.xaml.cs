@@ -1,12 +1,16 @@
 ﻿using System.IO;
+using System.Linq;
 
 using Windows.Media.Core;
 using Windows.Storage.Streams;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Navigation;
+
+using JLR.Utility.UWP.Controls;
 
 namespace MediaBase
 {
@@ -90,7 +94,11 @@ namespace MediaBase
 						TransitionInfoOverride   = new SuppressNavigationTransitionInfo()
 					};
 
-					page.ContentFrame.NavigateToType(typeof(MediaPlayerPage), null, navOptions);
+					if (page.ContentFrame.NavigateToType(typeof(MediaPlayerPage), null, navOptions) &&
+						page.ContentFrame.Content is MediaPlayerPage mediaPlayerPage)
+					{
+						mediaPlayerPage.SelectedMarkerChanged += page.MediaPlayerPage_SelectedMarkerChanged;
+					}
 				}
 				
 				// Set the media player's PlayableSource
@@ -141,6 +149,24 @@ namespace MediaBase
 				return;
 
 			ActiveDescriptor = file;
+		}
+		#endregion
+
+		#region Event Handlers (ListView)
+		private void ListViewMarkers_SelectionChanged(object sender, SelectionChangedEventArgs e)
+		{
+			if (!(ContentFrame.Content is MediaPlayerPage page))
+				return;
+
+			if (e.AddedItems.Count > 0)
+				page.SelectedMarker = e.AddedItems[0] as Marker;
+			else if (e.RemovedItems.Count > 0)
+				page.SelectedMarker = null;
+		}
+
+		private void MediaPlayerPage_SelectedMarkerChanged(object sender, MediaSlider.IMediaMarker e)
+		{
+			ListViewMarkers.SelectedItem = e;
 		}
 		#endregion
 

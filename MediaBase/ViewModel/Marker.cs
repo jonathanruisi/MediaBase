@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Xml;
 
 using JLR.Utility.NET;
+using JLR.Utility.UWP.Controls;
 using JLR.Utility.UWP.ViewModel;
 
 namespace MediaBase
@@ -11,7 +12,7 @@ namespace MediaBase
 	/// <summary>
 	/// Represents a specific time and duration (in seconds) within a media file.
 	/// </summary>
-	public sealed class Marker : XmlViewModel, IMediaDescriptor
+	public sealed class Marker : XmlViewModel, IMediaDescriptor, MediaSlider.IMediaMarker
 	{
 		#region Fields
 		private string  _name;

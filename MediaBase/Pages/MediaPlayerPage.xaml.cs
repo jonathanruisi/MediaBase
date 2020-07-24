@@ -43,6 +43,28 @@ namespace MediaBase
 										typeof(IPlayable),
 										typeof(MediaPlayerPage),
 										new PropertyMetadata(null, OnPlayableSourceChanged));
+
+		public MediaSlider.IMediaMarker SelectedMarker
+		{
+			get => (MediaSlider.IMediaMarker) GetValue(SelectedMarkerProperty);
+			set => SetValue(SelectedMarkerProperty, value);
+		}
+
+		public static readonly DependencyProperty SelectedMarkerProperty =
+			DependencyProperty.Register("SelectedMarker",
+										typeof(MediaSlider.IMediaMarker),
+										typeof(MediaPlayerPage),
+										new PropertyMetadata(null, OnSelectedMarkerChanged));
+		#endregion
+
+		#region Events
+		public event EventHandler<MediaSlider.IMediaMarker> SelectedMarkerChanged;
+
+		private void RaiseSelectedMarkerChanged()
+		{
+			var handler = SelectedMarkerChanged;
+			handler?.Invoke(this, SelectedMarker);
+		}
 		#endregion
 
 		#region Constructor
@@ -83,6 +105,32 @@ namespace MediaBase
 			{
 				newMarkable.Markers.CollectionChanged += page.Markers_CollectionChanged;
 			}
+		}
+
+		private static void OnSelectedMarkerChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			if (!(d is MediaPlayerPage page) || !(e.NewValue is MediaSlider.IMediaMarker newMarker))
+				return;
+
+			if (page._player.PlaybackSession.CanSeek &&
+				page._player.PlaybackSession.CanPause)
+			{
+				page._player.Pause();
+				page._player.PlaybackSession.Position =
+					TimeSpan.FromSeconds(decimal.ToDouble(newMarker.Position));
+			}
+
+			if (newMarker.Duration > 0)
+			{
+				page.Slider.SetSelectionFromMarker(newMarker);
+			}
+			else
+			{
+				page.Slider.SelectionStart = null;
+				page.Slider.SelectionEnd   = null;
+			}
+
+			page.RaiseSelectedMarkerChanged();
 		}
 		#endregion
 
@@ -129,7 +177,6 @@ namespace MediaBase
 			Slider.SelectionDragCompleted += Slider_SelectionDragCompleted;
 			Slider.ZoomDragStarted        += Slider_ZoomDragStarted;
 			Slider.ZoomDragCompleted      += Slider_ZoomDragCompleted;
-			Slider.SelectedMarkerChanged  += Slider_SelectedMarkerChanged;
 		}
 
 		private void Page_Unloaded(object sender, RoutedEventArgs e)
@@ -170,8 +217,6 @@ namespace MediaBase
 				// Adjust slider
 				Slider.Duration = sender.PlaybackSession.NaturalDuration;
 
-				// TODO: Fix this
-				//Slider.VisibleDuration = Slider.Duration;
 				if (sender.Source is MediaSource mediaSource)
 				{
 					var fps = (double) mediaSource.CustomProperties["FPS"];
@@ -188,11 +233,13 @@ namespace MediaBase
 				{
 					foreach (var marker in markable.Markers)
 					{
-						Slider.Markers.Add(new MediaSlider.MediaSliderMarker(marker.Name,
-																			 marker.Position,
-																			 marker.Duration));
+						Slider.Markers.Add(marker);
 					}
 				}
+
+				// TODO: Fix this (we're supposed to use MediaSlider.VisibleDuration property)
+				Slider.ZoomStart = Slider.Start;
+				Slider.ZoomEnd = Slider.End;
 
 				// Update UI
 				TextBlockTimeTemp.Text = string.Empty;
@@ -277,9 +324,12 @@ namespace MediaBase
 			});
 		}
 
-		private void PlaybackSession_PositionChanged(MediaPlaybackSession sender, object args)
+		private async void PlaybackSession_PositionChanged(MediaPlaybackSession sender, object args)
 		{
+			if (sender.PlaybackState != MediaPlaybackState.Paused || _isMouseScrubbing)
+				return;
 
+			await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, SyncSliderToMedia);
 		}
 
 		private async void PlaybackSession_SeekCompleted(MediaPlaybackSession sender, object args)
@@ -352,6 +402,21 @@ namespace MediaBase
 		{
 			Slider.PositionFollowMode = _previousFollowMode;
 			Commands.PlayerNewClipCommand.PlayerNewClip.NotifyCanExecuteChanged();
+
+			// Update clip
+			if (SelectedMarker != null &&
+				SelectedMarker.Duration > 0 &&
+				Slider.SelectionStart != null && Slider.SelectionEnd != null &&
+				PlayableSource is IMarkable markable)
+			{
+				var index = markable.Markers.IndexOf((Marker) SelectedMarker);
+				
+				if (index >= 0)
+				{
+					markable.Markers[index].Position = (decimal) Slider.SelectionStart;
+					markable.Markers[index].Duration = (decimal) Slider.SelectionEnd - (decimal) Slider.SelectionStart;
+				}
+			}
 		}
 
 		private void Slider_ZoomDragStarted(object sender, EventArgs e)
@@ -363,11 +428,6 @@ namespace MediaBase
 		private void Slider_ZoomDragCompleted(object sender, EventArgs e)
 		{
 			Slider.PositionFollowMode = _previousFollowMode;
-		}
-
-		private void Slider_SelectedMarkerChanged(object sender, MediaSlider.MediaSliderMarker e)
-		{
-
 		}
 		#endregion
 
@@ -386,15 +446,17 @@ namespace MediaBase
 				case NotifyCollectionChangedAction.Add:
 					foreach (var marker in e.NewItems.OfType<Marker>())
 					{
-						Slider.Markers.Add(new MediaSlider.MediaSliderMarker(marker.Name,
-																			 marker.Position,
-																			 marker.Duration));
+						Slider.Markers.Add(marker);
 					}
 
 					break;
 
 				case NotifyCollectionChangedAction.Remove:
-					// TODO: Implement equality comparison
+					foreach (var marker in e.OldItems.OfType<Marker>())
+					{
+						Slider.Markers.Remove(marker);
+					}
+
 					break;
 
 				case NotifyCollectionChangedAction.Replace:

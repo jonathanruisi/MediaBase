@@ -223,6 +223,8 @@ namespace MediaBase
 			if (!(PlayableSource is IMarkable markable))
 				return;
 
+			SelectedMarker = null;
+
 			var dlg = new TextPromptDialog
 			{
 				Title             = "New Marker",
@@ -250,6 +252,8 @@ namespace MediaBase
 				Slider.SelectionStart == null ||
 				Slider.SelectionEnd == null)
 				return;
+
+			SelectedMarker = null;
 
 			var dlg = new TextPromptDialog
 			{

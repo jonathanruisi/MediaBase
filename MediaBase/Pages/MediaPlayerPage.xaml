@@ -26,7 +26,8 @@
 		<controls:MediaSlider x:Name="Slider" Grid.Row="1"
 							  Height="125"
 							  SnapToNearest="MinorTick"
-							  PositionFollowMode="Advance"/>
+							  PositionFollowMode="Advance"
+							  SelectedMarker="{x:Bind SelectedMarker, Mode=TwoWay}"/>
 
 		<!-- Time Grid -->
 		<Grid Grid.Row="2">

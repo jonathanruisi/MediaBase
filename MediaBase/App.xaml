@@ -21,6 +21,15 @@
 					<converters:EmptyObjectToObjectConverter x:Key="NullToBooleanConverter"
 															 EmptyValue="False"
 															 NotEmptyValue="True"/>
+
+					<converters:EmptyCollectionToObjectConverter x:Key="MarkerCountToVideoGlyphConverter"
+																 EmptyValue="&#xE116;"
+																 NotEmptyValue="&#xE25D;"/>
+
+					<converters:DoubleToVisibilityConverter x:Key="RatingToVisibilityConverter"
+															GreaterThan="0"
+															TrueValue="Visible"
+															FalseValue="Collapsed"/>
 				</ResourceDictionary>
 			</ResourceDictionary.MergedDictionaries>
 		</ResourceDictionary>

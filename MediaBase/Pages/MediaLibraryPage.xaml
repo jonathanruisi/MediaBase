@@ -7,6 +7,7 @@
 	  xmlns:interactivity="using:Microsoft.Xaml.Interactivity"
 	  xmlns:core="using:Microsoft.Xaml.Interactions.Core"
 	  xmlns:mediaBase="using:MediaBase"
+	  xmlns:controls="using:JLR.Utility.UWP.Controls"
 	  mc:Ignorable="d"
 	  MinWidth="1024"
 	  MinHeight="768"
@@ -16,6 +17,7 @@
 	<Page.Resources>
 		<mediaBase:ObjectToFriendlyTypeStringConverter x:Key="FriendlyTypeStringConverter"/>
 		<mediaBase:RatingAdjustmentConverter x:Key="RatingAdjustmentConverter"/>
+		<mediaBase:RatingToBrushConverter x:Key="RatingToBrushConverter"/>
 
 		<mediaBase:MediaItemTemplateSelector x:Key="MediaItemTemplateSelector"
 											 FolderTemplate="{StaticResource FolderDataTemplate}"
@@ -118,7 +120,7 @@
 		</DataTemplate>
 
 		<DataTemplate x:Key="VideoFileDataTemplate"
-					  x:DataType="mediaBase:MediaTreeFile">
+					  x:DataType="mediaBase:VideoFile">
 			<TreeViewItem ContextFlyout="{StaticResource MenuFlyoutFileDataTemplate}"
 						  RightTapped="TreeViewMediaLibrary_RightTapped">
 				<TreeViewItem.Content>
@@ -127,8 +129,16 @@
 									Foreground="Red"
 									Margin="0,0,10,0"
 									Visibility="{x:Bind StorageFile, Converter={StaticResource EmptyObjectToVisibilityConverter}, Mode=OneWay}"/>
+						<TextBlock HorizontalAlignment="Center"
+								   VerticalAlignment="Center"
+								   Margin="0,0,5,0"
+								   FontSize="18"
+								   FontWeight="Bold"
+								   Text="{x:Bind Rating, Mode=OneWay}"
+								   Foreground="{x:Bind Rating, Converter={StaticResource RatingToBrushConverter}, Mode=OneWay}"
+								   Visibility="{x:Bind Rating, Converter={StaticResource RatingToVisibilityConverter}, Mode=OneWay}"/>
 						<FontIcon FontFamily="Segoe MDL2 Assets"
-								  Glyph="&#xE116;"
+								  Glyph="{x:Bind Markers, Converter={StaticResource MarkerCountToVideoGlyphConverter}, Mode=OneWay}"
 								  Margin="0,0,10,0"/>
 						<TextBlock HorizontalAlignment="Left"
 								   VerticalAlignment="Center"
@@ -215,7 +225,9 @@
 				<!-- Marker List -->
 				<ListView x:Name="ListViewMarkers"
 						  Grid.Row="0"
-						  ItemTemplate="{StaticResource MarkerTemplate}">
+						  SelectionMode="Single"
+						  ItemTemplate="{StaticResource MarkerTemplate}"
+						  SelectionChanged="ListViewMarkers_SelectionChanged">
 					<ListView.Header>
 						<Border BorderThickness="0"
 								Background="#303030">
