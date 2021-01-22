@@ -86,6 +86,14 @@ namespace MediaBase
 				Commands.MediaLibraryRenameItemCommand.MediaLibraryRenameItem;
 			FlyoutItemMediaLibraryItemRename.Command =
 				Commands.MediaLibraryRenameItemCommand.MediaLibraryRenameItem;
+
+			// MediaLibraryRemoveMarkerCommand
+			Commands.MediaLibraryRemoveMarkerCommand.MediaLibraryRemoveMarker.CanExecuteRequested +=
+				MediaLibraryRemoveMarker_CanExecuteRequested;
+			Commands.MediaLibraryRemoveMarkerCommand.MediaLibraryRemoveMarker.ExecuteRequested +=
+				MediaLibraryRemoveMarker_ExecuteRequested;
+			FlyoutItemRemoveMarker.Command =
+				Commands.MediaLibraryRemoveMarkerCommand.MediaLibraryRemoveMarker;
 		}
 		#endregion
 
@@ -130,6 +138,12 @@ namespace MediaBase
 																CanExecuteRequestedEventArgs args)
 		{
 			args.CanExecute = ActiveNode?.Depth > 0;
+		}
+
+		private void MediaLibraryRemoveMarker_CanExecuteRequested(XamlUICommand sender,
+																  CanExecuteRequestedEventArgs args)
+		{
+			args.CanExecute = _descriptorContext != null;
 		}
 		#endregion
 
@@ -279,6 +293,14 @@ namespace MediaBase
 			{
 				ActiveNode.Name                 = dlg.Text;
 				ActiveProject.HasUnsavedChanges = true;
+			}
+		}
+
+		private void MediaLibraryRemoveMarker_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+		{
+			if (ActiveDescriptor is IMarkable markable && _descriptorContext is Marker marker)
+			{
+				markable.Markers.Remove(marker);
 			}
 		}
 		#endregion

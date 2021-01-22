@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Xml;
 
@@ -72,7 +73,7 @@ namespace MediaBase
 		{
 			base.WriteElements(writer);
 
-			foreach (var marker in Markers)
+			foreach (var marker in Markers.OrderBy(x => x.Position))
 			{
 				marker.WriteXml(writer);
 			}

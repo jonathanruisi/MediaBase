@@ -215,6 +215,21 @@ namespace MediaBase
 				};
 			}
 		}
+
+		public static class MediaLibraryRemoveMarkerCommand
+		{
+			public static XamlUICommand MediaLibraryRemoveMarker { get; }
+
+			static MediaLibraryRemoveMarkerCommand()
+			{
+				MediaLibraryRemoveMarker = new XamlUICommand
+				{
+					Label       = "Remove",
+					Description = "Remove marker",
+					IconSource  = new SymbolIconSource {Symbol = Symbol.Remove}
+				};
+			}
+		}
 		#endregion
 
 		#region Player Commands
@@ -276,6 +291,7 @@ namespace MediaBase
 				PlayerPreviousFrame.KeyboardAccelerators.Add(new KeyboardAccelerator
 				{
 					Key       = VirtualKey.Left,
+					Modifiers = VirtualKeyModifiers.Shift,
 					IsEnabled = true
 				});
 			}
@@ -295,6 +311,49 @@ namespace MediaBase
 				};
 
 				PlayerNextFrame.KeyboardAccelerators.Add(new KeyboardAccelerator
+				{
+					Key       = VirtualKey.Right,
+					Modifiers = VirtualKeyModifiers.Shift,
+					IsEnabled = true
+				});
+			}
+		}
+
+		public static class PlayerPreviousMarkerCommand
+		{
+			public static XamlUICommand PlayerPreviousMarker { get; }
+
+			static PlayerPreviousMarkerCommand()
+			{
+				PlayerPreviousMarker = new XamlUICommand
+				{
+					Label       = "Previous marker",
+					Description = "Go to previous marker",
+					IconSource  = new SymbolIconSource {Symbol = (Symbol) 0xE760}
+				};
+
+				PlayerPreviousMarker.KeyboardAccelerators.Add(new KeyboardAccelerator
+				{
+					Key       = VirtualKey.Left,
+					IsEnabled = true
+				});
+			}
+		}
+
+		public static class PlayerNextMarkerCommand
+		{
+			public static XamlUICommand PlayerNextMarker { get; }
+
+			static PlayerNextMarkerCommand()
+			{
+				PlayerNextMarker = new XamlUICommand
+				{
+					Label       = "Next marker",
+					Description = "Go to next marker",
+					IconSource  = new SymbolIconSource {Symbol = (Symbol) 0xE761}
+				};
+
+				PlayerNextMarker.KeyboardAccelerators.Add(new KeyboardAccelerator
 				{
 					Key       = VirtualKey.Right,
 					IsEnabled = true
@@ -404,6 +463,27 @@ namespace MediaBase
 				PlayerRateDecrease.KeyboardAccelerators.Add(new KeyboardAccelerator
 				{
 					Key       = VirtualKey.Down,
+					IsEnabled = true
+				});
+			}
+		}
+
+		public static class PlayerRateNormalCommand
+		{
+			public static XamlUICommand PlayerRateNormal { get; }
+
+			static PlayerRateNormalCommand()
+			{
+				PlayerRateNormal = new XamlUICommand
+				{
+					Label       = "Normal Rate",
+					Description = "Normal playback rate",
+					IconSource  = new SymbolIconSource {Symbol = Symbol.Memo}
+				};
+
+				PlayerRateNormal.KeyboardAccelerators.Add(new KeyboardAccelerator
+				{
+					Key       = (VirtualKey) 187,
 					IsEnabled = true
 				});
 			}

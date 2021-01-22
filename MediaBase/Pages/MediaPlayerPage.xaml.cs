@@ -115,9 +115,18 @@ namespace MediaBase
 			if (page._player.PlaybackSession.CanSeek &&
 				page._player.PlaybackSession.CanPause)
 			{
-				page._player.Pause();
+				var rate = 0.0;
+				if (page._player.PlaybackSession.PlaybackState == MediaPlaybackState.Playing)
+				{
+					rate                                      = page._player.PlaybackSession.PlaybackRate;
+					page._player.PlaybackSession.PlaybackRate = 0;
+				}
+
 				page._player.PlaybackSession.Position =
 					TimeSpan.FromSeconds(decimal.ToDouble(newMarker.Position));
+
+				if (page._player.PlaybackSession.PlaybackState == MediaPlaybackState.Playing)
+					page._player.PlaybackSession.PlaybackRate = rate;
 			}
 
 			if (newMarker.Duration > 0)
@@ -220,7 +229,7 @@ namespace MediaBase
 				if (sender.Source is MediaSource mediaSource)
 				{
 					var fps = (double) mediaSource.CustomProperties["FPS"];
-					Slider.FramesPerSecond = (int) Math.Ceiling(fps);
+					Slider.FramesPerSecond  = (int) Math.Ceiling(fps);
 					_uiUpdateTimer.Interval = TimeSpan.FromSeconds(0.5 / fps);
 				}
 
@@ -239,7 +248,7 @@ namespace MediaBase
 
 				// TODO: Fix this (we're supposed to use MediaSlider.VisibleDuration property)
 				Slider.ZoomStart = Slider.Start;
-				Slider.ZoomEnd = Slider.End;
+				Slider.ZoomEnd   = Slider.End;
 
 				// Update UI
 				TextBlockTimeTemp.Text = string.Empty;
@@ -353,7 +362,7 @@ namespace MediaBase
 
 		private void Slider_SelectionChanged(object sender, (decimal start, decimal end)? e)
 		{
-			
+
 		}
 
 		private void Slider_ZoomChanged(object sender, (decimal start, decimal end) e)
@@ -410,7 +419,7 @@ namespace MediaBase
 				PlayableSource is IMarkable markable)
 			{
 				var index = markable.Markers.IndexOf((Marker) SelectedMarker);
-				
+
 				if (index >= 0)
 				{
 					markable.Markers[index].Position = (decimal) Slider.SelectionStart;
@@ -435,6 +444,7 @@ namespace MediaBase
 		private void UIUpdateTimer_Tick(object sender, object e)
 		{
 			SyncSliderToMedia();
+			RefreshPlayerCommands();
 		}
 		#endregion
 
@@ -510,11 +520,42 @@ namespace MediaBase
 			Commands.PlayerPauseCommand.PlayerPause.NotifyCanExecuteChanged();
 			Commands.PlayerPreviousFrameCommand.PlayerPreviousFrame.NotifyCanExecuteChanged();
 			Commands.PlayerNextFrameCommand.PlayerNextFrame.NotifyCanExecuteChanged();
+			Commands.PlayerPreviousMarkerCommand.PlayerPreviousMarker.NotifyCanExecuteChanged();
+			Commands.PlayerNextMarkerCommand.PlayerNextMarker.NotifyCanExecuteChanged();
 			Commands.PlayerNewMarkerCommand.PlayerNewMarker.NotifyCanExecuteChanged();
 			Commands.PlayerNewClipCommand.PlayerNewClip.NotifyCanExecuteChanged();
 			Commands.PlayerFullscreenCommand.PlayerFullscreen.NotifyCanExecuteChanged();
 			Commands.PlayerRateIncreaseCommand.PlayerRateIncrease.NotifyCanExecuteChanged();
 			Commands.PlayerRateDecreaseCommand.PlayerRateDecrease.NotifyCanExecuteChanged();
+			Commands.PlayerRateNormalCommand.PlayerRateNormal.NotifyCanExecuteChanged();
+		}
+
+		private Marker PreviousMarkerFromCurrentPosition()
+		{
+			if (!(PlayableSource is IMarkable markable))
+				return null;
+
+			var i = markable.Markers.Count - 1;
+			while (i >= 0 && markable.Markers[i].Position >= Slider.Position - 0.5M)  // The "0.5" provides a one second dead zone
+			{
+				i--;
+			}
+
+			return i >= 0 ? markable.Markers[i] : null;
+		}
+
+		private Marker NextMarkerFromCurrentPosition()
+		{
+			if (!(PlayableSource is IMarkable markable))
+				return null;
+
+			var i = 0;
+			while (i < markable.Markers.Count && markable.Markers[i].Position <= Slider.Position)
+			{
+				i++;
+			}
+
+			return i < markable.Markers.Count ? markable.Markers[i] : null;
 		}
 		#endregion
 	}

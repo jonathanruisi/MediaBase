@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Linq;
 
 using Windows.Media.Core;
 using Windows.Media.Playback;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Input;
+
+using ColorCode.Common;
 
 using JLR.Utility.UWP.Controls;
 using JLR.Utility.UWP.Dialogs;
@@ -43,6 +46,20 @@ namespace MediaBase
 				PlayerNextFrame_ExecuteRequested;
 			ButtonNextFrame.Command = Commands.PlayerNextFrameCommand.PlayerNextFrame;
 
+			// PlayerPreviousMarkerCommand
+			Commands.PlayerPreviousMarkerCommand.PlayerPreviousMarker.CanExecuteRequested +=
+				PlayerPreviousMarker_CanExecuteRequested;
+			Commands.PlayerPreviousMarkerCommand.PlayerPreviousMarker.ExecuteRequested +=
+				PlayerPreviousMarker_ExecuteRequested;
+			ButtonPreviousMarker.Command = Commands.PlayerPreviousMarkerCommand.PlayerPreviousMarker;
+
+			// PlayerNextMarkerCommand
+			Commands.PlayerNextMarkerCommand.PlayerNextMarker.CanExecuteRequested +=
+				PlayerNextMarker_CanExecuteRequested;
+			Commands.PlayerNextMarkerCommand.PlayerNextMarker.ExecuteRequested +=
+				PlayerNextMarker_ExecuteRequested;
+			ButtonNextMarker.Command = Commands.PlayerNextMarkerCommand.PlayerNextMarker;
+
 			// PlayerNewMarkerCommand
 			Commands.PlayerNewMarkerCommand.PlayerNewMarker.CanExecuteRequested +=
 				PlayerNewMarker_CanExecuteRequested;
@@ -77,6 +94,13 @@ namespace MediaBase
 			Commands.PlayerRateDecreaseCommand.PlayerRateDecrease.ExecuteRequested +=
 				PlayerRateDecrease_ExecuteRequested;
 			ButtonDecreaseRate.Command = Commands.PlayerRateDecreaseCommand.PlayerRateDecrease;
+
+			// PlayerRateNormalCommand
+			Commands.PlayerRateNormalCommand.PlayerRateNormal.CanExecuteRequested +=
+				PlayerRateNormal_CanExecuteRequested;
+			Commands.PlayerRateNormalCommand.PlayerRateNormal.ExecuteRequested +=
+				PlayerRateNormal_ExecuteRequested;
+			ButtonNormalRate.Command = Commands.PlayerRateNormalCommand.PlayerRateNormal;
 		}
 		#endregion
 
@@ -128,6 +152,32 @@ namespace MediaBase
 				Slider.FrameDuration;
 		}
 
+		private void PlayerPreviousMarker_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+		{
+			args.CanExecute =
+				IsLoaded &&
+				_player.Source != null &&
+				_player.Source is MediaSource source &&
+				source.IsOpen &&
+				source.State == MediaSourceState.Opened &&
+				(_player.PlaybackSession.PlaybackState == MediaPlaybackState.Playing ||
+				 _player.PlaybackSession.PlaybackState == MediaPlaybackState.Paused) &&
+				PreviousMarkerFromCurrentPosition() != null;
+		}
+
+		private void PlayerNextMarker_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+		{
+			args.CanExecute =
+				IsLoaded &&
+				_player.Source != null &&
+				_player.Source is MediaSource source &&
+				source.IsOpen &&
+				source.State == MediaSourceState.Opened &&
+				(_player.PlaybackSession.PlaybackState == MediaPlaybackState.Playing ||
+				 _player.PlaybackSession.PlaybackState == MediaPlaybackState.Paused) &&
+				NextMarkerFromCurrentPosition() != null;
+		}
+
 		private void PlayerNewMarker_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
 		{
 			args.CanExecute =
@@ -174,10 +224,23 @@ namespace MediaBase
 				_player.Source is MediaSource source &&
 				source.IsOpen &&
 				source.State == MediaSourceState.Opened &&
-				_player.PlaybackSession.PlaybackState == MediaPlaybackState.Playing;
+				_player.PlaybackSession.PlaybackState == MediaPlaybackState.Playing &&
+				_player.PlaybackSession.PlaybackRate < 4.0;
 		}
 
 		private void PlayerRateDecrease_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+		{
+			args.CanExecute =
+				IsLoaded &&
+				_player.Source != null &&
+				_player.Source is MediaSource source &&
+				source.IsOpen &&
+				source.State == MediaSourceState.Opened &&
+				_player.PlaybackSession.PlaybackState == MediaPlaybackState.Playing &&
+				_player.PlaybackSession.PlaybackRate > 0.5;
+		}
+
+		private void PlayerRateNormal_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
 		{
 			args.CanExecute =
 				IsLoaded &&
@@ -218,6 +281,28 @@ namespace MediaBase
 			_player.PlaybackSession.PlaybackRate =  rate;
 		}
 
+		private void PlayerPreviousMarker_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+		{
+			var marker = PreviousMarkerFromCurrentPosition();
+			if (marker != null)
+			{
+				if (SelectedMarker == marker)
+					SelectedMarker = null;
+				SelectedMarker = marker;
+			}
+		}
+
+		private void PlayerNextMarker_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+		{
+			var marker = NextMarkerFromCurrentPosition();
+			if (marker != null)
+			{
+				if (SelectedMarker == marker)
+					SelectedMarker = null;
+				SelectedMarker = marker;
+			}
+		}
+
 		private async void PlayerNewMarker_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
 		{
 			if (!(PlayableSource is IMarkable markable))
@@ -242,7 +327,15 @@ namespace MediaBase
 					Position = Slider.Position,
 					Duration = 0
 				};
-				markable.Markers.Add(marker);
+
+				var insertionIndex = 0;
+				while (insertionIndex < markable.Markers.Count &&
+					   markable.Markers[insertionIndex].Position <= marker.Position)
+				{
+					insertionIndex++;
+				}
+
+				markable.Markers.Insert(insertionIndex, marker);
 			}
 		}
 
@@ -272,24 +365,38 @@ namespace MediaBase
 					Position = (decimal) Slider.SelectionStart,
 					Duration = (decimal) Slider.SelectionEnd - (decimal) Slider.SelectionStart
 				};
-				markable.Markers.Add(marker);
+
+				var insertionIndex = 0;
+				while (insertionIndex < markable.Markers.Count &&
+					   markable.Markers[insertionIndex].Position <= marker.Position)
+				{
+					insertionIndex++;
+				}
+
+				markable.Markers.Insert(insertionIndex, marker);
 			}
 		}
 
 		private void PlayerFullscreen_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
 		{
-			
+
 		}
 
 		private void PlayerRateIncrease_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
 		{
-			_player.PlaybackSession.PlaybackRate += 0.5;
+			if (_player.PlaybackSession.PlaybackRate < 4.0)
+				_player.PlaybackSession.PlaybackRate += 0.5;
 		}
 
 		private void PlayerRateDecrease_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
 		{
 			if (_player.PlaybackSession.PlaybackRate > 0.5)
 				_player.PlaybackSession.PlaybackRate -= 0.5;
+		}
+
+		private void PlayerRateNormal_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+		{
+			_player.PlaybackSession.PlaybackRate = 1.0;
 		}
 		#endregion
 	}

@@ -16,6 +16,10 @@ namespace MediaBase
 {
 	public sealed partial class MediaLibraryPage : Page
 	{
+		#region Fields
+		private IMediaDescriptor _descriptorContext;
+		#endregion
+
 		#region Properties
 		public Project ActiveProject
 		{
@@ -162,6 +166,14 @@ namespace MediaBase
 				page.SelectedMarker = e.AddedItems[0] as Marker;
 			else if (e.RemovedItems.Count > 0)
 				page.SelectedMarker = null;
+		}
+
+		private void Marker_RightTapped(object sender, RightTappedRoutedEventArgs e)
+		{
+			_descriptorContext = null;
+
+			if (sender is ListViewItem item && item.DataContext is IMediaDescriptor descriptor)
+				_descriptorContext = descriptor;
 		}
 
 		private void MediaPlayerPage_SelectedMarkerChanged(object sender, MediaSlider.IMediaMarker e)

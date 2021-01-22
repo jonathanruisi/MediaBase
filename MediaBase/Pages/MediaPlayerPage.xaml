@@ -74,6 +74,10 @@
 							  Width="40"
 							  LabelPosition="Collapsed"
 							  ToolTipService.ToolTip="Rate +"/>
+				<AppBarButton x:Name="ButtonNormalRate"
+							  Width="40"
+							  LabelPosition="Collapsed"
+							  ToolTipService.ToolTip="Normal Rate"/>
 				<AppBarButton x:Name="ButtonDecreaseRate"
 							  Width="40"
 							  LabelPosition="Collapsed"
@@ -87,6 +91,15 @@
 							  Width="40"
 							  LabelPosition="Collapsed"
 							  ToolTipService.ToolTip="New Marker"/>
+				<AppBarSeparator/>
+				<AppBarButton x:Name="ButtonNextMarker"
+							  Width="40"
+							  LabelPosition="Collapsed"
+							  ToolTipService.ToolTip="Next Frame"/>
+				<AppBarButton x:Name="ButtonPreviousMarker"
+							  Width="40"
+							  LabelPosition="Collapsed"
+							  ToolTipService.ToolTip="Previous Frame"/>
 				<AppBarSeparator/>
 				<AppBarButton x:Name="ButtonNextFrame"
 							  Width="40"
