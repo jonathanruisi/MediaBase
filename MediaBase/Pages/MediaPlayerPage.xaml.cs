@@ -367,7 +367,8 @@ namespace MediaBase
 
 		private void Slider_ZoomChanged(object sender, (decimal start, decimal end) e)
 		{
-
+			Commands.PlayerZoomInTimelimeCommand.PlayerZoomInTimelime.NotifyCanExecuteChanged();
+			Commands.PlayerZoomOutTimelimeCommand.PlayerZoomOutTimelime.NotifyCanExecuteChanged();
 		}
 
 		private async void Slider_PositionDragStarted(object sender, EventArgs e)
@@ -528,6 +529,8 @@ namespace MediaBase
 			Commands.PlayerRateIncreaseCommand.PlayerRateIncrease.NotifyCanExecuteChanged();
 			Commands.PlayerRateDecreaseCommand.PlayerRateDecrease.NotifyCanExecuteChanged();
 			Commands.PlayerRateNormalCommand.PlayerRateNormal.NotifyCanExecuteChanged();
+			Commands.PlayerZoomInTimelimeCommand.PlayerZoomInTimelime.NotifyCanExecuteChanged();
+			Commands.PlayerZoomOutTimelimeCommand.PlayerZoomOutTimelime.NotifyCanExecuteChanged();
 		}
 
 		private Marker PreviousMarkerFromCurrentPosition()

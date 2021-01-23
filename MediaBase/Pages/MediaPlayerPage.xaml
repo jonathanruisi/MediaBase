@@ -13,111 +13,85 @@
 	<Grid>
 		<Grid.RowDefinitions>
 			<RowDefinition Height="*"/>
-			<RowDefinition Height="Auto"/>
-			<RowDefinition Height="Auto"/>
-			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto "/>
+			<RowDefinition Height="Auto "/>
 		</Grid.RowDefinitions>
 
 		<!-- Swap Chain Panel -->
-		<win2d:CanvasSwapChainPanel x:Name="SwapChainPanel" Grid.Row="0"
-									SizeChanged="SwapChainPanel_SizeChanged"/>
+		<win2d:CanvasSwapChainPanel x:Name="SwapChainPanel"
+									Grid.Row="0"
+									SizeChanged="SwapChainPanel_SizeChanged">
 
-		<!-- Slider -->
-		<controls:MediaSlider x:Name="Slider" Grid.Row="1"
-							  Height="125"
-							  SnapToNearest="MinorTick"
-							  PositionFollowMode="Advance"
-							  SelectedMarker="{x:Bind SelectedMarker, Mode=TwoWay}"/>
+			<Grid>
+				<Grid.RowDefinitions>
+					<RowDefinition Height="*" />
+					<RowDefinition Height="Auto" />
+				</Grid.RowDefinitions>
+
+				<!-- Slider -->
+				<controls:MediaSlider x:Name="Slider" Grid.Row="1" Height="75" ZoomBarSize="0.2*" MarkerBarSize="0.2*"
+						PositionElementRelativeSize="0.8" SelectionElementRelativeSize="0.8" SnapToNearest="MinorTick"
+						PositionFollowMode="Advance" SelectedMarker="{x:Bind SelectedMarker, Mode=TwoWay}" />
+			</Grid>
+		</win2d:CanvasSwapChainPanel>
 
 		<!-- Time Grid -->
-		<Grid Grid.Row="2">
+		<Grid Grid.Row="1">
 			<Grid.ColumnDefinitions>
-				<ColumnDefinition Width="*"/>
-				<ColumnDefinition Width="*"/>
-				<ColumnDefinition Width="*"/>
+				<ColumnDefinition Width="*" />
+				<ColumnDefinition Width="*" />
+				<ColumnDefinition Width="*" />
 			</Grid.ColumnDefinitions>
 
-			<TextBlock x:Name="TextBlockTimeElapsed" Grid.Column="0"
-					   Padding="3"
-					   HorizontalAlignment="Stretch"
-					   HorizontalTextAlignment="Start"
-					   FontFamily="Consolas"
-					   FontSize="28"
-					   FontWeight="Bold"/>
+			<TextBlock x:Name="TextBlockTimeElapsed" Grid.Column="0" Padding="3" HorizontalAlignment="Stretch"
+					HorizontalTextAlignment="Start" FontFamily="Consolas" FontSize="18" FontWeight="Bold" />
 
-			<TextBlock x:Name="TextBlockTimeTemp" Grid.Column="1"
-					   Padding="3"
-					   HorizontalAlignment="Stretch"
-					   HorizontalTextAlignment="Center"
-					   FontFamily="Consolas"
-					   FontSize="28"
-					   FontWeight="Bold"/>
+			<TextBlock x:Name="TextBlockTimeTemp" Grid.Column="1" Padding="3" HorizontalAlignment="Stretch"
+					HorizontalTextAlignment="Center" FontFamily="Consolas" FontSize="18" FontWeight="Bold" />
 
-			<TextBlock x:Name="TextBlockTimeRemaining" Grid.Column="2"
-					   Padding="3"
-					   HorizontalAlignment="Stretch"
-					   HorizontalTextAlignment="End"
-					   FontFamily="Consolas"
-					   FontSize="28"
-					   FontWeight="Bold"/>
+			<TextBlock x:Name="TextBlockTimeRemaining" Grid.Column="2" Padding="3" HorizontalAlignment="Stretch"
+					HorizontalTextAlignment="End" FontFamily="Consolas" FontSize="18" FontWeight="Bold" />
 		</Grid>
 
 		<!-- Command Bar -->
-		<CommandBar x:Name="CommandBar" Grid.Row="3"
-					DefaultLabelPosition="Collapsed"
-					IsDynamicOverflowEnabled="False"
-					OverflowButtonVisibility="Collapsed"
-					FlowDirection="RightToLeft"
-					Visibility="Visible">
+		<CommandBar x:Name="CommandBar" Grid.Row="2" DefaultLabelPosition="Collapsed" IsDynamicOverflowEnabled="False"
+				OverflowButtonVisibility="Collapsed" FlowDirection="RightToLeft" Visibility="Visible">
 			<CommandBar.PrimaryCommands>
-				<AppBarButton x:Name="ButtonIncreaseRate"
+				<AppBarButton x:Name="ButtonTimelineZoomIn"
 							  Width="40"
 							  LabelPosition="Collapsed"
-							  ToolTipService.ToolTip="Rate +"/>
-				<AppBarButton x:Name="ButtonNormalRate"
+							  ToolTipService.ToolTip="Timeline zoom 25%"/>
+				<AppBarButton x:Name="ButtonTimelineZoomOut"
 							  Width="40"
 							  LabelPosition="Collapsed"
-							  ToolTipService.ToolTip="Normal Rate"/>
-				<AppBarButton x:Name="ButtonDecreaseRate"
-							  Width="40"
-							  LabelPosition="Collapsed"
-							  ToolTipService.ToolTip="Rate -"/>
+							  ToolTipService.ToolTip="Timeline zoom 100%"/>
 				<AppBarSeparator/>
-				<AppBarButton x:Name="ButtonNewClip"
-							  Width="40"
-							  LabelPosition="Collapsed"
-							  ToolTipService.ToolTip="New Clip"/>
-				<AppBarButton x:Name="ButtonNewMarker"
-							  Width="40"
-							  LabelPosition="Collapsed"
-							  ToolTipService.ToolTip="New Marker"/>
-				<AppBarSeparator/>
-				<AppBarButton x:Name="ButtonNextMarker"
-							  Width="40"
-							  LabelPosition="Collapsed"
-							  ToolTipService.ToolTip="Next Frame"/>
-				<AppBarButton x:Name="ButtonPreviousMarker"
-							  Width="40"
-							  LabelPosition="Collapsed"
-							  ToolTipService.ToolTip="Previous Frame"/>
-				<AppBarSeparator/>
-				<AppBarButton x:Name="ButtonNextFrame"
-							  Width="40"
-							  LabelPosition="Collapsed"
-							  ToolTipService.ToolTip="Next Frame"/>
-				<AppBarButton x:Name="ButtonPreviousFrame"
-							  Width="40"
-							  LabelPosition="Collapsed"
-							  ToolTipService.ToolTip="Previous Frame"/>
-				<AppBarButton x:Name="ButtonPlayPause"
-							  Width="60"
-							  LabelPosition="Collapsed"
-							  ToolTipService.ToolTip="Play/Pause"/>
-				<AppBarSeparator/>
-				<AppBarButton x:Name="ButtonFullscreen"
-							  Width="40"
-							  LabelPosition="Collapsed"
-							  ToolTipService.ToolTip="Fullscreen"/>
+				<AppBarButton x:Name="ButtonIncreaseRate" Width="40" LabelPosition="Collapsed"
+							  ToolTipService.ToolTip="Rate +" />
+				<AppBarButton x:Name="ButtonNormalRate" Width="40" LabelPosition="Collapsed"
+						ToolTipService.ToolTip="Normal Rate" />
+				<AppBarButton x:Name="ButtonDecreaseRate" Width="40" LabelPosition="Collapsed"
+						ToolTipService.ToolTip="Rate -" />
+				<AppBarSeparator />
+				<AppBarButton x:Name="ButtonNewClip" Width="40" LabelPosition="Collapsed"
+						ToolTipService.ToolTip="New Clip" />
+				<AppBarButton x:Name="ButtonNewMarker" Width="40" LabelPosition="Collapsed"
+						ToolTipService.ToolTip="New Marker" />
+				<AppBarSeparator />
+				<AppBarButton x:Name="ButtonNextMarker" Width="40" LabelPosition="Collapsed"
+						ToolTipService.ToolTip="Next Frame" />
+				<AppBarButton x:Name="ButtonPreviousMarker" Width="40" LabelPosition="Collapsed"
+						ToolTipService.ToolTip="Previous Frame" />
+				<AppBarSeparator />
+				<AppBarButton x:Name="ButtonNextFrame" Width="40" LabelPosition="Collapsed"
+						ToolTipService.ToolTip="Next Frame" />
+				<AppBarButton x:Name="ButtonPreviousFrame" Width="40" LabelPosition="Collapsed"
+						ToolTipService.ToolTip="Previous Frame" />
+				<AppBarButton x:Name="ButtonPlayPause" Width="60" LabelPosition="Collapsed"
+						ToolTipService.ToolTip="Play/Pause" />
+				<AppBarSeparator />
+				<AppBarButton x:Name="ButtonFullscreen" Width="40" LabelPosition="Collapsed"
+						ToolTipService.ToolTip="Fullscreen" />
 			</CommandBar.PrimaryCommands>
 		</CommandBar>
 	</Grid>

@@ -488,6 +488,48 @@ namespace MediaBase
 				});
 			}
 		}
+
+		public static class PlayerZoomOutTimelimeCommand
+		{
+			public static XamlUICommand PlayerZoomOutTimelime { get; }
+
+			static PlayerZoomOutTimelimeCommand()
+			{
+				PlayerZoomOutTimelime = new XamlUICommand
+				{
+					Label       = "Zoom Out Timeline",
+					Description = "Zoom timeline 100%",
+				};
+
+				PlayerZoomOutTimelime.KeyboardAccelerators.Add(new KeyboardAccelerator
+				{
+					Key       = VirtualKey.Number0,
+					Modifiers = VirtualKeyModifiers.Control,
+					IsEnabled = true
+				});
+			}
+		}
+
+		public static class PlayerZoomInTimelimeCommand
+		{
+			public static XamlUICommand PlayerZoomInTimelime { get; }
+
+			static PlayerZoomInTimelimeCommand()
+			{
+				PlayerZoomInTimelime = new XamlUICommand
+				{
+					Label       = "Zoom In Timeline",
+					Description = "Zoom timeline 25%",
+				};
+
+				PlayerZoomInTimelime.KeyboardAccelerators.Add(new KeyboardAccelerator
+				{
+					Key       = VirtualKey.Number1,
+					Modifiers = VirtualKeyModifiers.Control,
+					IsEnabled = true
+				});
+			}
+		}
 		#endregion
 	}
 }

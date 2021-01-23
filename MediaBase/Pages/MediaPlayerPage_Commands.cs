@@ -4,6 +4,7 @@ using System.Linq;
 
 using Windows.Media.Core;
 using Windows.Media.Playback;
+using Windows.UI.ViewManagement;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Input;
 
@@ -101,6 +102,20 @@ namespace MediaBase
 			Commands.PlayerRateNormalCommand.PlayerRateNormal.ExecuteRequested +=
 				PlayerRateNormal_ExecuteRequested;
 			ButtonNormalRate.Command = Commands.PlayerRateNormalCommand.PlayerRateNormal;
+
+			// PlayerZoomInTimelimeCommand
+			Commands.PlayerZoomInTimelimeCommand.PlayerZoomInTimelime.CanExecuteRequested +=
+				PlayerZoomInTimelime_CanExecuteRequested;
+			Commands.PlayerZoomInTimelimeCommand.PlayerZoomInTimelime.ExecuteRequested +=
+				PlayerZoomInTimelime_ExecuteRequested;
+			ButtonTimelineZoomIn.Command = Commands.PlayerZoomInTimelimeCommand.PlayerZoomInTimelime;
+
+			// PlayerZoomOutTimelineCommand
+			Commands.PlayerZoomOutTimelimeCommand.PlayerZoomOutTimelime.CanExecuteRequested +=
+				PlayerZoomOutTimelime_CanExecuteRequested;
+			Commands.PlayerZoomOutTimelimeCommand.PlayerZoomOutTimelime.ExecuteRequested +=
+				PlayerZoomOutTimelime_ExecuteRequested;
+			ButtonTimelineZoomOut.Command = Commands.PlayerZoomOutTimelimeCommand.PlayerZoomOutTimelime;
 		}
 		#endregion
 
@@ -250,6 +265,26 @@ namespace MediaBase
 				source.State == MediaSourceState.Opened &&
 				_player.PlaybackSession.PlaybackState == MediaPlaybackState.Playing;
 		}
+
+		private void PlayerZoomInTimelime_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+		{
+			args.CanExecute =
+				IsLoaded &&
+				_player.Source != null &&
+				_player.Source is MediaSource source &&
+				source.IsOpen &&
+				source.State == MediaSourceState.Opened;
+		}
+
+		private void PlayerZoomOutTimelime_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+		{
+			args.CanExecute =
+				IsLoaded &&
+				_player.Source != null &&
+				_player.Source is MediaSource source &&
+				source.IsOpen &&
+				source.State == MediaSourceState.Opened;
+		}
 		#endregion
 
 		#region Event Handlers (Execute)
@@ -379,7 +414,11 @@ namespace MediaBase
 
 		private void PlayerFullscreen_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
 		{
-
+			var appView = ApplicationView.GetForCurrentView();
+			if (appView.IsFullScreenMode)
+				appView.ExitFullScreenMode();
+			else
+				appView.TryEnterFullScreenMode();
 		}
 
 		private void PlayerRateIncrease_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
@@ -397,6 +436,16 @@ namespace MediaBase
 		private void PlayerRateNormal_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
 		{
 			_player.PlaybackSession.PlaybackRate = 1.0;
+		}
+
+		private void PlayerZoomInTimelime_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+		{
+			Slider.VisibleDuration *= 0.5;
+		}
+
+		private void PlayerZoomOutTimelime_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+		{
+			Slider.VisibleDuration *= 2;
 		}
 		#endregion
 	}
