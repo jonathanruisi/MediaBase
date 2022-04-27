@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net6.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <RootNamespace>MediaBase</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Platforms>x64</Platforms>
+    <RuntimeIdentifiers>win10-x86;win10-x64;win10-arm64</RuntimeIdentifiers>
+    <PublishProfile>win10-$(Platform).pubxml</PublishProfile>
+    <UseWinUI>true</UseWinUI>
+    <EnablePreviewMsixTooling>true</EnablePreviewMsixTooling>
+    <PackageCertificateThumbprint>4703AD77E42FE1C701CB4934C8817FA7168DE65B</PackageCertificateThumbprint>
+    <AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Remove="Assets\Logo_Package.scale-400.png" />
+    <None Remove="Assets\Logo_Tile_Medium.scale-400.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.WinUI.UI.Controls" Version="7.1.2" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Graphics.Win2D" Version="1.0.1" />
+    <PackageReference Include="Microsoft.Toolkit.Mvvm" Version="7.1.2" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.0.3" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.22000.197" />
+    <PackageReference Include="Microsoft.Xaml.Behaviors.WinUI.Managed" Version="2.0.8" />
+    <PackageReference Include="PInvoke.User32" Version="0.7.104" />
+    <Manifest Include="$(ApplicationManifest)" />
+  </ItemGroup>
+
+  <!-- Defining the "Msix" ProjectCapability here allows the Single-project MSIX Packaging
+       Tools extension to be activated for this project even if the Windows App SDK Nuget
+       package has not yet been restored -->
+  <ItemGroup Condition="'$(DisableMsixProjectCapabilityAddedByProject)'!='true' and '$(EnablePreviewMsixTooling)'=='true'">
+    <ProjectCapability Include="Msix" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Controls\" />
+    <Folder Include="Dialogs\" />
+    <Folder Include="General\" />
+    <Folder Include="ViewModel\Base\" />
+  </ItemGroup>
+</Project>

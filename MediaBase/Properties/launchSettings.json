@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "MediaBase (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "MediaBase (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
