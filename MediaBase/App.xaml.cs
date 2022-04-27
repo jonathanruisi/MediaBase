@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -17,37 +19,60 @@ using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.UI.Popups;
 
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
+using WinRT.Interop;
 
 namespace MediaBase
 {
-    /// <summary>
-    /// Provides application-specific behavior to supplement the default Application class.
-    /// </summary>
     public partial class App : Application
     {
-        /// <summary>
-        /// Initializes the singleton application object.  This is the first line of authored code
-        /// executed, and as such is the logical equivalent of main() or WinMain().
-        /// </summary>
+        #region Properties
+        public new static App Current => (App)Application.Current;
+        public static MainWindow Window { get; private set; }
+        public static IntPtr WindowHandle { get; private set; }
+        public IServiceProvider Services { get; }
+        #endregion
+
+        #region Constructor
         public App()
         {
-            this.InitializeComponent();
+            UnhandledException += App_UnhandledException;
+            Services = ConfigureServices();
+            InitializeComponent();
         }
+        #endregion
 
-        /// <summary>
-        /// Invoked when the application is launched normally by the end user.  Other entry points
-        /// will be used such as when the application is launched to open a specific file.
-        /// </summary>
-        /// <param name="args">Details about the launch request and process.</param>
+        #region Public Methods
+        public async void ShowMessageBoxAsync(string content, string title)
+        {
+            var messageDialog = new MessageDialog(content, title);
+            InitializeWithWindow.Initialize(messageDialog, WindowHandle);
+            await messageDialog.ShowAsync();
+        }
+        #endregion
+
+        #region Event Handlers
         protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
-            m_window = new MainWindow();
-            m_window.Activate();
+            Window = new MainWindow();
+            WindowHandle = WindowNative.GetWindowHandle(Window);
+            Window.Activate();
         }
 
-        private Window m_window;
+        private void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
+        {
+            ShowMessageBoxAsync(e.Message, "Unhandled Exception");
+        }
+        #endregion
+
+        #region Private Methods
+        private static IServiceProvider ConfigureServices()
+        {
+            var services = new ServiceCollection();
+            services.AddSingleton<IMessenger>(StrongReferenceMessenger.Default);
+            return services.BuildServiceProvider();
+        }
+        #endregion
     }
 }
