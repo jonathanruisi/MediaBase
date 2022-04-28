@@ -39,8 +39,6 @@
   <ItemGroup>
     <Folder Include="Controls\" />
     <Folder Include="Dialogs\" />
-    <Folder Include="General\" />
-    <Folder Include="ViewModel\Base\" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Utility.NET\Utility.NET\Utility.NET.csproj" />
