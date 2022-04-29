@@ -41,6 +41,13 @@ namespace MediaBase.ViewModel
         public bool UseCustomParser { get; }
 
         /// <summary>
+        /// Gets a value indicating whether or not to use
+        /// <see cref="ViewModelElement.CustomPropertyWriter"/>
+        /// during serialization.
+        /// </summary>
+        public bool UseCustomWriter { get; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ViewModelObjectAttribute"/> class.
         /// </summary>
         /// <param name="xmlName">Name used to represent the target in XML.</param>
@@ -56,7 +63,15 @@ namespace MediaBase.ViewModel
         /// <see cref="ViewModelElement.CustomPropertyParser"/>
         /// on this property during deserialization.
         /// </param>
-        public ViewModelObjectAttribute(string xmlName, XmlNodeType targetNodeType, bool useCustomParser = false)
+        /// <param name="useCustomWriter">
+        /// Indicates whether or not to use
+        /// <see cref="ViewModelElement.CustomPropertyWriter"/>
+        /// during serialization.
+        /// </param>
+        public ViewModelObjectAttribute(string xmlName,
+                                        XmlNodeType targetNodeType,
+                                        bool useCustomParser = false,
+                                        bool useCustomWriter = false)
         {
             if (targetNodeType != XmlNodeType.Attribute && targetNodeType != XmlNodeType.Element)
             {
@@ -66,6 +81,7 @@ namespace MediaBase.ViewModel
             XmlName = xmlName;
             TargetNodeType = targetNodeType;
             UseCustomParser = useCustomParser;
+            UseCustomWriter = useCustomWriter;
         }
     }
 
@@ -95,8 +111,20 @@ namespace MediaBase.ViewModel
         /// custom parsing function individually.
         /// </para>
         /// </param>
-        public ViewModelCollectionAttribute(string xmlName, string xmlChildName = null, bool useCustomParser = false)
-            : base(xmlName, XmlNodeType.Element, useCustomParser)
+        /// <param name="useCustomWriter">
+        /// Indicates whether or not to use
+        /// <see cref="ViewModelElement.CustomPropertyWriter"/>
+        /// on this collection during serialization.
+        /// <para>
+        /// The custom writing function will be called
+        /// for each item in the collection.
+        /// </para>
+        /// </param>
+        public ViewModelCollectionAttribute(string xmlName,
+                                            string xmlChildName = null,
+                                            bool useCustomParser = false,
+                                            bool useCustomWriter = false)
+            : base(xmlName, XmlNodeType.Element, useCustomParser, useCustomWriter)
         {
             XmlChildName = xmlChildName;
         }

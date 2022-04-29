@@ -94,7 +94,7 @@ namespace MediaBase.ViewModel
                 throw new InvalidOperationException("Duration cannot be equal to zero for image files");
 
             var composition = new MediaComposition();
-            var clip = await MediaClip.CreateFromImageFileAsync(File,
+            var clip = await Windows.Media.Editing.MediaClip.CreateFromImageFileAsync(File,
                 TimeSpan.FromSeconds(decimal.ToDouble(Duration)));
             composition.Clips.Add(clip);
 

@@ -108,7 +108,7 @@ namespace MediaBase.ViewModel.Base
                     newNode._parent = this;
             }
 
-            Messenger.Send(new ViewModelGeneralChangeNotificationMessage(GetType(), nameof(Children)));
+            // TODO: Handle change notification
         }
         #endregion
 

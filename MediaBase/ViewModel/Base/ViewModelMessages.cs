@@ -4,17 +4,6 @@ using System.Collections.Generic;
 
 namespace MediaBase.ViewModel
 {
-    public sealed class ViewModelGeneralChangeNotificationMessage
-    {
-        public Type SenderType { get; }
-        public string PropertyName { get; }
-        public ViewModelGeneralChangeNotificationMessage(Type senderType, string propertyName)
-        {
-            SenderType = senderType;
-            PropertyName = propertyName;
-        }
-    }
-
     public sealed class ViewModelTagCollectionChangedMessage
     {
         public List<int> AddedTags { get; }

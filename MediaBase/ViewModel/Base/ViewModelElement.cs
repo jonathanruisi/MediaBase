@@ -175,6 +175,11 @@ namespace MediaBase.ViewModel
         {
             return null;
         }
+
+        protected virtual string CustomPropertyWriter(string propertyName, object value)
+        {
+            return null;
+        }
         #endregion
 
         #region Interface Implementation (IXmlSerializable)
@@ -224,7 +229,8 @@ namespace MediaBase.ViewModel
 
             // Deserialize elements
             reader.ReadStartElement();
-            while (reader.NodeType == XmlNodeType.Element || (collectionInfo != null && reader.NodeType == XmlNodeType.EndElement))
+            while (reader.NodeType == XmlNodeType.Element ||
+                  (collectionInfo != null && reader.NodeType == XmlNodeType.EndElement))
             {
                 var elementName = reader.Name;
 
@@ -333,7 +339,10 @@ namespace MediaBase.ViewModel
             // Write attributes
             foreach (var kvp in info.MemberProperties.Where(x => x.Value.TargetNodeType == XmlNodeType.Attribute))
             {
-                writer.WriteAttributeString(kvp.Key, kvp.Value.Getter(this).ToString());
+                var attributeString = kvp.Value.UseCustomWriter
+                    ? CustomPropertyWriter(kvp.Key, kvp.Value.Getter(this))
+                    : kvp.Value.Getter(this).ToString();
+                writer.WriteAttributeString(kvp.Key, attributeString);
             }
 
             // Write elements
@@ -342,7 +351,12 @@ namespace MediaBase.ViewModel
                 if (kvp.Value.Getter(this) is ViewModelElement observableElement)
                     observableElement.WriteXml(writer);
                 else
-                    writer.WriteElementString(kvp.Key, kvp.Value.Getter(this).ToString());
+                {
+                    var elementString = kvp.Value.UseCustomWriter
+                        ? CustomPropertyWriter(kvp.Key, kvp.Value.Getter(this))
+                        : kvp.Value.Getter(this).ToString();
+                    writer.WriteElementString(kvp.Key, elementString);
+                }
             }
 
             // Write collections
@@ -359,23 +373,24 @@ namespace MediaBase.ViewModel
                     if (item is ViewModelElement observableElement)
                         observableElement.WriteXml(writer);
                     else
-                        writer.WriteElementString(kvp.Value.XmlChildName, item.ToString());
+                    {
+                        var itemString = kvp.Value.UseCustomWriter
+                            ? CustomPropertyWriter(kvp.Value.XmlChildName, item)
+                            : item.ToString();
+                        writer.WriteElementString(kvp.Value.XmlChildName, itemString);
+                    }
                 }
 
                 writer.WriteEndElement();
             }
-
+            
             // Write end tag
             writer.WriteEndElement();
         }
         #endregion
 
         #region Method Overrides (ObservableObject)
-        protected override void OnPropertyChanged(PropertyChangedEventArgs e)
-        {
-            base.OnPropertyChanged(e);
-            Messenger.Send(new ViewModelGeneralChangeNotificationMessage(GetType(), e.PropertyName));
-        }
+        // TODO: Handle change notification
         #endregion
 
         #region Method Overrides (System.Object)

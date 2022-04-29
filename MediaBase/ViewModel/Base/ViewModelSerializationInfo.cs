@@ -89,7 +89,8 @@ namespace MediaBase.ViewModel
                         Getter = (Func<ViewModelElement, IList>)property.PropertyGetter<IList>(),
                         XmlChildName = collectionAttribute.XmlChildName,
                         ChildType = property.PropertyType.GetGenericArguments().Single(),
-                        UseCustomParser = collectionAttribute.UseCustomParser
+                        UseCustomParser = collectionAttribute.UseCustomParser,
+                        UseCustomWriter = collectionAttribute.UseCustomWriter
                     });
                 }
                 else
@@ -111,7 +112,8 @@ namespace MediaBase.ViewModel
                         TargetNodeType = propertyAttribute.TargetNodeType,
                         Getter = (Func<ViewModelElement, object>)property.PropertyGetter<object>(),
                         Setter = (Action<ViewModelElement, object>)property.PropertySetter(),
-                        UseCustomParser = propertyAttribute.UseCustomParser
+                        UseCustomParser = propertyAttribute.UseCustomParser,
+                        UseCustomWriter = propertyAttribute.UseCustomWriter
                     });
                 }
             }
@@ -152,7 +154,14 @@ namespace MediaBase.ViewModel
             /// <see cref="ViewModelElement.CustomPropertyParser"/>
             /// on this property during deserialization.
             /// </summary>
-            public bool UseCustomParser { get; set; }
+            public bool UseCustomParser { get; internal set; }
+
+            /// <summary>
+            /// Gets a value indicating whether or not to use
+            /// <see cref="ViewModelElement.CustomPropertyWriter"/>
+            /// on this property during serialization.
+            /// </summary>
+            public bool UseCustomWriter { get; internal set; }
         }
 
         public sealed class ViewModelSerializationCollectionInfo
@@ -181,7 +190,18 @@ namespace MediaBase.ViewModel
             /// Each object in the collection is passed to the
             /// custom parsing function individually.
             /// </remarks>
-            public bool UseCustomParser { get; set; }
+            public bool UseCustomParser { get; internal set; }
+
+            /// <summary>
+            /// Gets a value indicating whether or not to use
+            /// <see cref="ViewModelElement.CustomPropertyWriter"/>
+            /// on this collection during serialization.
+            /// </summary>
+            /// <remarks>
+            /// The custom writing function will be called
+            /// for each item in the collection.
+            /// </remarks>
+            public bool UseCustomWriter { get; internal set; }
         }
         #endregion
     }
