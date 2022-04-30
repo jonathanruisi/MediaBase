@@ -162,7 +162,7 @@ namespace MediaBase.ViewModel
         /// When overridden in a derived class, this method is called
         /// during XML deserialization when parsing a property
         /// marked with <see cref="ViewModelObjectAttribute.UseCustomParser"/>
-        /// = <c>true</c>.
+        /// = <b><c>true</c></b>.
         /// </summary>
         /// <param name="propertyName">The name of the property to parse.</param>
         /// <param name="content">The property's content as read from XML.</param>
@@ -176,6 +176,23 @@ namespace MediaBase.ViewModel
             return null;
         }
 
+        /// <summary>
+        /// When overridden in a derived class, this method is called
+        /// during XML serialization when writing a property
+        /// marked with <see cref="ViewModelObjectAttribute.UseCustomWriter"/>
+        /// = <b><c>true</c></b>.
+        /// </summary>
+        /// <param name="propertyName">
+        /// The <b><u>XML name</u></b> of the property to be written.
+        /// </param>
+        /// <param name="value">The object to be written.</param>
+        /// <returns>
+        /// A string representation of the object.
+        /// </returns>
+        /// <remarks>
+        /// Use this method when a property is not a <see cref="ViewModelElement"/>,
+        /// and <see cref="object.ToString"/> does not adequately represent the property.
+        /// </remarks>
         protected virtual string CustomPropertyWriter(string propertyName, object value)
         {
             return null;

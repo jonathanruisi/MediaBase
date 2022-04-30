@@ -7,6 +7,9 @@ using MediaBase.General;
 
 namespace MediaBase.ViewModel
 {
+    /// <summary>
+    /// Represents a point in time (or span of time) in a video.
+    /// </summary>
     [ViewModelObject("Marker", XmlNodeType.Element)]
     public sealed class Marker : ViewModelElement, ITimelineMarker
     {
@@ -33,13 +36,25 @@ namespace MediaBase.ViewModel
         public decimal Duration
         {
             get => _duration;
-            set => SetProperty(ref _duration, value);
+            set
+            {
+                SetProperty(ref _duration, value);
+
+                if (_duration == 0)
+                    Track = 0;
+            }
         }
 
         /// <summary>
-        /// Gets or sets a value which identifies the collection (category or track)
-        /// to which the marker belongs.
+        /// Gets or sets a value which identifies the category
+        /// or track to which the marker belongs.
         /// </summary>
+        /// <remarks>
+        /// If this type is used with a <see cref="MediaTimeline"/>,
+        /// it is expected that markers with duration = 0 are assigned
+        /// to track 0. Track 0 is used to display "chapter" style
+        /// markers on a <see cref="MediaTimeline"/>.
+        /// </remarks>
         [ViewModelObject(nameof(Track), XmlNodeType.Attribute)]
         public int Track
         {

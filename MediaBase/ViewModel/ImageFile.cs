@@ -1,67 +1,65 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 
+using Windows.Media.Core;
 using Windows.Media.Editing;
 using Windows.Media.MediaProperties;
 using Windows.Media.Playback;
 
 namespace MediaBase.ViewModel
 {
-    /// <summary>
-    /// Represents an image file.
-    /// </summary>
-    [ViewModelObject("Image", XmlNodeType.Element)]
-    public sealed class ImageFile : MediaFile
+    [ViewModelObject("Image File", XmlNodeType.Element)]
+    public class ImageFile : MediaFile, IImageSource
     {
-        #region Fields
-        private decimal _duration;
-        private double _fps;
-        private uint _widthInPixels, _heightInPixels;
-        #endregion
-
         #region Properties
+        [ViewModelCollection(nameof(Keyframes), "Keyframe")]
+        public ObservableCollection<ImageAnimationKeyframe> Keyframes { get; }
+
         public override decimal Duration
         {
-            get => _duration;
-            protected set => SetProperty(ref _duration, value);
+            get => base.Duration;
+            protected set
+            {
+                if (value == 0)
+                    Keyframes.Clear();
+
+                base.Duration = value;
+            }
         }
 
-        public override uint WidthInPixels
-        {
-            get => _widthInPixels;
-            protected set => SetProperty(ref _widthInPixels, value);
-        }
-
-        public override uint HeightInPixels
-        {
-            get => _heightInPixels;
-            protected set => SetProperty(ref _heightInPixels, value);
-        }
-
-        public override double FramesPerSecond
-        {
-            get => _fps;
-            protected set => SetProperty(ref _fps, value);
-        }
         public override MediaContentType ContentType => MediaContentType.Image;
         #endregion
 
         #region Constructor
         public ImageFile()
         {
-            _duration = 0;
-            _widthInPixels = 0;
-            _heightInPixels = 0;
-            _fps = 0;
+            Keyframes = new ObservableCollection<ImageAnimationKeyframe>();
+            Keyframes.CollectionChanged += Keyframes_CollectionChanged;
+        }
+        #endregion
+
+        #region Event Handlers
+        private void Keyframes_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            if (Keyframes.Count == 0)
+                return;
+
+            var maxTime = Keyframes.Max(x => x.Time);
+            if (maxTime > Duration)
+                Duration = maxTime;
         }
         #endregion
 
         #region Method Overrides (MediaFile)
-        public override async Task<bool> LoadFileFromPathAsync(bool setNameFromFilename = true)
+        public override async Task<bool> LoadFileFromPathAsync()
         {
-            if (await base.LoadFileFromPathAsync(setNameFromFilename == false))
+            if (await base.LoadFileFromPathAsync() == false)
                 return false;
 
             // Query image properties
@@ -71,6 +69,7 @@ namespace MediaBase.ViewModel
                 var strHeight = "System.Image.VerticalSize";
                 var propRequestList = new List<string> { strWidth, strHeight };
                 var propResultList = await File.Properties.RetrievePropertiesAsync(propRequestList);
+
                 WidthInPixels = (uint)propResultList[strWidth];
                 HeightInPixels = (uint)propResultList[strHeight];
             }
@@ -83,24 +82,17 @@ namespace MediaBase.ViewModel
         }
         #endregion
 
-        #region Method Overrides (MediaSource)
-        public override async Task<IMediaPlaybackSource> GetMediaPlaybackSourceAsync()
+        #region Method Overrides (MBMediaSource)
+        public override async Task<IMediaPlaybackSource> GetMediaSourceAsync()
         {
-            if (File == null || !File.IsAvailable)
-                throw new InvalidOperationException(
-                    "Unable to provide a playback source because the image file has not been loaded.");
-
-            if (Duration == 0)
-                throw new InvalidOperationException("Duration cannot be equal to zero for image files");
-
             var composition = new MediaComposition();
-            var clip = await Windows.Media.Editing.MediaClip.CreateFromImageFileAsync(File,
+            var clip = await MediaClip.CreateFromImageFileAsync(File,
                 TimeSpan.FromSeconds(decimal.ToDouble(Duration)));
             composition.Clips.Add(clip);
 
             var encodingProfile = MediaEncodingProfile.CreateHevc(VideoEncodingQuality.Uhd2160p);
             var mediaStreamSource = composition.GenerateMediaStreamSource(encodingProfile);
-            return Windows.Media.Core.MediaSource.CreateFromMediaStreamSource(mediaStreamSource);
+            return MediaSource.CreateFromMediaStreamSource(mediaStreamSource);
         }
         #endregion
     }

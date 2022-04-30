@@ -39,7 +39,7 @@ namespace MediaBase.Controls
         #region Event Handlers
         private void ProjectBrowserTreeView_ItemInvoked(TreeView sender, TreeViewItemInvokedEventArgs args)
         {
-            if (!(args.InvokedItem is MediaSource mediaSource))
+            if (!(args.InvokedItem is MBMediaSource mediaSource))
                 return;
 
             ViewModel.ActiveMediaSource = mediaSource;

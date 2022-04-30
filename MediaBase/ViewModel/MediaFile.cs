@@ -1,16 +1,16 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
-using System.Xml;
 
 using Windows.Storage;
 
 namespace MediaBase.ViewModel
 {
-    /// <summary>
-    /// Represents a multimedia file
-    /// </summary>
-    public abstract class MediaFile : MediaSource
+    /// <inheritdoc cref="IMediaFile"/>
+    public abstract class MediaFile : MBMediaSource, IMediaFile
     {
         #region Fields
         private string _path;
@@ -18,50 +18,31 @@ namespace MediaBase.ViewModel
         #endregion
 
         #region Properties
-        /// <summary>
-        /// <inheritdoc cref="StorageFile.Path"/>
-        /// </summary>
-        [ViewModelObject(nameof(Path), XmlNodeType.Element)]
+        [ViewModelObject(nameof(Path), System.Xml.XmlNodeType.Element)]
         public string Path
         {
             get => _path;
             set => SetProperty(ref _path, value);
         }
 
-        /// <summary>
-        /// Gets the underlying <see cref="StorageFile"/>
-        /// represented by this <see cref="MediaFile"/>.
-        /// </summary>
         public StorageFile File
         {
             get => _file;
-            private set => SetProperty(ref _file, value);
+            set => SetProperty(ref _file, value);
         }
         #endregion
 
         #region Constructor
-        protected MediaFile()
+        public MediaFile()
         {
             _path = string.Empty;
             _file = null;
+            FramesPerSecond = double.NaN;
         }
         #endregion
 
         #region Public Methods
-        /// <summary>
-        /// Asynchronously instantiates <see cref="File"/>.
-        /// </summary>
-        /// <param name="setNameFromFilename">
-        /// If set to <b><c>true</c></b> and the file
-        /// is loaded successfully, this method will set this
-        /// element's <see cref="ViewModelElement.Name"/> using
-        /// <see cref="StorageFile.DisplayName"/>.
-        /// </param>
-        /// <returns>
-        /// <b><c>true</c></b> if the file was loaded successfully,
-        /// <b><c>false</c></b> otherwise.
-        /// </returns>
-        public virtual async Task<bool> LoadFileFromPathAsync(bool setNameFromFilename = true)
+        public virtual async Task<bool> LoadFileFromPathAsync()
         {
             if (string.IsNullOrEmpty(Path))
                 return false;
@@ -74,7 +55,10 @@ namespace MediaBase.ViewModel
             catch (UnauthorizedAccessException) { return false; }
             catch (ArgumentException) { return false; }
 
-            Name = File.DisplayName;
+            var contentTypeString = Enum.GetName(ContentType);
+            if (!File.ContentType.Contains(contentTypeString.ToLower()))
+                throw new InvalidOperationException($"{contentTypeString} file expected");
+
             return true;
         }
         #endregion
@@ -82,7 +66,7 @@ namespace MediaBase.ViewModel
         #region Method Overrides (System.Object)
         public override string ToString()
         {
-            var filename = File != null ? File.Name : "NOT LOADED";
+            var filename = (bool)(File?.IsAvailable) ? File.Name : "FILE NOT LOADED";
             return $"{base.ToString()} ({filename})";
         }
         #endregion

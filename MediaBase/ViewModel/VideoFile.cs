@@ -1,49 +1,44 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 
+using Windows.Media.Core;
+using Windows.Media.Editing;
+using Windows.Media.MediaProperties;
 using Windows.Media.Playback;
+using Windows.Storage;
+using Windows.Storage.Streams;
 
 namespace MediaBase.ViewModel
 {
-    /// <summary>
-    /// Represents a video file.
-    /// </summary>
-    [ViewModelObject("Video", XmlNodeType.Element)]
-    public sealed class VideoFile : MediaFile
+    [ViewModelObject("Video File", XmlNodeType.Element)]
+    public class VideoFile : MediaFile, IVideoSource
     {
         #region Fields
-        private decimal _duration;
-        private double _fps;
-        private uint _widthInPixels, _heightInPixels;
+        private decimal _trimmedDuration;
+        private List<(decimal start, decimal end)> _playableRanges;
         #endregion
 
         #region Properties
-        public override decimal Duration
-        {
-            get => _duration;
-            protected set => SetProperty(ref _duration, value);
-        }
+        [ViewModelCollection(nameof(Markers), "Marker")]
+        public ObservableCollection<Marker> Markers { get; }
 
-        public override uint WidthInPixels
-        {
-            get => _widthInPixels;
-            protected set => SetProperty(ref _widthInPixels, value);
-        }
+        [ViewModelCollection(nameof(Cuts), "Cut", true, true)]
+        public ObservableCollection<(decimal start, decimal end)> Cuts { get; }
 
-        public override uint HeightInPixels
+        /// <summary>
+        /// Gets a value indicating what the duration of the
+        /// video will be after all cuts are applied.
+        /// </summary>
+        public decimal TrimmedDuration
         {
-            get => _heightInPixels;
-            protected set => SetProperty(ref _heightInPixels, value);
-        }
-
-        public override double FramesPerSecond
-        {
-            get => _fps;
-            protected set => SetProperty(ref _fps, value);
+            get => _trimmedDuration;
+            private set => SetProperty(ref _trimmedDuration, value);
         }
 
         public override MediaContentType ContentType => MediaContentType.Video;
@@ -52,32 +47,53 @@ namespace MediaBase.ViewModel
         #region Constructor
         public VideoFile()
         {
-            _duration = 0;
-            _widthInPixels = 0;
-            _heightInPixels = 0;
-            _fps = 0;
+            _trimmedDuration = 0;
+            _playableRanges = new List<(decimal start, decimal end)>();
+
+            Markers = new ObservableCollection<Marker>();
+            Markers.CollectionChanged += Markers_CollectionChanged;
+
+            Cuts = new ObservableCollection<(decimal start, decimal end)>();
+            Cuts.CollectionChanged += Cuts_CollectionChanged;
+        }
+        #endregion
+
+        #region Public Methods
+        // TODO: Implement a static method to create a new IVideoSource (like a VideoClip or something) from the cuts applied to this VideoFile
+        #endregion
+
+        #region Event Handlers
+        private void Markers_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+
+        }
+
+        private void Cuts_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            EvaluateCuts();
         }
         #endregion
 
         #region Method Overrides (MediaFile)
-        public override async Task<bool> LoadFileFromPathAsync(bool setNameFromFilename = true)
+        public override async Task<bool> LoadFileFromPathAsync()
         {
-            if (await base.LoadFileFromPathAsync(setNameFromFilename == false))
+            if (await base.LoadFileFromPathAsync() == false)
                 return false;
 
             // Query video properties
             try
             {
-                var strFps = "System.Video.FrameRate";
-                var strDuration = "System.Media.Duration";
                 var strWidth = "System.Video.FrameWidth";
                 var strHeight = "System.Video.FrameHeight";
-                var propRequestList = new List<string>() { strFps, strDuration, strWidth, strHeight };
+                var strFps = "System.Video.FrameRate";
+                var strDuration = "System.Media.Duration";
+                var propRequestList = new List<string> { strWidth, strHeight, strFps, strDuration };
                 var propResultList = await File.Properties.RetrievePropertiesAsync(propRequestList);
-                FramesPerSecond = (uint)propResultList[strFps] / 1000.0;
-                Duration = (ulong)propResultList[strDuration] / 10000000.0M;
+
                 WidthInPixels = (uint)propResultList[strWidth];
                 HeightInPixels = (uint)propResultList[strHeight];
+                FramesPerSecond = (uint)propResultList[strFps] / 1000.0;
+                Duration = (ulong)propResultList[strDuration] / 10000000.0M;
             }
             catch (Exception ex)
             {
@@ -88,14 +104,68 @@ namespace MediaBase.ViewModel
         }
         #endregion
 
-        #region Method Overrides (MediaSource)
-        public async override Task<IMediaPlaybackSource> GetMediaPlaybackSourceAsync()
+        #region Method Overrides (MBMediaSource)
+        public override async Task<IMediaPlaybackSource> GetMediaSourceAsync()
         {
-            if (File == null || !File.IsAvailable)
-                throw new InvalidOperationException(
-                    "Unable to provide a playback source because the video file has not been loaded.");
+            var composition = new MediaComposition();
 
-            return await Task.Run<IMediaPlaybackSource>(() => Windows.Media.Core.MediaSource.CreateFromStorageFile(File));
+            if (_playableRanges.Count == 0)
+            {
+                composition.Clips.Add(await MediaClip.CreateFromFileAsync(File));
+            }
+            else
+            {
+                foreach (var range in _playableRanges)
+                {
+                    var clip = await MediaClip.CreateFromFileAsync(File);
+                    clip.TrimTimeFromStart = TimeSpan.FromSeconds(decimal.ToDouble(range.start));
+                    clip.TrimTimeFromEnd = TimeSpan.FromSeconds(decimal.ToDouble(Duration - range.end));
+                    composition.Clips.Add(clip);
+                }
+            }
+
+            var encodingProfile = MediaEncodingProfile.CreateHevc(VideoEncodingQuality.Uhd2160p);
+            var mediaStreamSource = composition.GenerateMediaStreamSource(encodingProfile);
+            return MediaSource.CreateFromMediaStreamSource(mediaStreamSource);
+        }
+        #endregion
+
+        #region Private Methods
+        private void EvaluateCuts()
+        {
+            decimal lastStart = 0;
+            _playableRanges.Clear();
+
+            foreach (var cut in Cuts.OrderBy(x => x.start))
+            {
+                if (lastStart >= Duration)
+                    break;
+
+                if (cut.start <= 0)
+                {
+                    lastStart = cut.end;
+                    continue;
+                }
+
+                _playableRanges.Add((lastStart, cut.start));
+                lastStart = cut.end;
+            }
+
+            if (lastStart > 0 && lastStart < Duration)
+                _playableRanges.Add((lastStart, Duration));
+
+            if (_playableRanges.Count == 0)
+                TrimmedDuration = Duration;
+            else
+            {
+                decimal trimmedDuration = 0;
+                foreach (var range in _playableRanges)
+                {
+                    trimmedDuration += range.end - range.start;
+                }
+
+                TrimmedDuration = trimmedDuration;
+            }
         }
         #endregion
     }

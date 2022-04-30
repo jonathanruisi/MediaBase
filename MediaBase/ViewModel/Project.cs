@@ -28,7 +28,7 @@ namespace MediaBase.ViewModel
         private bool _hasUnsavedChanges;
         private StorageFile _file;
         private ViewModelNode _activeProjectNode;
-        private MediaSource _activeMediaSource;
+        private MBMediaSource _activeMediaSource;
         #endregion
 
         #region Properties
@@ -70,7 +70,7 @@ namespace MediaBase.ViewModel
         /// <summary>
         /// Gets or sets a reference to the currently active media source.
         /// </summary>
-        public MediaSource ActiveMediaSource
+        public MBMediaSource ActiveMediaSource
         {
             get => _activeMediaSource;
             set => SetProperty(ref _activeMediaSource, value, true);
