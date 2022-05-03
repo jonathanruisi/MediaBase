@@ -7,6 +7,9 @@ using System.Runtime.InteropServices.WindowsRuntime;
 
 using JLR.Utility.WinUI;
 
+using MediaBase.ViewModel;
+
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
@@ -21,6 +24,7 @@ using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Graphics;
 
+using WinRT;
 using WinRT.Interop;
 
 namespace MediaBase
@@ -33,13 +37,15 @@ namespace MediaBase
         #endregion
 
         #region Properties
-
+        public Project ViewModel { get; private set; }
         #endregion
 
         #region Constructor
         public MainWindow()
         {
             InitializeComponent();
+
+            ViewModel = App.Current.Services.GetService<Project>();
 
             Activated += MainWindow_Activated;
             Closed += MainWindow_Closed;
@@ -60,6 +66,8 @@ namespace MediaBase
             {
                 AppTitleBar.Visibility = Visibility.Collapsed;
             }
+
+            InitializeCommands();
         }
         #endregion
 
@@ -177,6 +185,115 @@ namespace MediaBase
             MDT_Angular_DPI = 1,
             MDT_Raw_DPI = 2,
             MDT_Default = MDT_Effective_DPI
+        }
+        #endregion
+
+        #region Commands
+        private void InitializeCommands()
+        {
+            ViewModel.ProjectNew.CanExecuteRequested += ProjectNew_CanExecuteRequested;
+            ViewModel.ProjectNew.ExecuteRequested += ProjectNew_ExecuteRequested;
+
+            ViewModel.ProjectOpen.CanExecuteRequested += ProjectOpen_CanExecuteRequested;
+            ViewModel.ProjectOpen.ExecuteRequested += ProjectOpen_ExecuteRequested;
+
+            ViewModel.ProjectSave.CanExecuteRequested += ProjectSave_CanExecuteRequested;
+            ViewModel.ProjectSave.ExecuteRequested += ProjectSave_ExecuteRequested;
+
+            ViewModel.ProjectSaveAs.CanExecuteRequested += ProjectSaveAs_CanExecuteRequested;
+            ViewModel.ProjectSaveAs.ExecuteRequested += ProjectSaveAs_ExecuteRequested;
+
+            ViewModel.ViewNormal.CanExecuteRequested += ViewNormal_CanExecuteRequested;
+            ViewModel.ViewNormal.ExecuteRequested += ViewNormal_ExecuteRequested;
+
+            ViewModel.ViewCompact.CanExecuteRequested += ViewCompact_CanExecuteRequested;
+            ViewModel.ViewCompact.ExecuteRequested += ViewCompact_ExecuteRequested;
+
+            ViewModel.ViewFullscreen.CanExecuteRequested += ViewFullscreen_CanExecuteRequested;
+            ViewModel.ViewFullscreen.ExecuteRequested += ViewFullscreen_ExecuteRequested;
+
+            ViewModel.HelpAbout.CanExecuteRequested += HelpAbout_CanExecuteRequested;
+            ViewModel.HelpAbout.ExecuteRequested += HelpAbout_ExecuteRequested;
+        }
+
+        private void ProjectNew_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ProjectOpen_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ProjectSave_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ProjectSaveAs_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ViewNormal_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ViewCompact_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ViewFullscreen_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void HelpAbout_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ProjectNew_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ProjectOpen_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ProjectSave_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ProjectSaveAs_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ViewNormal_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ViewCompact_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ViewFullscreen_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void HelpAbout_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
         }
         #endregion
     }

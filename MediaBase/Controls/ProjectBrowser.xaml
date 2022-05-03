@@ -5,7 +5,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    xmlns:local="using:MediaBase.Controls"
+    xmlns:mb="using:MediaBase"
     xmlns:viewmodel="using:MediaBase.ViewModel"
     xmlns:toolkit_converters="using:CommunityToolkit.WinUI.UI.Converters"
     xmlns:interactivity="using:Microsoft.Xaml.Interactivity"
@@ -25,37 +25,37 @@
 
         <!-- Context Flyouts -->
         <MenuFlyout x:Key="MenuFlyout_ProjectBrowserActions">
-            <MenuFlyoutItem x:Name="MenuFlyoutItem_ProjectBrowserActions_NewFolder"/>
+            <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectNewFolder}"/>
             <MenuFlyoutSubItem Text="Import" Icon="Add">
-                <MenuFlyoutItem x:Name="MenuFlyoutItem_ProjectBrowserActions_ImportFiles"/>
-                <MenuFlyoutItem x:Name="MenuFlyoutItem_ProjectBrowserActions_ImportFolder"/>
+                <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectImportFiles}"/>
+                <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectImportFolder}"/>
             </MenuFlyoutSubItem>
             <MenuFlyoutSubItem Text="Remove" Icon="Remove">
-                <MenuFlyoutItem x:Name="MenuFlyoutItem_ProjectBrowserActions_RemoveSelected"/>
-                <MenuFlyoutItem x:Name="MenuFlyoutItem_ProjectBrowserActions_RemoveAll"/>
+                <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectRemoveSelected}"/>
+                <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectRemoveAll}"/>
             </MenuFlyoutSubItem>
         </MenuFlyout>
 
         <MenuFlyout x:Key="MenuFlyout_ProjectBrowserFolderActions">
-            <MenuFlyoutItem x:Name="MenuFlyoutItem_ProjectBrowserFolderActions_NewFolder"/>
-            <MenuFlyoutItem x:Name="MenuFlyoutItem_ProjectBrowserFolderActions_Rename"/>
+            <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectNewFolder}"/>
+            <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectRenameItem}"/>
             <MenuFlyoutSubItem Text="Import" Icon="Add">
-                <MenuFlyoutItem x:Name="MenuFlyoutItem_ProjectBrowserFolderActions_ImportFiles"/>
-                <MenuFlyoutItem x:Name="MenuFlyoutItem_ProjectBrowserFolderActions_ImportFolder"/>
+                <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectImportFiles}"/>
+                <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectImportFolder}"/>
             </MenuFlyoutSubItem>
             <MenuFlyoutSubItem Text="Remove" Icon="Remove">
-                <MenuFlyoutItem x:Name="MenuFlyoutItem_ProjectBrowserFolderActions_RemoveItem"/>
-                <MenuFlyoutItem x:Name="MenuFlyoutItem_ProjectBrowserFolderActions_RemoveSelected"/>
-                <MenuFlyoutItem x:Name="MenuFlyoutItem_ProjectBrowserFolderActions_RemoveAll"/>
+                <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectRemoveItem}"/>
+                <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectRemoveSelected}"/>
+                <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectRemoveAll}"/>
             </MenuFlyoutSubItem>
         </MenuFlyout>
 
         <MenuFlyout x:Key="MenuFlyout_ProjectBrowserFileActions">
-            <MenuFlyoutItem x:Name="MenuFlyoutItem_ProjectBrowserFileActions_Rename"/>
+            <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectRenameItem}"/>
             <MenuFlyoutSubItem Text="Remove" Icon="Remove">
-                <MenuFlyoutItem x:Name="MenuFlyoutItem_ProjectBrowserFileActions_RemoveItem"/>
-                <MenuFlyoutItem x:Name="MenuFlyoutItem_ProjectBrowserFileActions_RemoveSelected"/>
-                <MenuFlyoutItem x:Name="MenuFlyoutItem_ProjectBrowserFileActions_RemoveAll"/>
+                <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectRemoveItem}"/>
+                <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectRemoveSelected}"/>
+                <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectRemoveAll}"/>
             </MenuFlyoutSubItem>
         </MenuFlyout>
 
@@ -93,9 +93,67 @@
                 </TreeViewItem.Content>
             </TreeViewItem>
         </DataTemplate>
-    </UserControl.Resources>
-    
-    <Grid>
 
+        <DataTemplate x:Key="ProjectImageDataTemplate"
+                      x:DataType="viewmodel:ImageFile">
+            <TreeViewItem ContextFlyout="{StaticResource MenuFlyout_ProjectBrowserFileActions}"
+                          RightTapped="ProjectBrowserTreeView_RightTapped">
+                <TreeViewItem.Content>
+                    <StackPanel Orientation="Horizontal">
+                        <SymbolIcon Symbol="Important"
+                                    Foreground="Red"
+                                    Margin="0,0,10,0"
+                                    Visibility="{x:Bind File,
+                                                        Converter={StaticResource NullToVisibleConverter},
+                                                        Mode=OneWay}"/>
+                        <FontIcon FontFamily="Segoe Fluent Icons"
+                                  Glyph="&#xEB9F;"
+                                  Margin="0,0,10,0"/>
+                        <TextBlock HorizontalAlignment="Left"
+                                   VerticalAlignment="Center"
+                                   Text="{x:Bind Name, Mode=OneWay}"/>
+                    </StackPanel>
+                </TreeViewItem.Content>
+            </TreeViewItem>
+        </DataTemplate>
+
+        <DataTemplate x:Key="ProjectVideoDataTemplate"
+                      x:DataType="viewmodel:VideoFile">
+            <TreeViewItem ContextFlyout="{StaticResource MenuFlyout_ProjectBrowserFileActions}"
+                          RightTapped="ProjectBrowserTreeView_RightTapped">
+                <TreeViewItem.Content>
+                    <StackPanel Orientation="Horizontal">
+                        <SymbolIcon Symbol="Important"
+                                    Foreground="Red"
+                                    Margin="0,0,10,0"
+                                    Visibility="{x:Bind File,
+                                                        Converter={StaticResource NullToVisibleConverter},
+                                                        Mode=OneWay}"/>
+                        <FontIcon FontFamily="Segoe Fluent Icons"
+                                  Glyph="&#xE8B2;"
+                                  Margin="0,0,10,0"/>
+                        <TextBlock HorizontalAlignment="Left"
+                                   VerticalAlignment="Center"
+                                   Text="{x:Bind Name, Mode=OneWay}"/>
+                    </StackPanel>
+                </TreeViewItem.Content>
+            </TreeViewItem>
+        </DataTemplate>
+
+        <mb:ProjectItemTemplateSelector x:Key="ProjectItemTemplateSelector"
+                                        FolderTemplate="{StaticResource ProjectFolderDataTemplate}"
+                                        ImageFileTemplate="{StaticResource ProjectImageDataTemplate}"
+                                        VideoFileTemplate="{StaticResource ProjectVideoDataTemplate}"/>
+    </UserControl.Resources>
+
+    <Grid>
+        <TreeView x:Name="ProjectBrowserTreeView"
+                  HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                  SelectionMode="Multiple"
+                  ItemsSource="{x:Bind ViewModel.MediaLibrary.Children, Mode=OneWay}"
+                  ItemTemplateSelector="{StaticResource ProjectItemTemplateSelector}"
+                  ContextFlyout="{StaticResource MenuFlyout_ProjectBrowserActions}"
+                  ItemInvoked="ProjectBrowserTreeView_ItemInvoked"
+                  RightTapped="ProjectBrowserTreeView_RightTapped"/>
     </Grid>
 </UserControl>

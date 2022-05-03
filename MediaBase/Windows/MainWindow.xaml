@@ -6,6 +6,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
     xmlns:local="using:MediaBase"
+    xmlns:controls="using:MediaBase.Controls"
     xmlns:windowing="using:Microsoft.UI.Windowing"
     xmlns:toolkit="using:CommunityToolkit.WinUI.UI.Controls">
 
@@ -44,27 +45,27 @@
                 <!-- Menu -->
                 <MenuBar Grid.Column="2" Margin="0">
                     <MenuBarItem Title="Project" Margin="0" VerticalAlignment="Bottom">
-                        <MenuFlyoutItem x:Name="MenuFlyoutItem_ProjectNew"/>
-                        <MenuFlyoutItem x:Name="MenuFlyoutItem_ProjectOpen"/>
+                        <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectNew}"/>
+                        <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectOpen}"/>
                         <MenuFlyoutSeparator/>
-                        <MenuFlyoutItem x:Name="MenuFlyoutItem_ProjectSave"/>
-                        <MenuFlyoutItem x:Name="MenuFlyoutItem_ProjectSaveAs"/>
+                        <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectSave}"/>
+                        <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectSaveAs}"/>
                     </MenuBarItem>
                     <MenuBarItem Title="Tools" Margin="0" VerticalAlignment="Bottom">
                     </MenuBarItem>
                     <MenuBarItem Title="View" Margin="0" VerticalAlignment="Bottom">
-                        <RadioMenuFlyoutItem x:Name="MenuFlyoutItem_ViewDefault"
-                                             GroupName="Presenter"
+                        <RadioMenuFlyoutItem GroupName="Presenter"
+                                             Command="{x:Bind ViewModel.ViewNormal}"
                                              CommandParameter="{x:Bind windowing:AppWindowPresenterKind.Default}"/>
-                        <RadioMenuFlyoutItem x:Name="MenuFlyoutItem_ViewCompact"
-                                             GroupName="Presenter"
+                        <RadioMenuFlyoutItem GroupName="Presenter"
+                                             Command="{x:Bind ViewModel.ViewCompact}"
                                              CommandParameter="{x:Bind windowing:AppWindowPresenterKind.CompactOverlay}"/>
-                        <RadioMenuFlyoutItem x:Name="MenuFlyoutItem_ViewFullscreen"
-                                             GroupName="Presenter"
+                        <RadioMenuFlyoutItem GroupName="Presenter"
+                                             Command="{x:Bind ViewModel.ViewFullscreen}"
                                              CommandParameter="{x:Bind windowing:AppWindowPresenterKind.FullScreen}"/>
                     </MenuBarItem>
                     <MenuBarItem Title="Help" Margin="0" VerticalAlignment="Bottom">
-                        <MenuFlyoutItem x:Name="MenuFlyoutItem_HelpAbout"/>
+                        <MenuFlyoutItem Command="{x:Bind ViewModel.HelpAbout}"/>
                     </MenuBarItem>
                 </MenuBar>
             </Grid>
@@ -97,8 +98,8 @@
                               ExpandDirection="Right" IsExpanded="True"
                               HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
                               Header="Project Browser">
-                <!--<controls:ProjectBrowser x:Name="ProjectBrowser" Grid.Column="0" Width="400"
-                                         HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>-->
+                <controls:ProjectBrowser x:Name="ProjectBrowser" Grid.Column="0" Width="400"
+                                         HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
             </toolkit:Expander>
 
             <!-- Properties -->

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Text;
 
-namespace MediaBase.General
+namespace MediaBase
 {
     public static class ExtensionMethods
     {

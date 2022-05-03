@@ -8,6 +8,9 @@ using System.Xml;
 
 using MediaBase.ViewModel.Base;
 
+using Microsoft.Toolkit.Mvvm.Input;
+using Microsoft.UI.Xaml.Input;
+
 using Windows.Storage;
 
 namespace MediaBase.ViewModel
@@ -16,7 +19,7 @@ namespace MediaBase.ViewModel
     /// MediaBASE project ViewModel
     /// </summary>
     [ViewModelObject("Project", XmlNodeType.Element)]
-    public sealed class Project : ViewModelElement
+    public sealed partial class Project : ViewModelElement
     {
         #region Fields
         public static readonly string[] MediaFileExtensions = new[]
@@ -85,6 +88,8 @@ namespace MediaBase.ViewModel
             _activeProjectNode = null;
             _activeMediaSource = null;
             MediaLibrary = new MediaFolder { Name = MediaLibraryName };
+
+            InitializeCommands();
         }
         #endregion
 
@@ -93,7 +98,7 @@ namespace MediaBase.ViewModel
         /// Saves the XML representation of this <see cref="Project"/>
         /// to its associated <see cref="StorageFile"/>.
         /// </summary>
-        public async void Save()
+        public async Task SaveAsync()
         {
             if (!HasUnsavedChanges)
                 return;

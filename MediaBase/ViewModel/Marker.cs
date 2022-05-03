@@ -3,8 +3,6 @@ using System.Xml;
 
 using JLR.Utility.WinUI.Controls;
 
-using MediaBase.General;
-
 namespace MediaBase.ViewModel
 {
     /// <summary>
