@@ -45,33 +45,33 @@
                 <!-- Menu -->
                 <MenuBar Grid.Column="2" Margin="0">
                     <MenuBarItem Title="Project" Margin="0" VerticalAlignment="Bottom">
-                        <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectNew}"/>
-                        <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectOpen}"/>
+                        <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectNewCommand}"/>
+                        <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectOpenCommand}"/>
                         <MenuFlyoutSeparator/>
-                        <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectSave}"/>
-                        <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectSaveAs}"/>
+                        <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectSaveCommand}"/>
+                        <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectSaveAsCommand}"/>
                     </MenuBarItem>
                     <MenuBarItem Title="Tools" Margin="0" VerticalAlignment="Bottom">
                     </MenuBarItem>
                     <MenuBarItem Title="View" Margin="0" VerticalAlignment="Bottom">
                         <RadioMenuFlyoutItem GroupName="Presenter"
-                                             Command="{x:Bind ViewModel.ViewNormal}"
+                                             Command="{x:Bind ViewModel.ViewNormalCommand}"
                                              CommandParameter="{x:Bind windowing:AppWindowPresenterKind.Default}"/>
                         <RadioMenuFlyoutItem GroupName="Presenter"
-                                             Command="{x:Bind ViewModel.ViewCompact}"
+                                             Command="{x:Bind ViewModel.ViewCompactCommand}"
                                              CommandParameter="{x:Bind windowing:AppWindowPresenterKind.CompactOverlay}"/>
                         <RadioMenuFlyoutItem GroupName="Presenter"
-                                             Command="{x:Bind ViewModel.ViewFullscreen}"
+                                             Command="{x:Bind ViewModel.ViewFullscreenCommand}"
                                              CommandParameter="{x:Bind windowing:AppWindowPresenterKind.FullScreen}"/>
                     </MenuBarItem>
                     <MenuBarItem Title="Help" Margin="0" VerticalAlignment="Bottom">
-                        <MenuFlyoutItem Command="{x:Bind ViewModel.HelpAbout}"/>
+                        <MenuFlyoutItem Command="{x:Bind ViewModel.HelpAboutCommand}"/>
                     </MenuBarItem>
                 </MenuBar>
             </Grid>
 
             <!-- App Title -->
-            <TextBlock x:Name="AppTitleTextBlock" Grid.Column="1" Text="{x:Bind local:MainWindow.DefaultAppTitle}"
+            <TextBlock x:Name="AppTitleTextBlock" Grid.Column="1"
 		               HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,3"
                        Foreground="White" FontFamily="Segoe UI" FontWeight="Bold" FontSize="14"/>
 
@@ -112,9 +112,8 @@
             </toolkit:Expander>
 
             <!-- Media Editor -->
-            <!--<controls:MediaEditor x:Name="Editor" Grid.Row="0" Grid.Column="1"
-                                  HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                                  MediaSource="{x:Bind ViewModel.ActiveMediaSource, Mode=OneWay}"/>-->
+            <controls:MediaEditor x:Name="Editor" Grid.Row="0" Grid.Column="1"
+                                  HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
         </Grid>
 
         <!-- Info Bar -->

@@ -16,6 +16,7 @@
   <ItemGroup>
     <None Remove="Assets\Logo_Package.scale-400.png" />
     <None Remove="Assets\Logo_Tile_Medium.scale-400.png" />
+    <None Remove="Controls\MediaEditor.xaml" />
     <None Remove="Controls\ProjectBrowser.xaml" />
   </ItemGroup>
 
@@ -44,6 +45,11 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Utility.NET\Utility.NET\Utility.NET.csproj" />
     <ProjectReference Include="..\..\Utility.NET\Utility.WinUI\Utility.WinUI.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Controls\MediaEditor.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Page Update="Controls\ProjectBrowser.xaml">

@@ -25,37 +25,37 @@
 
         <!-- Context Flyouts -->
         <MenuFlyout x:Key="MenuFlyout_ProjectBrowserActions">
-            <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectNewFolder}"/>
+            <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectNewFolderCommand}"/>
             <MenuFlyoutSubItem Text="Import" Icon="Add">
-                <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectImportFiles}"/>
-                <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectImportFolder}"/>
+                <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectImportFilesCommand}"/>
+                <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectImportFolderCommand}"/>
             </MenuFlyoutSubItem>
             <MenuFlyoutSubItem Text="Remove" Icon="Remove">
-                <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectRemoveSelected}"/>
-                <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectRemoveAll}"/>
+                <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectRemoveSelectedCommand}"/>
+                <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectRemoveAllCommand}"/>
             </MenuFlyoutSubItem>
         </MenuFlyout>
 
         <MenuFlyout x:Key="MenuFlyout_ProjectBrowserFolderActions">
-            <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectNewFolder}"/>
-            <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectRenameItem}"/>
+            <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectNewFolderCommand}"/>
+            <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectRenameItemCommand}"/>
             <MenuFlyoutSubItem Text="Import" Icon="Add">
-                <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectImportFiles}"/>
-                <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectImportFolder}"/>
+                <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectImportFilesCommand}"/>
+                <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectImportFolderCommand}"/>
             </MenuFlyoutSubItem>
             <MenuFlyoutSubItem Text="Remove" Icon="Remove">
-                <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectRemoveItem}"/>
-                <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectRemoveSelected}"/>
-                <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectRemoveAll}"/>
+                <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectRemoveItemCommand}"/>
+                <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectRemoveSelectedCommand}"/>
+                <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectRemoveAllCommand}"/>
             </MenuFlyoutSubItem>
         </MenuFlyout>
 
         <MenuFlyout x:Key="MenuFlyout_ProjectBrowserFileActions">
-            <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectRenameItem}"/>
+            <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectRenameItemCommand}"/>
             <MenuFlyoutSubItem Text="Remove" Icon="Remove">
-                <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectRemoveItem}"/>
-                <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectRemoveSelected}"/>
-                <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectRemoveAll}"/>
+                <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectRemoveItemCommand}"/>
+                <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectRemoveSelectedCommand}"/>
+                <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectRemoveAllCommand}"/>
             </MenuFlyoutSubItem>
         </MenuFlyout>
 
@@ -65,6 +65,7 @@
             <TreeViewItem x:Name="Item"
                           ItemsSource="{x:Bind Children}"
                           ContextFlyout="{StaticResource MenuFlyout_ProjectBrowserFolderActions}"
+                          IsSelected="{x:Bind IsSelected, Mode=TwoWay}"
                           RightTapped="ProjectBrowserTreeView_RightTapped">
                 <TreeViewItem.Content>
                     <StackPanel Orientation="Horizontal">
@@ -97,6 +98,7 @@
         <DataTemplate x:Key="ProjectImageDataTemplate"
                       x:DataType="viewmodel:ImageFile">
             <TreeViewItem ContextFlyout="{StaticResource MenuFlyout_ProjectBrowserFileActions}"
+                          IsSelected="{x:Bind IsSelected, Mode=TwoWay}"
                           RightTapped="ProjectBrowserTreeView_RightTapped">
                 <TreeViewItem.Content>
                     <StackPanel Orientation="Horizontal">
@@ -120,6 +122,7 @@
         <DataTemplate x:Key="ProjectVideoDataTemplate"
                       x:DataType="viewmodel:VideoFile">
             <TreeViewItem ContextFlyout="{StaticResource MenuFlyout_ProjectBrowserFileActions}"
+                          IsSelected="{x:Bind IsSelected, Mode=TwoWay}"
                           RightTapped="ProjectBrowserTreeView_RightTapped">
                 <TreeViewItem.Content>
                     <StackPanel Orientation="Horizontal">

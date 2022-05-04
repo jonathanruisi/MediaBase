@@ -5,6 +5,8 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 
+using CommunityToolkit.WinUI.UI.Controls;
+
 using JLR.Utility.WinUI;
 
 using MediaBase.ViewModel;
@@ -67,19 +69,42 @@ namespace MediaBase
                 AppTitleBar.Visibility = Visibility.Collapsed;
             }
 
-            InitializeCommands();
+            // Initialize commands
+            ViewModel.ViewNormalCommand.CanExecuteRequested += ViewChangePresenter_CanExecuteRequested;
+            ViewModel.ViewNormalCommand.ExecuteRequested += ViewChangePresenter_ExecuteRequested;
+            ViewModel.ViewCompactCommand.CanExecuteRequested += ViewChangePresenter_CanExecuteRequested;
+            ViewModel.ViewCompactCommand.ExecuteRequested += ViewChangePresenter_ExecuteRequested;
+            ViewModel.ViewFullscreenCommand.CanExecuteRequested += ViewChangePresenter_CanExecuteRequested;
+            ViewModel.ViewFullscreenCommand.ExecuteRequested += ViewChangePresenter_ExecuteRequested;
+            ViewModel.HelpAboutCommand.CanExecuteRequested += HelpAboutCommand_CanExecuteRequested;
+            ViewModel.HelpAboutCommand.ExecuteRequested += HelpAboutCommand_ExecuteRequested;
         }
         #endregion
 
         #region Event Handlers (Window & Title Bar)
         private void MainWindow_Activated(object sender, WindowActivatedEventArgs args)
         {
-
+            AppTitleTextBlock.Text = DefaultAppTitle;
         }
-
+        
         private void MainWindow_Closed(object sender, WindowEventArgs args)
         {
             
+        }
+
+        private void AppTitleBar_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (AppWindowTitleBar.IsCustomizationSupported())
+                SetDragRegionForCustomTitleBar(_appWindow);
+        }
+
+        private void AppTitleBar_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            if (AppWindowTitleBar.IsCustomizationSupported() &&
+                _appWindow.TitleBar.ExtendsContentIntoTitleBar)
+            {
+                SetDragRegionForCustomTitleBar(_appWindow);
+            }
         }
 
         private void AppWindow_Changed(AppWindow sender, AppWindowChangedEventArgs args)
@@ -109,20 +134,27 @@ namespace MediaBase
                     break;
             }
         }
+        #endregion
 
-        private void AppTitleBar_Loaded(object sender, RoutedEventArgs e)
+        #region Event Handlers (ViewModel)
+        private void ViewChangePresenter_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            if (AppWindowTitleBar.IsCustomizationSupported())
-                SetDragRegionForCustomTitleBar(_appWindow);
+            args.CanExecute = _appWindow != null;
         }
 
-        private void AppTitleBar_SizeChanged(object sender, SizeChangedEventArgs e)
+        private void ViewChangePresenter_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            if (AppWindowTitleBar.IsCustomizationSupported() &&
-                _appWindow.TitleBar.ExtendsContentIntoTitleBar)
-            {
-                SetDragRegionForCustomTitleBar(_appWindow);
-            }
+            SwitchPresenter((AppWindowPresenterKind)args.Parameter);
+        }
+
+        private void HelpAboutCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = true;
+        }
+
+        private void HelpAboutCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
         }
         #endregion
 
@@ -171,6 +203,15 @@ namespace MediaBase
 
             appWindow.TitleBar.SetDragRectangles(dragRects.ToArray());
         }
+
+        private void SwitchPresenter(AppWindowPresenterKind presenterKind)
+        {
+            if (_appWindow == null)
+                return;
+
+            if (presenterKind != _appWindow.Presenter.Kind)
+                _appWindow.SetPresenter(presenterKind);
+        }
         #endregion
 
         #region Interop
@@ -185,115 +226,6 @@ namespace MediaBase
             MDT_Angular_DPI = 1,
             MDT_Raw_DPI = 2,
             MDT_Default = MDT_Effective_DPI
-        }
-        #endregion
-
-        #region Commands
-        private void InitializeCommands()
-        {
-            ViewModel.ProjectNew.CanExecuteRequested += ProjectNew_CanExecuteRequested;
-            ViewModel.ProjectNew.ExecuteRequested += ProjectNew_ExecuteRequested;
-
-            ViewModel.ProjectOpen.CanExecuteRequested += ProjectOpen_CanExecuteRequested;
-            ViewModel.ProjectOpen.ExecuteRequested += ProjectOpen_ExecuteRequested;
-
-            ViewModel.ProjectSave.CanExecuteRequested += ProjectSave_CanExecuteRequested;
-            ViewModel.ProjectSave.ExecuteRequested += ProjectSave_ExecuteRequested;
-
-            ViewModel.ProjectSaveAs.CanExecuteRequested += ProjectSaveAs_CanExecuteRequested;
-            ViewModel.ProjectSaveAs.ExecuteRequested += ProjectSaveAs_ExecuteRequested;
-
-            ViewModel.ViewNormal.CanExecuteRequested += ViewNormal_CanExecuteRequested;
-            ViewModel.ViewNormal.ExecuteRequested += ViewNormal_ExecuteRequested;
-
-            ViewModel.ViewCompact.CanExecuteRequested += ViewCompact_CanExecuteRequested;
-            ViewModel.ViewCompact.ExecuteRequested += ViewCompact_ExecuteRequested;
-
-            ViewModel.ViewFullscreen.CanExecuteRequested += ViewFullscreen_CanExecuteRequested;
-            ViewModel.ViewFullscreen.ExecuteRequested += ViewFullscreen_ExecuteRequested;
-
-            ViewModel.HelpAbout.CanExecuteRequested += HelpAbout_CanExecuteRequested;
-            ViewModel.HelpAbout.ExecuteRequested += HelpAbout_ExecuteRequested;
-        }
-
-        private void ProjectNew_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
-        {
-            
-        }
-
-        private void ProjectOpen_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
-        {
-            
-        }
-
-        private void ProjectSave_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
-        {
-            
-        }
-
-        private void ProjectSaveAs_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
-        {
-            
-        }
-
-        private void ViewNormal_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
-        {
-            
-        }
-
-        private void ViewCompact_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
-        {
-            
-        }
-
-        private void ViewFullscreen_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
-        {
-            
-        }
-
-        private void HelpAbout_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
-        {
-            
-        }
-
-        private void ProjectNew_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
-        {
-            
-        }
-
-        private void ProjectOpen_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
-        {
-            
-        }
-
-        private void ProjectSave_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
-        {
-            
-        }
-
-        private void ProjectSaveAs_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
-        {
-            
-        }
-
-        private void ViewNormal_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
-        {
-            
-        }
-
-        private void ViewCompact_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
-        {
-            
-        }
-
-        private void ViewFullscreen_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
-        {
-            
-        }
-
-        private void HelpAbout_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
-        {
-            
         }
         #endregion
     }

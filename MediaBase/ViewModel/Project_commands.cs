@@ -14,17 +14,17 @@ namespace MediaBase.ViewModel
     public partial class Project
     {
         #region Project Commands
-        public XamlUICommand ProjectNew { get; private set; }
-        public XamlUICommand ProjectOpen { get; private set; }
-        public XamlUICommand ProjectSave { get; private set; }
-        public XamlUICommand ProjectSaveAs { get; private set; }
-        public XamlUICommand ProjectNewFolder { get; private set; }
-        public XamlUICommand ProjectImportFiles { get; private set; }
-        public XamlUICommand ProjectImportFolder { get; private set; }
-        public XamlUICommand ProjectRemoveItem { get; private set; }
-        public XamlUICommand ProjectRemoveSelected { get; private set; }
-        public XamlUICommand ProjectRemoveAll { get; private set; }
-        public XamlUICommand ProjectRenameItem { get; private set; }
+        public XamlUICommand ProjectNewCommand { get; private set; }
+        public XamlUICommand ProjectOpenCommand { get; private set; }
+        public XamlUICommand ProjectSaveCommand { get; private set; }
+        public XamlUICommand ProjectSaveAsCommand { get; private set; }
+        public XamlUICommand ProjectNewFolderCommand { get; private set; }
+        public XamlUICommand ProjectImportFilesCommand { get; private set; }
+        public XamlUICommand ProjectImportFolderCommand { get; private set; }
+        public XamlUICommand ProjectRemoveItemCommand { get; private set; }
+        public XamlUICommand ProjectRemoveSelectedCommand { get; private set; }
+        public XamlUICommand ProjectRemoveAllCommand { get; private set; }
+        public XamlUICommand ProjectRenameItemCommand { get; private set; }
         #endregion
 
         #region Tool Commands
@@ -32,153 +32,153 @@ namespace MediaBase.ViewModel
         #endregion
 
         #region View Commands
-        public XamlUICommand ViewNormal { get; private set; }
-        public XamlUICommand ViewCompact { get; private set; }
-        public XamlUICommand ViewFullscreen { get; private set; }
+        public XamlUICommand ViewNormalCommand { get; private set; }
+        public XamlUICommand ViewCompactCommand { get; private set; }
+        public XamlUICommand ViewFullscreenCommand { get; private set; }
         #endregion
 
         #region Help Commands
-        public XamlUICommand HelpAbout { get; private set; }
+        public XamlUICommand HelpAboutCommand { get; private set; }
         #endregion
 
         #region Editor Commands
-        public XamlUICommand EditorPlay { get; private set; }
-        public XamlUICommand EditorPause { get; private set; }
-        public XamlUICommand EditorPreviousFrame { get; private set; }
-        public XamlUICommand EditorNextFrame { get; private set; }
-        public XamlUICommand EditorPreviousMarker { get; private set; }
-        public XamlUICommand EditorNextMarker { get; private set; }
-        public XamlUICommand EditorToggleActiveSelection { get; private set; }
-        public XamlUICommand EditorNewMarker { get; private set; }
-        public XamlUICommand EditorNewClip { get; private set; }
-        public XamlUICommand EditorNewKeyframe { get; private set; }
-        public XamlUICommand EditorCutSelected { get; private set; }
-        public XamlUICommand EditorPlaybackRateDecrease { get; private set; }
-        public XamlUICommand EditorPlaybackRateIncrease { get; private set; }
-        public XamlUICommand EditorPlaybackRateNormal { get; private set; }
-        public XamlUICommand EditorCenterImage { get; private set; }
-        public XamlUICommand EditorImageZoomFit { get; private set; }
-        public XamlUICommand EditorImageZoomFull { get; private set; }
-        public XamlUICommand EditorTimelineZoomOut { get; private set; }
-        public XamlUICommand EditorTimelineZoomIn { get; private set; }
-        public XamlUICommand EditorAnimateImage { get; private set; }
-        public XamlUICommand EditorTrimMedia { get; private set; }
-        public XamlUICommand EditorMarkMedia { get; private set; }
+        public XamlUICommand EditorPlayCommand { get; private set; }
+        public XamlUICommand EditorPauseCommand { get; private set; }
+        public XamlUICommand EditorPreviousFrameCommand { get; private set; }
+        public XamlUICommand EditorNextFrameCommand { get; private set; }
+        public XamlUICommand EditorPreviousMarkerCommand { get; private set; }
+        public XamlUICommand EditorNextMarkerCommand { get; private set; }
+        public XamlUICommand EditorToggleActiveSelectionCommand { get; private set; }
+        public XamlUICommand EditorNewMarkerCommand { get; private set; }
+        public XamlUICommand EditorNewClipCommand { get; private set; }
+        public XamlUICommand EditorNewKeyframeCommand { get; private set; }
+        public XamlUICommand EditorCutSelectedCommand { get; private set; }
+        public XamlUICommand EditorPlaybackRateDecreaseCommand { get; private set; }
+        public XamlUICommand EditorPlaybackRateIncreaseCommand { get; private set; }
+        public XamlUICommand EditorPlaybackRateNormalCommand { get; private set; }
+        public XamlUICommand EditorCenterImageCommand { get; private set; }
+        public XamlUICommand EditorImageZoomFitCommand { get; private set; }
+        public XamlUICommand EditorImageZoomFullCommand { get; private set; }
+        public XamlUICommand EditorTimelineZoomOutCommand { get; private set; }
+        public XamlUICommand EditorTimelineZoomInCommand { get; private set; }
+        public XamlUICommand EditorAnimateImageCommand { get; private set; }
+        public XamlUICommand EditorTrimMediaCommand { get; private set; }
+        public XamlUICommand EditorMarkMediaCommand { get; private set; }
         #endregion
 
         private void InitializeCommands()
         {
             #region Project Commands
-            ProjectNew = new XamlUICommand
+            ProjectNewCommand = new XamlUICommand
             {
                 Label = "New...",
                 Description = "Begin a new project",
                 IconSource = new SymbolIconSource { Symbol = Symbol.Document }
             };
 
-            ProjectNew.KeyboardAccelerators.Add(new KeyboardAccelerator
+            ProjectNewCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.N,
                 Modifiers = VirtualKeyModifiers.Control,
                 IsEnabled = true
             });
 
-            ProjectOpen = new XamlUICommand
+            ProjectOpenCommand = new XamlUICommand
             {
                 Label = "Open...",
                 Description = "Open an existing project",
                 IconSource = new SymbolIconSource { Symbol = Symbol.OpenLocal }
             };
 
-            ProjectOpen.KeyboardAccelerators.Add(new KeyboardAccelerator
+            ProjectOpenCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.O,
                 Modifiers = VirtualKeyModifiers.Control,
                 IsEnabled = true
             });
 
-            ProjectSave = new XamlUICommand
+            ProjectSaveCommand = new XamlUICommand
             {
                 Label = "Save",
                 Description = "Save the current project",
                 IconSource = new SymbolIconSource { Symbol = Symbol.SaveLocal }
             };
 
-            ProjectSave.KeyboardAccelerators.Add(new KeyboardAccelerator
+            ProjectSaveCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.S,
                 Modifiers = VirtualKeyModifiers.Control,
                 IsEnabled = true
             });
 
-            ProjectSaveAs = new XamlUICommand
+            ProjectSaveAsCommand = new XamlUICommand
             {
                 Label = "Save As...",
                 Description = "Save the current project to a different file",
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xE792 }
             };
 
-            ProjectSaveAs.KeyboardAccelerators.Add(new KeyboardAccelerator
+            ProjectSaveAsCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.S,
                 Modifiers = VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift,
                 IsEnabled = true
             });
 
-            ProjectNewFolder = new XamlUICommand
+            ProjectNewFolderCommand = new XamlUICommand
             {
                 Label = "New Folder...",
                 Description = "Create a new folder at this location",
                 IconSource = new SymbolIconSource { Symbol = Symbol.NewFolder }
             };
 
-            ProjectImportFiles = new XamlUICommand
+            ProjectImportFilesCommand = new XamlUICommand
             {
                 Label = "Files...",
                 Description = "Browse for and import media files to this location",
                 IconSource = new SymbolIconSource { Symbol = Symbol.Import }
             };
 
-            ProjectImportFolder = new XamlUICommand
+            ProjectImportFolderCommand = new XamlUICommand
             {
                 Label = "Folder...",
                 Description = "Browse for and import a folder to this location",
                 IconSource = new SymbolIconSource { Symbol = Symbol.ImportAll }
             };
 
-            ProjectRemoveItem = new XamlUICommand
+            ProjectRemoveItemCommand = new XamlUICommand
             {
                 Label = "Item",
                 Description = "Remove this item"
             };
 
-            ProjectRemoveSelected = new XamlUICommand
+            ProjectRemoveSelectedCommand = new XamlUICommand
             {
                 Label = "Selected",
                 Description = "Remove selected (checked) items"
             };
 
-            ProjectRemoveSelected.KeyboardAccelerators.Add(new KeyboardAccelerator
+            ProjectRemoveSelectedCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.Delete,
                 Modifiers = VirtualKeyModifiers.Control,
                 IsEnabled = true
             });
 
-            ProjectRemoveAll = new XamlUICommand
+            ProjectRemoveAllCommand = new XamlUICommand
             {
                 Label = "All",
                 Description = "Remove all items"
             };
 
-            ProjectRemoveAll.KeyboardAccelerators.Add(new KeyboardAccelerator
+            ProjectRemoveAllCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.Delete,
                 Modifiers = VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift,
                 IsEnabled = true
             });
 
-            ProjectRenameItem = new XamlUICommand
+            ProjectRenameItemCommand = new XamlUICommand
             {
                 Label = "Rename...",
                 Description = "Rename this item",
@@ -191,39 +191,39 @@ namespace MediaBase.ViewModel
             #endregion
 
             #region View Commands
-            ViewNormal = new XamlUICommand
+            ViewNormalCommand = new XamlUICommand
             {
                 Label = "Normal",
                 Description = "Normal \"overlapped\" view",
                 IconSource = new SymbolIconSource { Symbol = Symbol.BackToWindow }
             };
 
-            ViewNormal.KeyboardAccelerators.Add(new KeyboardAccelerator
+            ViewNormalCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.F10,
                 IsEnabled = true
             });
 
-            ViewCompact = new XamlUICommand
+            ViewCompactCommand = new XamlUICommand
             {
                 Label = "Compact",
                 Description = "Compact view"
             };
 
-            ViewCompact.KeyboardAccelerators.Add(new KeyboardAccelerator
+            ViewCompactCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.F11,
                 IsEnabled = true
             });
 
-            ViewFullscreen = new XamlUICommand
+            ViewFullscreenCommand = new XamlUICommand
             {
                 Label = "Fullscreen",
                 Description = "Fullscreen view",
                 IconSource = new SymbolIconSource { Symbol = Symbol.FullScreen }
             };
 
-            ViewFullscreen.KeyboardAccelerators.Add(new KeyboardAccelerator
+            ViewFullscreenCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.F12,
                 IsEnabled = true
@@ -231,14 +231,14 @@ namespace MediaBase.ViewModel
             #endregion
 
             #region Help Commands
-            HelpAbout = new XamlUICommand
+            HelpAboutCommand = new XamlUICommand
             {
                 Label = "About...",
                 Description = "Display information about this app",
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xE946 }
             };
 
-            HelpAbout.KeyboardAccelerators.Add(new KeyboardAccelerator
+            HelpAboutCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.F1,
                 IsEnabled = true
@@ -246,280 +246,429 @@ namespace MediaBase.ViewModel
             #endregion
 
             #region Editor Commands
-            EditorPlay = new XamlUICommand
+            EditorPlayCommand = new XamlUICommand
             {
                 Label = "Play",
                 Description = "Begin playback",
                 IconSource = new SymbolIconSource { Symbol = Symbol.Play }
             };
 
-            EditorPlay.KeyboardAccelerators.Add(new KeyboardAccelerator
+            EditorPlayCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.Space,
                 IsEnabled = true
             });
 
-            EditorPause = new XamlUICommand
+            EditorPauseCommand = new XamlUICommand
             {
                 Label = "Pause",
                 Description = "Pause playback",
                 IconSource = new SymbolIconSource { Symbol = Symbol.Pause }
             };
 
-            EditorPause.KeyboardAccelerators.Add(new KeyboardAccelerator
+            EditorPauseCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.Space,
                 IsEnabled = true
             });
 
-            EditorPreviousFrame = new XamlUICommand
+            EditorPreviousFrameCommand = new XamlUICommand
             {
                 Label = "Previous Frame",
                 Description = "Seek back one frame",
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xE76B }
             };
 
-            EditorPreviousFrame.KeyboardAccelerators.Add(new KeyboardAccelerator
+            EditorPreviousFrameCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.Left,
                 IsEnabled = true
             });
 
-            EditorNextFrame = new XamlUICommand
+            EditorNextFrameCommand = new XamlUICommand
             {
                 Label = "Next Frame",
                 Description = "Seek forward one frame",
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xE76C }
             };
 
-            EditorNextFrame.KeyboardAccelerators.Add(new KeyboardAccelerator
+            EditorNextFrameCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.Right,
                 IsEnabled = true
             });
 
-            EditorPreviousMarker = new XamlUICommand
+            EditorPreviousMarkerCommand = new XamlUICommand
             {
                 Label = "Previous Marker",
                 Description = "Seek to the previous marker",
                 IconSource = new SymbolIconSource { Symbol = Symbol.Previous }
             };
 
-            EditorPreviousMarker.KeyboardAccelerators.Add(new KeyboardAccelerator
+            EditorPreviousMarkerCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.Left,
                 Modifiers = VirtualKeyModifiers.Control,
                 IsEnabled = true
             });
 
-            EditorNextMarker = new XamlUICommand
+            EditorNextMarkerCommand = new XamlUICommand
             {
                 Label = "Next Marker",
                 Description = "Seek to the next marker",
                 IconSource = new SymbolIconSource { Symbol = Symbol.Next }
             };
 
-            EditorNextMarker.KeyboardAccelerators.Add(new KeyboardAccelerator
+            EditorNextMarkerCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.Right,
                 Modifiers = VirtualKeyModifiers.Control,
                 IsEnabled = true
             });
 
-            EditorToggleActiveSelection = new XamlUICommand
+            EditorToggleActiveSelectionCommand = new XamlUICommand
             {
                 Label = "Toggle Active Selection",
                 Description = "Enable/disable timeline selection controls",
                 IconSource = new SymbolIconSource { Symbol = Symbol.Highlight }
             };
 
-            EditorToggleActiveSelection.KeyboardAccelerators.Add(new KeyboardAccelerator
+            EditorToggleActiveSelectionCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.S,
                 IsEnabled = true
             });
 
-            EditorNewMarker = new XamlUICommand
+            EditorNewMarkerCommand = new XamlUICommand
             {
                 Label = "New Marker",
                 Description = "Add new marker at current position",
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xECAF }
             };
 
-            EditorNewMarker.KeyboardAccelerators.Add(new KeyboardAccelerator
+            EditorNewMarkerCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.M,
                 Modifiers = VirtualKeyModifiers.Control,
                 IsEnabled = true
             });
 
-            EditorNewClip = new XamlUICommand
+            EditorNewClipCommand = new XamlUICommand
             {
                 Label = "New Clip",
                 Description = "Create clip from current selection",
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xF406 }
             };
 
-            EditorNewClip.KeyboardAccelerators.Add(new KeyboardAccelerator
+            EditorNewClipCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.M,
                 Modifiers = VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift,
                 IsEnabled = true
             });
 
-            EditorNewKeyframe = new XamlUICommand
+            EditorNewKeyframeCommand = new XamlUICommand
             {
                 Label = "New Keyframe",
                 Description = "Add new keyframe",
                 IconSource = new SymbolIconSource { Symbol = Symbol.Permissions }
             };
 
-            EditorNewKeyframe.KeyboardAccelerators.Add(new KeyboardAccelerator
+            EditorNewKeyframeCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.K,
                 IsEnabled = true
             });
 
-            EditorCutSelected = new XamlUICommand
+            EditorCutSelectedCommand = new XamlUICommand
             {
                 Label = "Cut Selected",
                 Description = "Add selection to cut list",
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xF406 }
             };
 
-            EditorCutSelected.KeyboardAccelerators.Add(new KeyboardAccelerator
+            EditorCutSelectedCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.Delete,
                 IsEnabled = true
             });
 
-            EditorPlaybackRateDecrease = new XamlUICommand
+            EditorPlaybackRateDecreaseCommand = new XamlUICommand
             {
                 Label = "Playback Rate -",
                 Description = "Decrease playback rate",
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xEC48 }
             };
 
-            EditorPlaybackRateDecrease.KeyboardAccelerators.Add(new KeyboardAccelerator
+            EditorPlaybackRateDecreaseCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.Down,
                 IsEnabled = true
             });
 
-            EditorPlaybackRateIncrease = new XamlUICommand
+            EditorPlaybackRateIncreaseCommand = new XamlUICommand
             {
                 Label = "Playback Rate +",
                 Description = "Increase playback rate",
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xEC4A }
             };
 
-            EditorPlaybackRateIncrease.KeyboardAccelerators.Add(new KeyboardAccelerator
+            EditorPlaybackRateIncreaseCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.Up,
                 IsEnabled = true
             });
 
-            EditorPlaybackRateNormal = new XamlUICommand
+            EditorPlaybackRateNormalCommand = new XamlUICommand
             {
                 Label = "Normal Playback Rate",
                 Description = "Normal playback rate",
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xEC49 }
             };
 
-            EditorPlaybackRateNormal.KeyboardAccelerators.Add(new KeyboardAccelerator
+            EditorPlaybackRateNormalCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.Home,
                 IsEnabled = true
             });
 
-            EditorCenterImage = new XamlUICommand
+            EditorCenterImageCommand = new XamlUICommand
             {
                 Label = "Center Image",
                 Description = "Center image in window",
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xE799 }
             };
 
-            EditorCenterImage.KeyboardAccelerators.Add(new KeyboardAccelerator
+            EditorCenterImageCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.C,
                 IsEnabled = true
             });
 
-            EditorImageZoomFit = new XamlUICommand
+            EditorImageZoomFitCommand = new XamlUICommand
             {
                 Label = "Zoom Fit",
                 Description = "Zoom to fit current view",
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xE9A6 }
             };
 
-            EditorImageZoomFit.KeyboardAccelerators.Add(new KeyboardAccelerator
+            EditorImageZoomFitCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.Number0,
                 Modifiers = VirtualKeyModifiers.Control,
                 IsEnabled = true
             });
 
-            EditorImageZoomFull = new XamlUICommand
+            EditorImageZoomFullCommand = new XamlUICommand
             {
                 Label = "Zoom Full",
                 Description = "Zoom to actual size",
                 IconSource = new SymbolIconSource { Symbol = Symbol.FullScreen }
             };
 
-            EditorImageZoomFull.KeyboardAccelerators.Add(new KeyboardAccelerator
+            EditorImageZoomFullCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.Number1,
                 Modifiers = VirtualKeyModifiers.Control,
                 IsEnabled = true
             });
 
-            EditorTimelineZoomOut = new XamlUICommand
+            EditorTimelineZoomOutCommand = new XamlUICommand
             {
                 Label = "Zoom Out Timeline",
                 Description = "Increase the visible timeline range",
                 IconSource = new SymbolIconSource { Symbol = Symbol.ZoomOut }
             };
 
-            EditorTimelineZoomOut.KeyboardAccelerators.Add(new KeyboardAccelerator
+            EditorTimelineZoomOutCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.PageDown,
                 IsEnabled = true
             });
 
-            EditorTimelineZoomIn = new XamlUICommand
+            EditorTimelineZoomInCommand = new XamlUICommand
             {
                 Label = "Zoom In Timeline",
                 Description = "Decrease the visible timeline range",
                 IconSource = new SymbolIconSource { Symbol = Symbol.ZoomIn }
             };
 
-            EditorTimelineZoomIn.KeyboardAccelerators.Add(new KeyboardAccelerator
+            EditorTimelineZoomInCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.PageUp,
                 IsEnabled = true
             });
 
-            EditorAnimateImage = new XamlUICommand
+            EditorAnimateImageCommand = new XamlUICommand
             {
                 Label = "Animate Image",
                 Description = "Animate current image",
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xE805 }
             };
 
-            EditorTrimMedia = new XamlUICommand
+            EditorTrimMediaCommand = new XamlUICommand
             {
                 Label = "Trim",
                 Description = "Trim current media item",
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xE78A }
             };
 
-            EditorMarkMedia = new XamlUICommand
+            EditorMarkMediaCommand = new XamlUICommand
             {
                 Label = "Mark",
                 Description = "Define tags, chapters, and clips for the current media item",
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xED63 }
             };
             #endregion
+
+            #region Assign Event Handlers
+            ProjectNewCommand.CanExecuteRequested += ProjectNewCommand_CanExecuteRequested;
+            ProjectNewCommand.ExecuteRequested += ProjectNewCommand_ExecuteRequested;
+
+            ProjectOpenCommand.CanExecuteRequested += ProjectOpenCommand_CanExecuteRequested;
+            ProjectOpenCommand.ExecuteRequested += ProjectOpenCommand_ExecuteRequested;
+
+            ProjectSaveCommand.CanExecuteRequested += ProjectSaveCommand_CanExecuteRequested;
+            ProjectSaveCommand.ExecuteRequested += ProjectSaveCommand_ExecuteRequested;
+
+            ProjectSaveAsCommand.CanExecuteRequested += ProjectSaveAsCommand_CanExecuteRequested;
+            ProjectSaveAsCommand.ExecuteRequested += ProjectSaveAsCommand_ExecuteRequested;
+
+            ProjectNewFolderCommand.CanExecuteRequested += ProjectNewFolderCommand_CanExecuteRequested;
+            ProjectNewFolderCommand.ExecuteRequested += ProjectNewFolderCommand_ExecuteRequested;
+
+            ProjectImportFilesCommand.CanExecuteRequested += ProjectImportFilesCommand_CanExecuteRequested;
+            ProjectImportFilesCommand.ExecuteRequested += ProjectImportFilesCommand_ExecuteRequested;
+
+            ProjectImportFolderCommand.CanExecuteRequested += ProjectImportFolderCommand_CanExecuteRequested;
+            ProjectImportFolderCommand.ExecuteRequested += ProjectImportFolderCommand_ExecuteRequested;
+
+            ProjectRemoveItemCommand.CanExecuteRequested += ProjectRemoveItemCommand_CanExecuteRequested;
+            ProjectRemoveItemCommand.ExecuteRequested += ProjectRemoveItemCommand_ExecuteRequested;
+
+            ProjectRemoveSelectedCommand.CanExecuteRequested += ProjectRemoveSelectedCommand_CanExecuteRequested;
+            ProjectRemoveSelectedCommand.ExecuteRequested += ProjectRemoveSelectedCommand_ExecuteRequested;
+
+            ProjectRemoveAllCommand.CanExecuteRequested += ProjectRemoveAllCommand_CanExecuteRequested;
+            ProjectRemoveAllCommand.ExecuteRequested += ProjectRemoveAllCommand_ExecuteRequested;
+
+            ProjectRenameItemCommand.CanExecuteRequested += ProjectRenameItemCommand_CanExecuteRequested;
+            ProjectRenameItemCommand.ExecuteRequested += ProjectRenameItemCommand_ExecuteRequested;
+            #endregion
         }
+
+        #region Event Handlers (CanExecuteRequested)
+        private void ProjectNewCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ProjectOpenCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ProjectSaveCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ProjectSaveAsCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ProjectNewFolderCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = IsActive && ActiveNode is MediaFolder;
+        }
+
+        private void ProjectImportFilesCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = IsActive && ActiveNode is MediaFolder;
+        }
+
+        private void ProjectImportFolderCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = IsActive && ActiveNode is MediaFolder;
+        }
+
+        private void ProjectRemoveItemCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = IsActive && ActiveNode?.Depth > 0;
+        }
+
+        private void ProjectRemoveSelectedCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ProjectRemoveAllCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ProjectRenameItemCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+        #endregion
+
+        #region Event Handlers (ExecuteRequested)
+        private void ProjectNewCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ProjectOpenCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ProjectSaveCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ProjectSaveAsCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ProjectNewFolderCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ProjectImportFilesCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ProjectImportFolderCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ProjectRemoveItemCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ProjectRemoveSelectedCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ProjectRemoveAllCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ProjectRenameItemCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+        #endregion
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -11,6 +12,7 @@ using MediaBase.ViewModel.Base;
 using Microsoft.Toolkit.Mvvm.Input;
 using Microsoft.UI.Xaml.Input;
 
+using Windows.Media.Playback;
 using Windows.Storage;
 
 namespace MediaBase.ViewModel
@@ -32,6 +34,7 @@ namespace MediaBase.ViewModel
         private StorageFile _file;
         private ViewModelNode _activeProjectNode;
         private MBMediaSource _activeMediaSource;
+        private MediaPlayer _player;
         #endregion
 
         #region Properties
@@ -77,6 +80,16 @@ namespace MediaBase.ViewModel
         {
             get => _activeMediaSource;
             set => SetProperty(ref _activeMediaSource, value, true);
+        }
+
+        /// <summary>
+        /// Gets or sets a reference to a <see cref="MediaPlayer"/>
+        /// used to view the <see cref="ActiveMediaSource"/>.
+        /// </summary>
+        public MediaPlayer Player
+        {
+            get => _player;
+            set => SetProperty(ref _player, value);
         }
         #endregion
 
