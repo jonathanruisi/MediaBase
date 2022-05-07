@@ -11,6 +11,7 @@ using Windows.Media.Core;
 using Windows.Media.Editing;
 using Windows.Media.MediaProperties;
 using Windows.Media.Playback;
+using Windows.Storage;
 
 namespace MediaBase.ViewModel
 {
@@ -36,8 +37,10 @@ namespace MediaBase.ViewModel
         public override MediaContentType ContentType => MediaContentType.Image;
         #endregion
 
-        #region Constructor
-        public ImageFile()
+        #region Constructors
+        public ImageFile() : this(null) { }
+
+        public ImageFile(StorageFile file) : base(file)
         {
             Keyframes = new ObservableCollection<ImageAnimationKeyframe>();
             Keyframes.CollectionChanged += Keyframes_CollectionChanged;
@@ -57,12 +60,8 @@ namespace MediaBase.ViewModel
         #endregion
 
         #region Method Overrides (MediaFile)
-        public override async Task<bool> LoadFileFromPathAsync()
+        public override async Task<bool> LoadMediaPropertiesAsync()
         {
-            if (await base.LoadFileFromPathAsync() == false)
-                return false;
-
-            // Query image properties
             try
             {
                 var strWidth = "System.Image.HorizontalSize";
@@ -73,9 +72,9 @@ namespace MediaBase.ViewModel
                 WidthInPixels = (uint)propResultList[strWidth];
                 HeightInPixels = (uint)propResultList[strHeight];
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                throw new InvalidOperationException("Unable to retrieve image properties", ex);
+                return false;
             }
 
             return true;

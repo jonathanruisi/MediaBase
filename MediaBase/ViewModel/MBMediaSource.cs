@@ -4,8 +4,6 @@ using System.Collections.Specialized;
 using System.Threading.Tasks;
 using System.Xml;
 
-using MediaBase.ViewModel.Base;
-
 using Microsoft.Toolkit.Mvvm.Messaging;
 
 using Windows.Media.Playback;

@@ -32,17 +32,20 @@ namespace MediaBase.ViewModel
         }
         #endregion
 
-        #region Constructor
-        public MediaFile()
+        #region Constructors
+        public MediaFile() : this(null) { }
+
+        public MediaFile(StorageFile file)
         {
-            _path = string.Empty;
-            _file = null;
+            _file = file;
+            _path = file?.Path;
+            Name = file?.DisplayName;
             FramesPerSecond = double.NaN;
         }
         #endregion
 
         #region Public Methods
-        public virtual async Task<bool> LoadFileFromPathAsync()
+        public async Task<bool> LoadFileFromPathAsync()
         {
             if (string.IsNullOrEmpty(Path))
                 return false;
@@ -50,6 +53,7 @@ namespace MediaBase.ViewModel
             try
             {
                 File = await StorageFile.GetFileFromPathAsync(Path);
+                Name = File.DisplayName;
             }
             catch (FileNotFoundException) { return false; }
             catch (UnauthorizedAccessException) { return false; }
@@ -59,8 +63,10 @@ namespace MediaBase.ViewModel
             if (!File.ContentType.Contains(contentTypeString.ToLower()))
                 throw new InvalidOperationException($"{contentTypeString} file expected");
 
-            return true;
+            return await LoadMediaPropertiesAsync();
         }
+
+        public abstract Task<bool> LoadMediaPropertiesAsync();
         #endregion
 
         #region Method Overrides (System.Object)

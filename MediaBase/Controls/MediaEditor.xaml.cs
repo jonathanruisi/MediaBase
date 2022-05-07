@@ -23,6 +23,10 @@ namespace MediaBase.Controls
 {
     public sealed partial class MediaEditor : UserControl
     {
+        #region Fields
+        private MediaPlayer _player;
+        #endregion
+
         #region Properties
         public Project ViewModel => (Project)DataContext;
         #endregion
@@ -32,56 +36,41 @@ namespace MediaBase.Controls
         {
             InitializeComponent();
             DataContext = App.Current.Services.GetService<Project>();
+
+            // Initialize media player
+            _player = new MediaPlayer();
+            _player.AutoPlay = false;
+            _player.IsVideoFrameServerEnabled = true;
+            _player.CommandManager.IsEnabled = false;
+
+            // Subscribe to media player events
+            _player.SourceChanged += Player_SourceChanged;
+            _player.MediaOpened += Player_MediaOpened;
+            _player.MediaEnded += Player_MediaEnded;
+            _player.MediaFailed += Player_MediaFailed;
+            _player.VideoFrameAvailable += Player_VideoFrameAvailable;
+            _player.PlaybackSession.PlaybackStateChanged += PlaybackSession_PlaybackStateChanged;
+            _player.PlaybackSession.PositionChanged += PlaybackSession_PositionChanged;
+            _player.PlaybackSession.SeekCompleted += PlaybackSession_SeekCompleted;
+
+            InitializeCommands();
         }
         #endregion
 
         #region Event Handlers (UserControl)
         private void UserControl_Loaded(object sender, RoutedEventArgs e)
         {
-            if (ViewModel.Player == null)
-            {
-                // Initialize
-                ViewModel.Player = new MediaPlayer();
-                ViewModel.Player.IsVideoFrameServerEnabled = true;
-                ViewModel.Player.CommandManager.IsEnabled = false;
-                ViewModel.Player.AutoPlay = false;
+            // Initialize timeline
 
-                // Subscribe to events
-                ViewModel.Player.SourceChanged += Player_SourceChanged;
-                ViewModel.Player.MediaOpened += Player_MediaOpened;
-                ViewModel.Player.MediaEnded += Player_MediaEnded;
-                ViewModel.Player.MediaFailed += Player_MediaFailed;
-                ViewModel.Player.VideoFrameAvailable += Player_VideoFrameAvailable;
-                ViewModel.Player.PlaybackSession.PlaybackStateChanged += PlaybackSession_PlaybackStateChanged;
-                ViewModel.Player.PlaybackSession.PositionChanged += PlaybackSession_PositionChanged;
-                ViewModel.Player.PlaybackSession.SeekCompleted += PlaybackSession_SeekCompleted;
-            }
+            // Initialize swap chain
+
+            // Initialize frame timer
         }
 
         private void UserControl_Unloaded(object sender, RoutedEventArgs e)
         {
-            // Free swap-chain resources
             SwapChainCanvas.RemoveFromVisualTree();
             SwapChainCanvas.SwapChain = null;
-
-            // Free MediaPlayer resources
-            if (ViewModel.Player != null)
-            {
-                // Unsubscribe from events
-                ViewModel.Player.PlaybackSession.PlaybackStateChanged -= PlaybackSession_PlaybackStateChanged;
-                ViewModel.Player.PlaybackSession.PositionChanged -= PlaybackSession_PositionChanged;
-                ViewModel.Player.PlaybackSession.SeekCompleted -= PlaybackSession_SeekCompleted;
-                ViewModel.Player.SourceChanged -= Player_SourceChanged;
-                ViewModel.Player.MediaOpened -= Player_MediaOpened;
-                ViewModel.Player.MediaEnded -= Player_MediaEnded;
-                ViewModel.Player.MediaFailed -= Player_MediaFailed;
-                ViewModel.Player.VideoFrameAvailable -= Player_VideoFrameAvailable;
-
-                // Free resources
-                ViewModel.Player.Source = null;
-                ViewModel.Player.Dispose();
-                ViewModel.Player = null;
-            }
         }
         #endregion
 
@@ -173,6 +162,300 @@ namespace MediaBase.Controls
         private void RenderAreaBorder_PointerWheelChanged(object sender, PointerRoutedEventArgs e)
         {
 
+        }
+        #endregion
+
+        #region Event Handlers (Commands - CanExecuteRequested)
+        private void EditorPlayCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void EditorPauseCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void EditorPreviousFrameCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void EditorNextFrameCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void EditorPreviousMarkerCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void EditorNextMarkerCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void EditorToggleActiveSelectionCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void EditorCutSelectedCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void EditorNewMarkerCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void EditorNewClipCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void EditorNewKeyframeCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void EditorPlaybackRateDecreaseCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void EditorPlaybackRateIncreaseCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void EditorPlaybackRateNormalCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void EditorCenterImageCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void EditorImageZoomFitCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void EditorImageZoomFullCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void EditorTimelineZoomOutCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void EditorTimelineZoomInCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+        #endregion
+
+        #region Event Handlers (Commands - ExecuteRequested)
+        private void EditorPlayCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void EditorPauseCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void EditorPreviousFrameCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void EditorNextFrameCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void EditorPreviousMarkerCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void EditorNextMarkerCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void EditorToggleActiveSelectionCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void EditorCutSelectedCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void EditorNewMarkerCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void EditorNewClipCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void EditorNewKeyframeCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void EditorPlaybackRateDecreaseCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void EditorPlaybackRateIncreaseCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void EditorPlaybackRateNormalCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void EditorCenterImageCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void EditorImageZoomFitCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void EditorImageZoomFullCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void EditorTimelineZoomOutCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void EditorTimelineZoomInCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+        #endregion
+
+        #region Private Methods
+        private void InitializeCommands()
+        {
+            ViewModel.EditorPlayCommand.CanExecuteRequested +=
+                EditorPlayCommand_CanExecuteRequested;
+            ViewModel.EditorPlayCommand.ExecuteRequested +=
+                EditorPlayCommand_ExecuteRequested;
+
+            ViewModel.EditorPauseCommand.CanExecuteRequested +=
+                EditorPauseCommand_CanExecuteRequested;
+            ViewModel.EditorPauseCommand.ExecuteRequested +=
+                EditorPauseCommand_ExecuteRequested;
+
+            ViewModel.EditorPreviousFrameCommand.CanExecuteRequested +=
+                EditorPreviousFrameCommand_CanExecuteRequested;
+            ViewModel.EditorPreviousFrameCommand.ExecuteRequested +=
+                EditorPreviousFrameCommand_ExecuteRequested;
+
+            ViewModel.EditorNextFrameCommand.CanExecuteRequested +=
+                EditorNextFrameCommand_CanExecuteRequested;
+            ViewModel.EditorNextFrameCommand.ExecuteRequested +=
+                EditorNextFrameCommand_ExecuteRequested;
+
+            ViewModel.EditorPreviousMarkerCommand.CanExecuteRequested +=
+                EditorPreviousMarkerCommand_CanExecuteRequested;
+            ViewModel.EditorPreviousMarkerCommand.ExecuteRequested +=
+                EditorPreviousMarkerCommand_ExecuteRequested;
+
+            ViewModel.EditorNextMarkerCommand.CanExecuteRequested +=
+                EditorNextMarkerCommand_CanExecuteRequested;
+            ViewModel.EditorNextMarkerCommand.ExecuteRequested +=
+                EditorNextMarkerCommand_ExecuteRequested;
+
+            ViewModel.EditorToggleActiveSelectionCommand.CanExecuteRequested +=
+                EditorToggleActiveSelectionCommand_CanExecuteRequested;
+            ViewModel.EditorToggleActiveSelectionCommand.ExecuteRequested +=
+                EditorToggleActiveSelectionCommand_ExecuteRequested;
+
+            ViewModel.EditorCutSelectedCommand.CanExecuteRequested +=
+                EditorCutSelectedCommand_CanExecuteRequested;
+            ViewModel.EditorCutSelectedCommand.ExecuteRequested +=
+                EditorCutSelectedCommand_ExecuteRequested;
+
+            ViewModel.EditorNewMarkerCommand.CanExecuteRequested +=
+                EditorNewMarkerCommand_CanExecuteRequested;
+            ViewModel.EditorNewMarkerCommand.ExecuteRequested +=
+                EditorNewMarkerCommand_ExecuteRequested;
+
+            ViewModel.EditorNewClipCommand.CanExecuteRequested +=
+                EditorNewClipCommand_CanExecuteRequested;
+            ViewModel.EditorNewClipCommand.ExecuteRequested +=
+                EditorNewClipCommand_ExecuteRequested;
+
+            ViewModel.EditorNewKeyframeCommand.CanExecuteRequested +=
+                EditorNewKeyframeCommand_CanExecuteRequested;
+            ViewModel.EditorNewKeyframeCommand.ExecuteRequested +=
+                EditorNewKeyframeCommand_ExecuteRequested;
+
+            ViewModel.EditorPlaybackRateDecreaseCommand.CanExecuteRequested +=
+                EditorPlaybackRateDecreaseCommand_CanExecuteRequested;
+            ViewModel.EditorPlaybackRateDecreaseCommand.ExecuteRequested +=
+                EditorPlaybackRateDecreaseCommand_ExecuteRequested;
+
+            ViewModel.EditorPlaybackRateIncreaseCommand.CanExecuteRequested +=
+                EditorPlaybackRateIncreaseCommand_CanExecuteRequested;
+            ViewModel.EditorPlaybackRateIncreaseCommand.ExecuteRequested +=
+                EditorPlaybackRateIncreaseCommand_ExecuteRequested;
+
+            ViewModel.EditorPlaybackRateNormalCommand.CanExecuteRequested +=
+                EditorPlaybackRateNormalCommand_CanExecuteRequested;
+            ViewModel.EditorPlaybackRateNormalCommand.ExecuteRequested +=
+                EditorPlaybackRateNormalCommand_ExecuteRequested;
+
+            ViewModel.EditorCenterImageCommand.CanExecuteRequested +=
+                EditorCenterImageCommand_CanExecuteRequested;
+            ViewModel.EditorCenterImageCommand.ExecuteRequested +=
+                EditorCenterImageCommand_ExecuteRequested;
+
+            ViewModel.EditorImageZoomFitCommand.CanExecuteRequested +=
+                EditorImageZoomFitCommand_CanExecuteRequested;
+            ViewModel.EditorImageZoomFitCommand.ExecuteRequested +=
+                EditorImageZoomFitCommand_ExecuteRequested;
+
+            ViewModel.EditorImageZoomFullCommand.CanExecuteRequested +=
+                EditorImageZoomFullCommand_CanExecuteRequested;
+            ViewModel.EditorImageZoomFullCommand.ExecuteRequested +=
+                EditorImageZoomFullCommand_ExecuteRequested;
+
+            ViewModel.EditorTimelineZoomOutCommand.CanExecuteRequested +=
+                EditorTimelineZoomOutCommand_CanExecuteRequested;
+            ViewModel.EditorTimelineZoomOutCommand.ExecuteRequested +=
+                EditorTimelineZoomOutCommand_ExecuteRequested;
+
+            ViewModel.EditorTimelineZoomInCommand.CanExecuteRequested +=
+                EditorTimelineZoomInCommand_CanExecuteRequested;
+            ViewModel.EditorTimelineZoomInCommand.ExecuteRequested +=
+                EditorTimelineZoomInCommand_ExecuteRequested;
         }
         #endregion
     }

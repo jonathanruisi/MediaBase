@@ -44,8 +44,10 @@ namespace MediaBase.ViewModel
         public override MediaContentType ContentType => MediaContentType.Video;
         #endregion
 
-        #region Constructor
-        public VideoFile()
+        #region Constructors
+        public VideoFile() : this(null) { }
+
+        public VideoFile(StorageFile file) : base(file)
         {
             _trimmedDuration = 0;
             _playableRanges = new List<(decimal start, decimal end)>();
@@ -75,12 +77,8 @@ namespace MediaBase.ViewModel
         #endregion
 
         #region Method Overrides (MediaFile)
-        public override async Task<bool> LoadFileFromPathAsync()
+        public override async Task<bool> LoadMediaPropertiesAsync()
         {
-            if (await base.LoadFileFromPathAsync() == false)
-                return false;
-
-            // Query video properties
             try
             {
                 var strWidth = "System.Video.FrameWidth";
@@ -95,9 +93,9 @@ namespace MediaBase.ViewModel
                 FramesPerSecond = (uint)propResultList[strFps] / 1000.0;
                 Duration = (ulong)propResultList[strDuration] / 10000000.0M;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                throw new InvalidOperationException("Unable to retrieve video properties", ex);
+                return false;
             }
 
             return true;

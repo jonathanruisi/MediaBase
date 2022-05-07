@@ -26,5 +26,17 @@ namespace MediaBase.ViewModel
         /// <b><c>false</c></b> otherwise.
         /// </returns>
         Task<bool> LoadFileFromPathAsync();
+
+        /// <summary>
+        /// Asynchronously loads the media properties
+        /// associated with this <see cref="IMediaFile"/>.
+        /// When overridden in a derived class,
+        /// use this method to populate media-related properties.
+        /// </summary>
+        /// <returns>
+        /// <b><c>true</c></b> if the properties were loaded successfully,
+        /// <b><c>false</c></b> otherwise.
+        /// </returns>
+        Task<bool> LoadMediaPropertiesAsync();
     }
 }

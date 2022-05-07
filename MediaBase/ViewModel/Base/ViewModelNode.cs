@@ -6,7 +6,7 @@ using System.Text;
 
 using Microsoft.Toolkit.Mvvm.Messaging;
 
-namespace MediaBase.ViewModel.Base
+namespace MediaBase.ViewModel
 {
     /// <summary>
     /// Represents a node in a hierarchical structure ideal for
@@ -20,7 +20,6 @@ namespace MediaBase.ViewModel.Base
     {
         #region Fields
         private ViewModelNode _parent;
-        private bool _isSelected;
         #endregion
 
         #region Properties
@@ -45,20 +44,6 @@ namespace MediaBase.ViewModel.Base
         public ObservableCollection<ViewModelNode> Children { get; }
 
         /// <summary>
-        /// Gets or sets a value which indicates if the current
-        /// <see cref="ViewModelNode"/> is selected.
-        /// </summary>
-        /// <remarks>
-        /// This value does not affect the logic of this type.
-        /// It exists as a convenience for data binding scenarios.
-        /// </remarks>
-        public bool IsSelected
-        {
-            get => _isSelected;
-            set => SetProperty(ref _isSelected, value, true);
-        }
-
-        /// <summary>
         /// Gets the depth of this node within the tree relative to the root node.
 		/// A value of zero indicates that this node is the root.
         /// </summary>
@@ -81,7 +66,6 @@ namespace MediaBase.ViewModel.Base
         #region Constructor
         protected ViewModelNode()
         {
-            _isSelected = false;
             Children = new ObservableCollection<ViewModelNode>();
             Children.CollectionChanged += Children_CollectionChanged;
         }

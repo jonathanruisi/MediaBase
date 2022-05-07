@@ -6,4 +6,12 @@
         Image,
         Video
     }
+
+    public enum EditorMode
+    {
+        None,
+        View,
+        Trim,
+        Edit
+    }
 }
