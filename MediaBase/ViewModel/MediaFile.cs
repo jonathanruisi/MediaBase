@@ -4,6 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
+
+using JLR.Utility.WinUI.ViewModel;
 
 using Windows.Storage;
 
@@ -18,7 +21,7 @@ namespace MediaBase.ViewModel
         #endregion
 
         #region Properties
-        [ViewModelObject(nameof(Path), System.Xml.XmlNodeType.Element)]
+        [ViewModelObject(nameof(Path), XmlNodeType.Element)]
         public string Path
         {
             get => _path;

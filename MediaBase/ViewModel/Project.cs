@@ -8,7 +8,10 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 
+using JLR.Utility.WinUI.ViewModel;
+
 using Microsoft.Toolkit.Mvvm.Input;
+using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 
@@ -195,9 +198,9 @@ namespace MediaBase.ViewModel
                 WriteXml(writer);
                 await writer.FlushAsync();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                success = false;
+                throw new Exception($"Error writing XML: {ex.Message}");
             }
             finally
             {
@@ -212,13 +215,35 @@ namespace MediaBase.ViewModel
                 if (tempBackup != null)
                     await tempBackup.DeleteAsync(StorageDeleteOption.PermanentDelete);
 
-                // TODO: Re-register for view model general change notification
+                // Re-register for view model general change notification
+                RegisterForViewModelSerializedPropertyChangeNotification();
             }
             else
             {
                 if (tempBackup != null)
                     await tempBackup.MoveAndReplaceAsync(File);
             }
+        }
+        #endregion
+
+        #region Method Overrides (ObservableRecipient)
+        protected override void OnActivated()
+        {
+            base.OnActivated();
+            RegisterForViewModelSerializedPropertyChangeNotification();
+        }
+
+        protected override void OnDeactivated()
+        {
+            base.OnDeactivated();
+
+            Messenger.Unregister<SerializedPropertyChangedMessage>(this);
+
+            _hasUnsavedChanges = false;
+            _file = null;
+            MediaLibrary.Children.Clear();
+            _activeProjectNode = MediaLibrary;
+            _activeMediaSource = null;
         }
         #endregion
 
@@ -433,7 +458,7 @@ namespace MediaBase.ViewModel
             {
                 Label = "Previous Frame",
                 Description = "Seek back one frame",
-                IconSource = new SymbolIconSource { Symbol = (Symbol)0xE76B }
+                IconSource = new SymbolIconSource { Symbol = Symbol.Previous }
             };
 
             EditorPreviousFrameCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
@@ -446,7 +471,7 @@ namespace MediaBase.ViewModel
             {
                 Label = "Next Frame",
                 Description = "Seek forward one frame",
-                IconSource = new SymbolIconSource { Symbol = (Symbol)0xE76C }
+                IconSource = new SymbolIconSource { Symbol = Symbol.Next }
             };
 
             EditorNextFrameCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
@@ -459,7 +484,7 @@ namespace MediaBase.ViewModel
             {
                 Label = "Previous Marker",
                 Description = "Seek to the previous marker",
-                IconSource = new SymbolIconSource { Symbol = Symbol.Previous }
+                IconSource = new SymbolIconSource { Symbol = (Symbol)0xE76B }
             };
 
             EditorPreviousMarkerCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
@@ -473,7 +498,7 @@ namespace MediaBase.ViewModel
             {
                 Label = "Next Marker",
                 Description = "Seek to the next marker",
-                IconSource = new SymbolIconSource { Symbol = Symbol.Next }
+                IconSource = new SymbolIconSource { Symbol = (Symbol)0xE76C }
             };
 
             EditorNextMarkerCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
@@ -678,30 +703,18 @@ namespace MediaBase.ViewModel
             };
             #endregion
         }
-        #endregion
 
-        #region Method Overrides (ObservableRecipient)
-        protected override void OnActivated()
+        private void RegisterForViewModelSerializedPropertyChangeNotification()
         {
-            base.OnActivated();
+            Messenger.Register<SerializedPropertyChangedMessage>(this, (r, m) =>
+            {
+                HasUnsavedChanges = true;
 
-            // TODO: Register to receive messages
-        }
-
-        protected override void OnDeactivated()
-        {
-            base.OnDeactivated();
-
-            // TODO: Unregister message receipt
-
-            _hasUnsavedChanges = false;
-            _file = null;
-            MediaLibrary.Children.Clear();
-            _activeProjectNode = MediaLibrary;
-            _activeMediaSource = null;
+                // Unregister from further messages.
+                // We will re-register when project is saved.
+                Messenger.Unregister<SerializedPropertyChangedMessage>(this);
+            });
         }
         #endregion
-
-
     }
 }

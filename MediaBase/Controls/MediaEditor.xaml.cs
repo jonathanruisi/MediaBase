@@ -7,6 +7,8 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using MediaBase.ViewModel;
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Toolkit.Mvvm.Messaging;
+using Microsoft.Toolkit.Mvvm.Messaging.Messages;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -53,6 +55,7 @@ namespace MediaBase.Controls
             _player.PlaybackSession.PositionChanged += PlaybackSession_PositionChanged;
             _player.PlaybackSession.SeekCompleted += PlaybackSession_SeekCompleted;
 
+            RegisterMessages();
             InitializeCommands();
         }
         #endregion
@@ -456,6 +459,25 @@ namespace MediaBase.Controls
                 EditorTimelineZoomInCommand_CanExecuteRequested;
             ViewModel.EditorTimelineZoomInCommand.ExecuteRequested +=
                 EditorTimelineZoomInCommand_ExecuteRequested;
+        }
+
+        private void RegisterMessages()
+        {
+            var messenger = App.Current.Services.GetService<IMessenger>();
+
+            messenger.Register<PropertyChangedMessage<MBMediaSource>>(this, (r, m) =>
+            {
+                if (m.Sender != ViewModel || m.PropertyName != nameof(Project.ActiveMediaSource))
+                    return;
+
+                EditorCommandBar.Visibility = ViewModel.ActiveMediaSource != null
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
+
+                Timeline.Visibility = ViewModel.ActiveMediaSource.Duration > 0
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
+            });
         }
         #endregion
     }

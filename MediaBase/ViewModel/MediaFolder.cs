@@ -5,11 +5,18 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 
+using JLR.Utility.WinUI.ViewModel;
+
 namespace MediaBase.ViewModel
 {
     [ViewModelObject("Folder", XmlNodeType.Element)]
     public sealed class MediaFolder : ViewModelNode
     {
+        public MediaFolder() : this(string.Empty) { }
 
+        public MediaFolder(string name)
+        {
+            Name = name;
+        }
     }
 }

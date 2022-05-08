@@ -13,33 +13,6 @@
     Loaded="UserControl_Loaded"
     Unloaded="UserControl_Unloaded">
 
-    <UserControl.Resources>
-        <!-- Value Converters -->
-        <toolkit_converters:EmptyObjectToObjectConverter x:Key="ObjectToVisibilityConverter">
-            <toolkit_converters:EmptyObjectToObjectConverter.EmptyValue>
-                <xaml:Visibility>Collapsed</xaml:Visibility>
-            </toolkit_converters:EmptyObjectToObjectConverter.EmptyValue>
-            <toolkit_converters:EmptyObjectToObjectConverter.NotEmptyValue>
-                <xaml:Visibility>Visible</xaml:Visibility>
-            </toolkit_converters:EmptyObjectToObjectConverter.NotEmptyValue>
-        </toolkit_converters:EmptyObjectToObjectConverter>
-
-        <toolkit_converters:DoubleToVisibilityConverter x:Key="GreaterThanZeroToVisibilityConverter">
-            <toolkit_converters:DoubleToVisibilityConverter.GreaterThan>
-                0.0
-            </toolkit_converters:DoubleToVisibilityConverter.GreaterThan>
-            <toolkit_converters:DoubleToVisibilityConverter.TrueValue>
-                <xaml:Visibility>Visible</xaml:Visibility>
-            </toolkit_converters:DoubleToVisibilityConverter.TrueValue>
-            <toolkit_converters:DoubleToVisibilityConverter.FalseValue>
-                <xaml:Visibility>Collapsed</xaml:Visibility>
-            </toolkit_converters:DoubleToVisibilityConverter.FalseValue>
-            <toolkit_converters:DoubleToVisibilityConverter.NullValue>
-                <xaml:Visibility>Collapsed</xaml:Visibility>
-            </toolkit_converters:DoubleToVisibilityConverter.NullValue>
-        </toolkit_converters:DoubleToVisibilityConverter>
-    </UserControl.Resources>
-    
     <Grid Background="{x:Bind Background}"
           BorderBrush="{x:Bind BorderBrush}"
           BorderThickness="{x:Bind BorderThickness}"
@@ -71,18 +44,14 @@
         <controls:MediaTimeline x:Name="Timeline" MinHeight="100"
                                 Grid.Row="1" Grid.Column="0"
                                 PositionFollowMode="Advance"
-                                Visibility="{x:Bind ViewModel.ActiveMediaSource.Duration,
-                                                    Converter={StaticResource GreaterThanZeroToVisibilityConverter},
-                                                    Mode=OneWay}"/>
-        
+                                Visibility="Collapsed"/>
+
         <!-- Command Bar -->
         <CommandBar x:Name="EditorCommandBar" Grid.Row="2"
                     DefaultLabelPosition="Collapsed"
                     IsDynamicOverflowEnabled="False"
                     FlowDirection="RightToLeft"
-                    Visibility="{x:Bind ViewModel.ActiveMediaSource,
-                                        Converter={StaticResource ObjectToVisibilityConverter},
-                                        Mode=OneWay}">
+                    Visibility="Collapsed">
             <CommandBar.PrimaryCommands>
                 <AppBarButton Width="40" Command="{x:Bind ViewModel.EditorCenterImageCommand}"/>
                 <AppBarButton Width="40" Command="{x:Bind ViewModel.EditorImageZoomFullCommand}"/>

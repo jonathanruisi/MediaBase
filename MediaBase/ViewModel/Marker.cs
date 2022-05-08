@@ -2,6 +2,7 @@
 using System.Xml;
 
 using JLR.Utility.WinUI.Controls;
+using JLR.Utility.WinUI.ViewModel;
 
 namespace MediaBase.ViewModel
 {

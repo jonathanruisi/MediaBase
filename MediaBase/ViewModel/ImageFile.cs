@@ -7,6 +7,10 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 
+using JLR.Utility.WinUI.ViewModel;
+
+using Microsoft.Toolkit.Mvvm.Messaging;
+
 using Windows.Media.Core;
 using Windows.Media.Editing;
 using Windows.Media.MediaProperties;
@@ -15,7 +19,7 @@ using Windows.Storage;
 
 namespace MediaBase.ViewModel
 {
-    [ViewModelObject("Image File", XmlNodeType.Element)]
+    [ViewModelObject("Image", XmlNodeType.Element)]
     public class ImageFile : MediaFile, IImageSource
     {
         #region Properties
@@ -50,6 +54,8 @@ namespace MediaBase.ViewModel
         #region Event Handlers
         private void Keyframes_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
+            NotifySerializedCollectionChanged(nameof(Keyframes));
+
             if (Keyframes.Count == 0)
                 return;
 

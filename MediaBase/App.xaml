@@ -6,8 +6,11 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+                <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls"/>
+                
                 <!-- Other merged dictionaries here -->
+                <ResourceDictionary Source="ms-appx:///Utility.WinUI/Controls/TransportElement.xaml"/>
+                <ResourceDictionary Source="ms-appx:///Utility.WinUI/Controls/MediaTimeline.xaml"/>
             </ResourceDictionary.MergedDictionaries>
             <!-- Other app resources here -->
         </ResourceDictionary>

@@ -5,13 +5,15 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 
+using JLR.Utility.WinUI.ViewModel;
+
 namespace MediaBase.ViewModel
 {
     /// <summary>
     /// Defines an image's scale and translation at
     /// a specific point in time.
     /// </summary>
-    [ViewModelObject("Image Keyframe", XmlNodeType.Element)]
+    [ViewModelObject("Keyframe", XmlNodeType.Element)]
     public sealed class ImageAnimationKeyframe : ViewModelElement
     {
         #region Fields

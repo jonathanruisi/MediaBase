@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Threading.Tasks;
 using System.Xml;
+
+using JLR.Utility.WinUI.ViewModel;
 
 using Microsoft.Toolkit.Mvvm.Messaging;
 
@@ -129,7 +132,7 @@ namespace MediaBase.ViewModel
         #region Event Handlers
         private void Tags_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
-            var tagMessage = new ViewModelTagCollectionChangedMessage();
+            var tagMessage = new MediaSourceTagCollectionChangedMessage();
 
             if (e.OldItems != null)
             {
@@ -144,6 +147,7 @@ namespace MediaBase.ViewModel
             }
 
             Messenger.Send(tagMessage);
+            NotifySerializedCollectionChanged(nameof(Tags));
         }
         #endregion
 
@@ -156,5 +160,24 @@ namespace MediaBase.ViewModel
             return Guid.Parse(content);
         }
         #endregion
+    }
+
+    public sealed class MediaSourceTagCollectionChangedMessage
+    {
+        public List<int> AddedTags { get; }
+        public List<int> RemovedTags { get; }
+
+        public MediaSourceTagCollectionChangedMessage()
+        {
+            AddedTags = new List<int>();
+            RemovedTags = new List<int>();
+        }
+
+        public MediaSourceTagCollectionChangedMessage(IList<int> addedTags,
+                                                    IList<int> removedTags) : this()
+        {
+            AddedTags.AddRange(addedTags);
+            RemovedTags.AddRange(removedTags);
+        }
     }
 }

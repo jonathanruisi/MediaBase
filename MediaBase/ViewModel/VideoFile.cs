@@ -7,6 +7,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 
+using JLR.Utility.WinUI.ViewModel;
+
 using Windows.Media.Core;
 using Windows.Media.Editing;
 using Windows.Media.MediaProperties;
@@ -16,7 +18,7 @@ using Windows.Storage.Streams;
 
 namespace MediaBase.ViewModel
 {
-    [ViewModelObject("Video File", XmlNodeType.Element)]
+    [ViewModelObject("Video", XmlNodeType.Element)]
     public class VideoFile : MediaFile, IVideoSource
     {
         #region Fields
@@ -67,12 +69,13 @@ namespace MediaBase.ViewModel
         #region Event Handlers
         private void Markers_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
-
+            NotifySerializedCollectionChanged(nameof(Markers));
         }
 
         private void Cuts_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
             EvaluateCuts();
+            NotifySerializedCollectionChanged(nameof(Cuts));
         }
         #endregion
 

@@ -11,6 +11,7 @@ using CommunityToolkit.WinUI.UI.Controls;
 
 using JLR.Utility.WinUI;
 using JLR.Utility.WinUI.Dialogs;
+using JLR.Utility.WinUI.ViewModel;
 
 using MediaBase.ViewModel;
 
@@ -160,7 +161,7 @@ namespace MediaBase
                 return;
 
             // Read project file and populate project browser
-            var newProject = (Project)await ViewModelElement.ReadFromAsync(file);
+            var newProject = (Project)await ViewModelElement.FromXmlFileAsync(file);
             if (newProject == null)
                 return;
 
@@ -180,13 +181,24 @@ namespace MediaBase
         private async void ProjectSaveCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
             if (ViewModel.File == null || !ViewModel.File.IsAvailable)
-                ViewModel.File = await PromptSaveLocation();
+            {
+                var saveFile = await PromptSaveLocation();
+                if (saveFile == null || !saveFile.IsAvailable)
+                    return;
+
+                ViewModel.File = saveFile;
+            }
+
             await ViewModel.SaveAsync();
         }
 
         private async void ProjectSaveAsCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            ViewModel.File = await PromptSaveLocation();
+            var saveFile = await PromptSaveLocation();
+            if (saveFile == null || !saveFile.IsAvailable)
+                return;
+
+            ViewModel.File = saveFile;
             await ViewModel.SaveAsync();
         }
 
@@ -204,11 +216,12 @@ namespace MediaBase
         #region Event Handlers (Window & Title Bar)
         private void MainWindow_Activated(object sender, WindowActivatedEventArgs args)
         {
-            AppTitleTextBlock.Text = DefaultAppTitle;
+            
         }
 
         private async void MainWindow_Closed(object sender, WindowEventArgs args)
         {
+            // TODO: This doesn't work
             _ = await PromptToSaveChanges();
         }
 
@@ -304,46 +317,26 @@ namespace MediaBase
         {
             var messenger = App.Current.Services.GetService<IMessenger>();
 
-            // Project.Name
-            messenger.Register<PropertyChangedMessage<string>>(this,
-                (r, m) =>
-                {
-                    if (m.Sender != ViewModel || m.PropertyName != nameof(Project.Name))
-                        return;
-
-                    var str = new StringBuilder(DefaultAppTitle);
-                    if (!string.IsNullOrEmpty(m.NewValue))
-                        str.Append($": {m.NewValue}");
-                    AppTitleTextBlock.Text = str.ToString();
-                });
-
             // Project.HasUnsavedChanges
-            messenger.Register<PropertyChangedMessage<bool>>(this,
-                (r, m) =>
-                {
-                    if (m.PropertyName != nameof(Project.HasUnsavedChanges))
-                        return;
+            messenger.Register<PropertyChangedMessage<bool>>(this, (r, m) =>
+            {
+                if (m.Sender != ViewModel || m.PropertyName != nameof(Project.HasUnsavedChanges))
+                    return;
 
-                    if (m.NewValue && AppTitleTextBlock.Text.Last() != '*')
-                        AppTitleTextBlock.Text += '*';
-                    else
-                    {
-                        var index = AppTitleTextBlock.Text.LastIndexOf('*');
-                        if (index > 0)
-                            AppTitleTextBlock.Text = AppTitleTextBlock.Text.Remove(index, 1);
-                    }
-                });
+                AppTitleUnsavedIndicatorTextBlock.Visibility = m.NewValue
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
+            });
 
             // Set info bar message
-            messenger.Register<SetInfoBarMessage>(this,
-                (r, m) =>
-                {
-                    AppInfoBar.Title = m.Title;
-                    AppInfoBar.Message = m.Message;
-                    AppInfoBar.Severity = m.Severity;
-                    AppInfoBar.IsClosable = m.IsCloseable;
-                    AppInfoBar.IsOpen = true;
-                });
+            messenger.Register<SetInfoBarMessage>(this, (r, m) =>
+            {
+                AppInfoBar.Title = m.Title;
+                AppInfoBar.Message = m.Message;
+                AppInfoBar.Severity = m.Severity;
+                AppInfoBar.IsClosable = m.IsCloseable;
+                AppInfoBar.IsOpen = true;
+            });
         }
 
         private async Task LoadMediaFiles()
@@ -489,7 +482,8 @@ namespace MediaBase
                                 MenuColumn.ActualWidth) * scaleAdjustment);
             dragRect.Y = 0;
             dragRect.Width = (int)((LeftDragColumn.ActualWidth +
-                                    AppTitleTextBlock.ActualWidth +
+                                    AppTitleProjectNameTextBlock.ActualWidth +
+                                    AppTitleUnsavedIndicatorTextBlock.ActualWidth +
                                     RightDragColumn.ActualWidth) * scaleAdjustment);
             dragRect.Height = (int)(AppTitleBar.ActualHeight * scaleAdjustment);
             dragRects.Add(dragRect);
