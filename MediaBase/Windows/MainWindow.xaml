@@ -113,14 +113,14 @@
             <toolkit:Expander Grid.Row="1" Grid.Column="1"
                               ExpandDirection="Down" IsExpanded="False"
                               Header="Properties">
-                <Pivot Height="300">
-                    
-                </Pivot>
+                <controls:PropertyEditor x:Name="PropertyEditor" Height="300"
+                                         HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
             </toolkit:Expander>
 
             <!-- Media Editor -->
             <controls:MediaEditor x:Name="Editor" Grid.Row="0" Grid.Column="1"
-                                  HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                                  HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                  Source="{x:Bind ViewModel.ActiveMediaSource, Mode=OneWay}"/>
         </Grid>
 
         <!-- Info Bar -->

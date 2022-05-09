@@ -59,6 +59,7 @@ namespace MediaBase
 
             Activated += MainWindow_Activated;
             Closed += MainWindow_Closed;
+            SizeChanged += MainWindow_SizeChanged;
 
             _appWindow = this.GetAppWindowForCurrentWindow();
             _appWindow.Changed += AppWindow_Changed;
@@ -223,6 +224,11 @@ namespace MediaBase
         {
             // TODO: This doesn't work
             _ = await PromptToSaveChanges();
+        }
+
+        private void MainWindow_SizeChanged(object sender, WindowSizeChangedEventArgs args)
+        {
+            // TODO: Do something here so the window respects MinWidth and MinHeight of the XAML layout
         }
 
         private void AppTitleBar_Loaded(object sender, RoutedEventArgs e)

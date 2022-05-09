@@ -5,6 +5,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
+    xmlns:local="using:MediaBase.Controls"
     xmlns:xaml="using:Microsoft.UI.Xaml"
     xmlns:win2d="using:Microsoft.Graphics.Canvas.UI.Xaml"
     xmlns:toolkit_converters="using:CommunityToolkit.WinUI.UI.Converters"
@@ -44,7 +45,8 @@
         <controls:MediaTimeline x:Name="Timeline" MinHeight="100"
                                 Grid.Row="1" Grid.Column="0"
                                 PositionFollowMode="Advance"
-                                Visibility="Collapsed"/>
+                                Visibility="Collapsed"
+                                FramesPerSecond="{x:Bind RefreshRate, Mode=OneWay}"/>
 
         <!-- Command Bar -->
         <CommandBar x:Name="EditorCommandBar" Grid.Row="2"

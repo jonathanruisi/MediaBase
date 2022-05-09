@@ -33,6 +33,7 @@ namespace MediaBase
         public new static App Current => (App)Application.Current;
         public static MainWindow Window { get; private set; }
         public static IntPtr WindowHandle { get; private set; }
+        public static int RefreshRate => 120;   // TODO: Query this value from the system
         public IServiceProvider Services { get; }
         #endregion
 
