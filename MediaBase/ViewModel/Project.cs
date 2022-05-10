@@ -125,12 +125,12 @@ namespace MediaBase.ViewModel
         public XamlUICommand EditorPlaybackRateDecreaseCommand { get; private set; }
         public XamlUICommand EditorPlaybackRateIncreaseCommand { get; private set; }
         public XamlUICommand EditorPlaybackRateNormalCommand { get; private set; }
-        public XamlUICommand EditorCenterImageCommand { get; private set; }
-        public XamlUICommand EditorImageZoomFitCommand { get; private set; }
-        public XamlUICommand EditorImageZoomFullCommand { get; private set; }
+        public XamlUICommand EditorCenterFrameCommand { get; private set; }
+        public XamlUICommand EditorFrameZoomFitCommand { get; private set; }
+        public XamlUICommand EditorFrameZoomFullCommand { get; private set; }
         public XamlUICommand EditorTimelineZoomOutCommand { get; private set; }
         public XamlUICommand EditorTimelineZoomInCommand { get; private set; }
-        public XamlUICommand EditorAnimateImageCommand { get; private set; }
+        public XamlUICommand EditorAnimateMediaCommand { get; private set; }
         public XamlUICommand EditorTrimMediaCommand { get; private set; }
         public XamlUICommand EditorMarkMediaCommand { get; private set; }
         #endregion
@@ -239,11 +239,11 @@ namespace MediaBase.ViewModel
 
             Messenger.Unregister<SerializedPropertyChangedMessage>(this);
 
-            _hasUnsavedChanges = false;
-            _file = null;
             MediaLibrary.Children.Clear();
             _activeProjectNode = MediaLibrary;
             _activeMediaSource = null;
+            _hasUnsavedChanges = false;
+            _file = null;
         }
         #endregion
 
@@ -614,41 +614,41 @@ namespace MediaBase.ViewModel
                 IsEnabled = true
             });
 
-            EditorCenterImageCommand = new XamlUICommand
+            EditorCenterFrameCommand = new XamlUICommand
             {
-                Label = "Center Image",
-                Description = "Center image in window",
+                Label = "Center Frame",
+                Description = "Center frame in window",
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xE799 }
             };
 
-            EditorCenterImageCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            EditorCenterFrameCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.C,
                 IsEnabled = true
             });
 
-            EditorImageZoomFitCommand = new XamlUICommand
+            EditorFrameZoomFitCommand = new XamlUICommand
             {
                 Label = "Zoom Fit",
                 Description = "Zoom to fit current view",
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xE9A6 }
             };
 
-            EditorImageZoomFitCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            EditorFrameZoomFitCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.Number0,
                 Modifiers = VirtualKeyModifiers.Control,
                 IsEnabled = true
             });
 
-            EditorImageZoomFullCommand = new XamlUICommand
+            EditorFrameZoomFullCommand = new XamlUICommand
             {
                 Label = "Zoom Full",
                 Description = "Zoom to actual size",
                 IconSource = new SymbolIconSource { Symbol = Symbol.FullScreen }
             };
 
-            EditorImageZoomFullCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            EditorFrameZoomFullCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.Number1,
                 Modifiers = VirtualKeyModifiers.Control,
@@ -681,24 +681,24 @@ namespace MediaBase.ViewModel
                 IsEnabled = true
             });
 
-            EditorAnimateImageCommand = new XamlUICommand
+            EditorAnimateMediaCommand = new XamlUICommand
             {
-                Label = "Animate Image",
-                Description = "Animate current image",
+                Label = "Animate",
+                Description = "Animate current media",
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xE805 }
             };
 
             EditorTrimMediaCommand = new XamlUICommand
             {
                 Label = "Trim",
-                Description = "Trim current media item",
+                Description = "Trim current media",
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xE78A }
             };
 
             EditorMarkMediaCommand = new XamlUICommand
             {
                 Label = "Mark",
-                Description = "Define tags, chapters, and clips for the current media item",
+                Description = "Define tags, chapters, and clips for the current media",
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xED63 }
             };
             #endregion

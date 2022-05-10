@@ -18,65 +18,20 @@ using Windows.Storage.Streams;
 
 namespace MediaBase.ViewModel
 {
+    /// <summary>
+    /// Contains properties and methods needed for accessing video files
+    /// </summary>
     [ViewModelObject("Video", XmlNodeType.Element)]
-    public class VideoFile : MediaFile, IVideoSource
+    public class VideoFile : MediaFile
     {
-        #region Fields
-        private decimal _trimmedDuration;
-        private List<(decimal start, decimal end)> _playableRanges;
-        #endregion
-
         #region Properties
-        [ViewModelCollection(nameof(Markers), "Marker")]
-        public ObservableCollection<Marker> Markers { get; }
-
-        [ViewModelCollection(nameof(Cuts), "Cut", true, true)]
-        public ObservableCollection<(decimal start, decimal end)> Cuts { get; }
-
-        /// <summary>
-        /// Gets a value indicating what the duration of the
-        /// video will be after all cuts are applied.
-        /// </summary>
-        public decimal TrimmedDuration
-        {
-            get => _trimmedDuration;
-            private set => SetProperty(ref _trimmedDuration, value);
-        }
-
         public override MediaContentType ContentType => MediaContentType.Video;
         #endregion
 
         #region Constructors
         public VideoFile() : this(null) { }
 
-        public VideoFile(StorageFile file) : base(file)
-        {
-            _trimmedDuration = 0;
-            _playableRanges = new List<(decimal start, decimal end)>();
-
-            Markers = new ObservableCollection<Marker>();
-            Markers.CollectionChanged += Markers_CollectionChanged;
-
-            Cuts = new ObservableCollection<(decimal start, decimal end)>();
-            Cuts.CollectionChanged += Cuts_CollectionChanged;
-        }
-        #endregion
-
-        #region Public Methods
-        // TODO: Implement a static method to create a new IVideoSource (like a VideoClip or something) from the cuts applied to this VideoFile
-        #endregion
-
-        #region Event Handlers
-        private void Markers_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
-        {
-            NotifySerializedCollectionChanged(nameof(Markers));
-        }
-
-        private void Cuts_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
-        {
-            EvaluateCuts();
-            NotifySerializedCollectionChanged(nameof(Cuts));
-        }
+        public VideoFile(StorageFile file) : base(file) { }
         #endregion
 
         #region Method Overrides (MediaFile)
@@ -110,13 +65,13 @@ namespace MediaBase.ViewModel
         {
             var composition = new MediaComposition();
 
-            if (_playableRanges.Count == 0)
+            if (PlayableRanges.Count == 0)
             {
                 composition.Clips.Add(await MediaClip.CreateFromFileAsync(File));
             }
             else
             {
-                foreach (var range in _playableRanges)
+                foreach (var range in PlayableRanges)
                 {
                     var clip = await MediaClip.CreateFromFileAsync(File);
                     clip.TrimTimeFromStart = TimeSpan.FromSeconds(decimal.ToDouble(range.start));
@@ -128,45 +83,6 @@ namespace MediaBase.ViewModel
             var encodingProfile = MediaEncodingProfile.CreateHevc(VideoEncodingQuality.Uhd2160p);
             var mediaStreamSource = composition.GenerateMediaStreamSource(encodingProfile);
             return MediaSource.CreateFromMediaStreamSource(mediaStreamSource);
-        }
-        #endregion
-
-        #region Private Methods
-        private void EvaluateCuts()
-        {
-            decimal lastStart = 0;
-            _playableRanges.Clear();
-
-            foreach (var cut in Cuts.OrderBy(x => x.start))
-            {
-                if (lastStart >= Duration)
-                    break;
-
-                if (cut.start <= 0)
-                {
-                    lastStart = cut.end;
-                    continue;
-                }
-
-                _playableRanges.Add((lastStart, cut.start));
-                lastStart = cut.end;
-            }
-
-            if (lastStart > 0 && lastStart < Duration)
-                _playableRanges.Add((lastStart, Duration));
-
-            if (_playableRanges.Count == 0)
-                TrimmedDuration = Duration;
-            else
-            {
-                decimal trimmedDuration = 0;
-                foreach (var range in _playableRanges)
-                {
-                    trimmedDuration += range.end - range.start;
-                }
-
-                TrimmedDuration = trimmedDuration;
-            }
         }
         #endregion
     }

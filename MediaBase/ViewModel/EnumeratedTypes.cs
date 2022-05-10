@@ -12,6 +12,7 @@
         None,
         View,
         Trim,
-        Edit
+        Edit,
+        Animate
     }
 }

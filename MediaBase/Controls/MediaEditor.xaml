@@ -8,6 +8,7 @@
     xmlns:local="using:MediaBase.Controls"
     xmlns:xaml="using:Microsoft.UI.Xaml"
     xmlns:win2d="using:Microsoft.Graphics.Canvas.UI.Xaml"
+    xmlns:toolkit_controls="using:CommunityToolkit.WinUI.UI.Controls"
     xmlns:toolkit_converters="using:CommunityToolkit.WinUI.UI.Converters"
     xmlns:controls="using:JLR.Utility.WinUI.Controls"
     xmlns:viewmodel="using:MediaBase.ViewModel"
@@ -55,30 +56,48 @@
                     FlowDirection="RightToLeft"
                     Visibility="Collapsed">
             <CommandBar.PrimaryCommands>
-                <AppBarButton Width="40" Command="{x:Bind ViewModel.EditorCenterImageCommand}"/>
-                <AppBarButton Width="40" Command="{x:Bind ViewModel.EditorImageZoomFullCommand}"/>
-                <AppBarButton Width="40" Command="{x:Bind ViewModel.EditorImageZoomFitCommand}"/>
-                <AppBarButton Width="40" Command="{x:Bind ViewModel.EditorTimelineZoomOutCommand}"/>
-                <AppBarButton Width="40" Command="{x:Bind ViewModel.EditorTimelineZoomInCommand}"/>
-                <AppBarSeparator/>
-                <AppBarButton Width="40" Command="{x:Bind ViewModel.EditorPlaybackRateIncreaseCommand}"/>
-                <AppBarButton Width="40" Command="{x:Bind ViewModel.EditorPlaybackRateNormalCommand}"/>
-                <AppBarButton Width="40" Command="{x:Bind ViewModel.EditorPlaybackRateDecreaseCommand}"/>
-                <AppBarSeparator/>
-                <AppBarButton Width="40" Command="{x:Bind ViewModel.EditorCutSelectedCommand}"/>
-                <AppBarButton Width="40" Command="{x:Bind ViewModel.EditorNewKeyframeCommand}"/>
-                <AppBarButton Width="40" Command="{x:Bind ViewModel.EditorNewClipCommand}"/>
-                <AppBarButton Width="40" Command="{x:Bind ViewModel.EditorNewMarkerCommand}"/>
-                <AppBarToggleButton Width="40"
+                <AppBarButton x:Name="CenterImageButton" Width="40"
+                              Command="{x:Bind ViewModel.EditorCenterFrameCommand}"/>
+                <AppBarButton x:Name="ImageZoomFullButton" Width="40"
+                              Command="{x:Bind ViewModel.EditorFrameZoomFullCommand}"/>
+                <AppBarButton x:Name="ImageZoomFitButton" Width="40"
+                              Command="{x:Bind ViewModel.EditorFrameZoomFitCommand}"/>
+                <AppBarButton x:Name="TimelineZoomOutButton" Width="40"
+                              Command="{x:Bind ViewModel.EditorTimelineZoomOutCommand}"/>
+                <AppBarButton x:Name="TimelineZoomInButton" Width="40"
+                              Command="{x:Bind ViewModel.EditorTimelineZoomInCommand}"/>
+                <AppBarSeparator x:Name="ZoomAndPanButtonSeparator"/>
+                <AppBarButton x:Name="PlaybackRateIncreaseButton" Width="40"
+                              Command="{x:Bind ViewModel.EditorPlaybackRateIncreaseCommand}"/>
+                <AppBarButton x:Name="PlaybackRateNormalButton" Width="40"
+                              Command="{x:Bind ViewModel.EditorPlaybackRateNormalCommand}"/>
+                <AppBarButton x:Name="PlaybackRateDecreaseButton" Width="40"
+                              Command="{x:Bind ViewModel.EditorPlaybackRateDecreaseCommand}"/>
+                <AppBarSeparator x:Name="PlaybackRateButtonSeparator"/>
+                <AppBarButton x:Name="CutSelectedButton" Width="40"
+                              Command="{x:Bind ViewModel.EditorCutSelectedCommand}"/>
+                <AppBarButton x:Name="NewKeyframeButton" Width="40"
+                              Command="{x:Bind ViewModel.EditorNewKeyframeCommand}"/>
+                <AppBarButton x:Name="NewClipButton" Width="40"
+                              Command="{x:Bind ViewModel.EditorNewClipCommand}"/>
+                <AppBarButton x:Name="NewMarkerButton" Width="40"
+                              Command="{x:Bind ViewModel.EditorNewMarkerCommand}"/>
+                <AppBarToggleButton x:Name="ToggleActiveSelectionButton" Width="40"
                                     Command="{x:Bind ViewModel.EditorToggleActiveSelectionCommand}"
                                     IsChecked="{x:Bind Timeline.IsSelectionEnabled, Mode=TwoWay}"/>
-                <AppBarSeparator/>
-                <AppBarButton Width="40" Command="{x:Bind ViewModel.EditorNextMarkerCommand}"/>
-                <AppBarButton Width="40" Command="{x:Bind ViewModel.EditorPreviousMarkerCommand}"/>
-                <AppBarButton Width="40" Command="{x:Bind ViewModel.EditorNextFrameCommand}"/>
-                <AppBarButton Width="40" Command="{x:Bind ViewModel.EditorPreviousFrameCommand}"/>
-                <AppBarButton Width="40" Command="{x:Bind ViewModel.EditorPauseCommand}"/>
-                <AppBarButton Width="40" Command="{x:Bind ViewModel.EditorPlayCommand}"/>
+                <AppBarSeparator x:Name="TrimAndEditButtonSeparator"/>
+                <AppBarButton x:Name="NextMarkerButton" Width="40"
+                              Command="{x:Bind ViewModel.EditorNextMarkerCommand}"/>
+                <AppBarButton x:Name="PreviousMarkerButton" Width="40"
+                              Command="{x:Bind ViewModel.EditorPreviousMarkerCommand}"/>
+                <AppBarButton x:Name="NextFrameButton" Width="40"
+                              Command="{x:Bind ViewModel.EditorNextFrameCommand}"/>
+                <AppBarButton x:Name="PreviousFrameButton" Width="40"
+                              Command="{x:Bind ViewModel.EditorPreviousFrameCommand}"/>
+                <AppBarButton x:Name="PauseButton" Width="40"
+                              Command="{x:Bind ViewModel.EditorPauseCommand}"/>
+                <AppBarButton x:Name="PlayButton" Width="40"
+                              Command="{x:Bind ViewModel.EditorPlayCommand}"/>
             </CommandBar.PrimaryCommands>
         </CommandBar>
     </Grid>

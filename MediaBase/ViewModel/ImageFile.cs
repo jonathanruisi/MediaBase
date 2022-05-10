@@ -19,50 +19,20 @@ using Windows.Storage;
 
 namespace MediaBase.ViewModel
 {
+    /// <summary>
+    /// Contains properties and methods needed for accessing image files
+    /// </summary>
     [ViewModelObject("Image", XmlNodeType.Element)]
-    public class ImageFile : MediaFile, IImageSource
+    public class ImageFile : MediaFile
     {
         #region Properties
-        [ViewModelCollection(nameof(Keyframes), "Keyframe")]
-        public ObservableCollection<ImageAnimationKeyframe> Keyframes { get; }
-
-        public override decimal Duration
-        {
-            get => base.Duration;
-            protected set
-            {
-                if (value == 0)
-                    Keyframes.Clear();
-
-                base.Duration = value;
-            }
-        }
-
         public override MediaContentType ContentType => MediaContentType.Image;
         #endregion
 
         #region Constructors
         public ImageFile() : this(null) { }
 
-        public ImageFile(StorageFile file) : base(file)
-        {
-            Keyframes = new ObservableCollection<ImageAnimationKeyframe>();
-            Keyframes.CollectionChanged += Keyframes_CollectionChanged;
-        }
-        #endregion
-
-        #region Event Handlers
-        private void Keyframes_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
-        {
-            NotifySerializedCollectionChanged(nameof(Keyframes));
-
-            if (Keyframes.Count == 0)
-                return;
-
-            var maxTime = Keyframes.Max(x => x.Time);
-            if (maxTime > Duration)
-                Duration = maxTime;
-        }
+        public ImageFile(StorageFile file) : base(file) { }
         #endregion
 
         #region Method Overrides (MediaFile)

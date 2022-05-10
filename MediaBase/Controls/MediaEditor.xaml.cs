@@ -49,8 +49,8 @@ namespace MediaBase.Controls
         private DispatcherQueueTimer _redrawTimer;
         private InputCursor _primaryCursor, _pointerOverCursor, _dragCursor;
         private Point _prevLeftMousePosition;
-        private double _scaleFactor, _imageScale, _imageOffsetX, _imageOffsetY;
-        private bool _isPointerOverImage, _isPointerCapturedForImage;
+        private double _scaleFactor, _frameScale, _frameOffsetX, _frameOffsetY;
+        private bool _isPointerOverFrame, _isPointerCapturedForFrame;
         private Rect _sourceRect, _destRect;
         private FollowMode _previousFollowMode;
         private bool _isScrubbing;
@@ -58,6 +58,19 @@ namespace MediaBase.Controls
 
         #region Properties
         public Project ViewModel => (Project)DataContext;
+
+        public EditorMode Mode
+        {
+            get => (EditorMode)GetValue(ModeProperty);
+            set => SetValue(ModeProperty, value);
+        }
+
+        public static readonly DependencyProperty ModeProperty =
+            DependencyProperty.Register("Mode",
+                                        typeof(EditorMode),
+                                        typeof(MediaEditor),
+                                        new PropertyMetadata(EditorMode.None,
+                                            OnModeChanged));
 
         public MBMediaSource Source
         {
@@ -95,7 +108,7 @@ namespace MediaBase.Controls
             DependencyProperty.Register("PrimaryCursorShape",
                                         typeof(InputSystemCursorShape),
                                         typeof(MediaEditor),
-                                        new PropertyMetadata(null,
+                                        new PropertyMetadata(InputSystemCursorShape.Hand,
                                             OnCursorShapeChanged));
 
         public InputSystemCursorShape PointerOverCursorShape
@@ -108,7 +121,7 @@ namespace MediaBase.Controls
             DependencyProperty.Register("PointerOverCursorShape",
                                         typeof(InputSystemCursorShape),
                                         typeof(MediaEditor),
-                                        new PropertyMetadata(null,
+                                        new PropertyMetadata(InputSystemCursorShape.Cross,
                                             OnCursorShapeChanged));
 
         public InputSystemCursorShape PointerDragCursorShape
@@ -121,7 +134,7 @@ namespace MediaBase.Controls
             DependencyProperty.Register("PointerDragCursorShape",
                                         typeof(InputSystemCursorShape),
                                         typeof(MediaEditor),
-                                        new PropertyMetadata(null,
+                                        new PropertyMetadata(InputSystemCursorShape.SizeAll,
                                             OnCursorShapeChanged));
 
         public Color TextOverlayColor
@@ -224,12 +237,196 @@ namespace MediaBase.Controls
             _redrawTimer.IsRepeating = true;
             _redrawTimer.Tick += RedrawTimer_Tick;
 
+            // Initialize Cursors
+            _primaryCursor = InputSystemCursor.Create(PrimaryCursorShape);
+            _pointerOverCursor = InputSystemCursor.Create(PointerOverCursorShape);
+            _dragCursor = InputSystemCursor.Create(PointerDragCursorShape);
+
             RegisterMessages();
             InitializeCommands();
         }
         #endregion
 
         #region Dependency Property Callbacks
+        private static void OnModeChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is not MediaEditor editor)
+                return;
+
+            if (editor.Source == null || editor.Mode == EditorMode.None)
+            {
+                editor.EditorCommandBar.Visibility = Visibility.Collapsed;
+                editor.Timeline.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            if (editor._player.PlaybackSession.PlaybackState == MediaPlaybackState.Playing &&
+                editor.Mode != EditorMode.View)
+                editor._player.Pause();
+
+            editor.EditorCommandBar.Visibility = Visibility.Visible;
+
+            if (editor.Source.Duration == 0)
+            {
+                editor.Timeline.Visibility = Visibility.Collapsed;
+
+                editor.PlayButton.Visibility = Visibility.Collapsed;
+                editor.PauseButton.Visibility = Visibility.Collapsed;
+                editor.PreviousFrameButton.Visibility = Visibility.Collapsed;
+                editor.NextFrameButton.Visibility = Visibility.Collapsed;
+                editor.PreviousMarkerButton.Visibility = Visibility.Collapsed;
+                editor.NextMarkerButton.Visibility = Visibility.Collapsed;
+
+                editor.TrimAndEditButtonSeparator.Visibility = Visibility.Collapsed;
+                editor.ToggleActiveSelectionButton.Visibility = Visibility.Collapsed;
+                editor.NewMarkerButton.Visibility = Visibility.Collapsed;
+                editor.NewClipButton.Visibility = Visibility.Collapsed;
+                editor.NewKeyframeButton.Visibility = Visibility.Collapsed;
+                editor.CutSelectedButton.Visibility = Visibility.Collapsed;
+
+                editor.PlaybackRateButtonSeparator.Visibility = Visibility.Collapsed;
+                editor.PlaybackRateDecreaseButton.Visibility = Visibility.Collapsed;
+                editor.PlaybackRateNormalButton.Visibility = Visibility.Collapsed;
+                editor.PlaybackRateIncreaseButton.Visibility = Visibility.Collapsed;
+
+                editor.ZoomAndPanButtonSeparator.Visibility = Visibility.Collapsed;
+                editor.TimelineZoomOutButton.Visibility = Visibility.Collapsed;
+                editor.TimelineZoomInButton.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            editor.Timeline.Visibility = Visibility.Visible;
+
+            editor.PlayButton.Visibility = Visibility.Visible;
+            editor.PauseButton.Visibility = Visibility.Visible;
+            editor.PreviousFrameButton.Visibility = Visibility.Visible;
+            editor.NextFrameButton.Visibility = Visibility.Visible;
+            editor.PreviousMarkerButton.Visibility = Visibility.Visible;
+            editor.NextMarkerButton.Visibility = Visibility.Visible;
+
+            editor.PlaybackRateButtonSeparator.Visibility = Visibility.Visible;
+            editor.PlaybackRateDecreaseButton.Visibility = Visibility.Visible;
+            editor.PlaybackRateNormalButton.Visibility = Visibility.Visible;
+            editor.PlaybackRateIncreaseButton.Visibility = Visibility.Visible;
+
+            editor.ZoomAndPanButtonSeparator.Visibility = Visibility.Visible;
+            editor.TimelineZoomOutButton.Visibility = Visibility.Visible;
+            editor.TimelineZoomInButton.Visibility = Visibility.Visible;
+
+            switch(editor.Mode)
+            {
+                case EditorMode.Animate:
+                    editor.TrimAndEditButtonSeparator.Visibility = Visibility.Visible;
+                    editor.ToggleActiveSelectionButton.Visibility = Visibility.Collapsed;
+                    editor.NewMarkerButton.Visibility = Visibility.Collapsed;
+                    editor.NewClipButton.Visibility = Visibility.Collapsed;
+                    editor.NewKeyframeButton.Visibility = Visibility.Visible;
+                    editor.CutSelectedButton.Visibility = Visibility.Collapsed;
+                    editor.Timeline.IsSelectionAdjustmentEnabled = false;
+                    editor.Timeline.IsSelectionEnabled = false;
+                    break;
+
+                case EditorMode.Edit:
+                    editor.TrimAndEditButtonSeparator.Visibility = Visibility.Visible;
+                    editor.ToggleActiveSelectionButton.Visibility = Visibility.Visible;
+                    editor.NewMarkerButton.Visibility = Visibility.Visible;
+                    editor.NewClipButton.Visibility = Visibility.Visible;
+                    editor.NewKeyframeButton.Visibility = Visibility.Collapsed;
+                    editor.CutSelectedButton.Visibility = Visibility.Collapsed;
+                    editor.Timeline.IsSelectionAdjustmentEnabled = true;
+                    editor.Timeline.IsSelectionEnabled = true;
+                    break;
+
+                case EditorMode.Trim:
+                    editor.TrimAndEditButtonSeparator.Visibility = Visibility.Visible;
+                    editor.ToggleActiveSelectionButton.Visibility = Visibility.Visible;
+                    editor.NewMarkerButton.Visibility = Visibility.Collapsed;
+                    editor.NewClipButton.Visibility = Visibility.Collapsed;
+                    editor.NewKeyframeButton.Visibility = Visibility.Collapsed;
+                    editor.CutSelectedButton.Visibility = Visibility.Visible;
+                    editor.Timeline.IsSelectionAdjustmentEnabled = true;
+                    editor.Timeline.IsSelectionEnabled = true;
+                    break;
+
+                case EditorMode.View:
+                    editor.TrimAndEditButtonSeparator.Visibility = Visibility.Collapsed;
+                    editor.ToggleActiveSelectionButton.Visibility = Visibility.Collapsed;
+                    editor.NewMarkerButton.Visibility = Visibility.Collapsed;
+                    editor.NewClipButton.Visibility = Visibility.Collapsed;
+                    editor.NewKeyframeButton.Visibility = Visibility.Collapsed;
+                    editor.CutSelectedButton.Visibility = Visibility.Collapsed;
+                    editor.Timeline.IsSelectionAdjustmentEnabled = false;
+                    editor.Timeline.IsSelectionEnabled = false;
+                    break;
+            }
+        }
+
+        private static async void OnSourceChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is not MediaEditor editor)
+                return;
+
+            // Stop any current playback and halt all timers
+            if (editor._player.PlaybackSession.PlaybackState is
+                MediaPlaybackState.Opening or
+                MediaPlaybackState.Buffering or
+                MediaPlaybackState.Playing)
+                editor._player.Pause();
+            editor._redrawTimer.Stop();
+
+            // Cleanup resources used by the previous media source (if needed)
+            if (editor._player.Source is MediaSource oldSource && oldSource != null)
+            {
+                oldSource.Dispose();
+                editor._player.Source = null;
+            }
+
+            if (editor._currentFrame != null)
+            {
+                editor._currentFrame.Dispose();
+                editor._currentFrame = null;
+            }
+
+            // Reset image scaling
+            editor._frameScale = 0;
+            editor._frameOffsetX = 0;
+            editor._frameOffsetY = 0;
+
+            // Reset timeline
+            editor.Timeline.Reset();
+
+            // Update commands
+
+            // Set editor mode and load new media source
+            if (editor.Source == null)
+            {
+                editor.Mode = EditorMode.None;
+            }
+            else if (editor.Source.ContentType == MediaContentType.Image)
+            {
+                editor.Mode = EditorMode.View;
+                editor.RefreshRate = App.RefreshRate;
+
+                if (editor.Source.Duration > 0)
+                    editor._player.Source = await editor.Source.GetMediaSourceAsync();
+                else
+                {
+                    editor._currentFrame = await CanvasBitmap.LoadAsync(editor.SwapChainCanvas.SwapChain.Device,
+                                                                        await ((MediaFile)editor.Source).File.OpenReadAsync());
+                    editor.SetScaleToFit(editor._currentFrame.SizeInPixels.Width,
+                                     editor._currentFrame.SizeInPixels.Height);
+                    editor.ScaleCurrentFrame();
+                    editor._redrawTimer.Start();
+                }
+            }
+            else if (editor.Source.ContentType == MediaContentType.Video)
+            {
+                editor.Mode = EditorMode.View;
+                editor.RefreshRate = (int)Math.Ceiling(editor.Source.FramesPerSecond);
+                editor._player.Source = await editor.Source.GetMediaSourceAsync();
+            }
+        }
+
         private static void OnRefreshRateChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             if (d is not MediaEditor editor)
@@ -245,12 +442,6 @@ namespace MediaBase.Controls
                 editor._redrawTimer.Start();
         }
 
-        private static void OnSourceChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            if (d is not MediaEditor editor)
-                return;
-        }
-
         private static void OnCursorShapeChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             if (d is not MediaEditor editor)
@@ -259,19 +450,19 @@ namespace MediaBase.Controls
             if (e.Property == PrimaryCursorShapeProperty)
             {
                 editor._primaryCursor = InputSystemCursor.Create((InputSystemCursorShape)e.NewValue);
-                if (!editor._isPointerCapturedForImage && !editor._isPointerOverImage)
+                if (!editor._isPointerCapturedForFrame && !editor._isPointerOverFrame)
                     editor.ProtectedCursor = editor._primaryCursor;
             }
             else if (e.Property == PointerDragCursorShapeProperty)
             {
                 editor._dragCursor = InputSystemCursor.Create((InputSystemCursorShape)e.NewValue);
-                if (editor._isPointerCapturedForImage)
+                if (editor._isPointerCapturedForFrame)
                     editor.ProtectedCursor = editor._dragCursor;
             }
             else if (e.Property == PointerOverCursorShapeProperty)
             {
                 editor._pointerOverCursor = InputSystemCursor.Create((InputSystemCursorShape)e.NewValue);
-                if (editor._isPointerOverImage)
+                if (editor._isPointerOverFrame)
                     editor.ProtectedCursor = editor._pointerOverCursor;
             }
         }
@@ -397,12 +588,15 @@ namespace MediaBase.Controls
             if (Source.Duration > 0)
                 ds.DrawText(_player.PlaybackSession.Position.TotalSeconds.ToTimecodeString(RefreshRate),
                             5, 5, TextOverlayColor, positionTextFormat);
+
+            SwapChainCanvas.SwapChain.Present();
         }
         #endregion
 
         #region Event Handlers (SwapChain)
         private void SwapChainCanvas_SizeChanged(object sender, SizeChangedEventArgs e)
         {
+            _frameBitmap = null;
             SwapChainCanvas.SwapChain?.ResizeBuffers(e.NewSize);
         }
         #endregion
@@ -472,7 +666,7 @@ namespace MediaBase.Controls
         #region Event Handlers (Pointer)
         private void RenderAreaBorder_PointerEntered(object sender, PointerRoutedEventArgs e)
         {
-            if (_isPointerCapturedForImage)
+            if (_isPointerCapturedForFrame)
                 return;
 
             ProtectedCursor = _primaryCursor;
@@ -480,7 +674,7 @@ namespace MediaBase.Controls
 
         private void RenderAreaBorder_PointerExited(object sender, PointerRoutedEventArgs e)
         {
-            _isPointerOverImage = false;
+            _isPointerOverFrame = false;
         }
 
         private void RenderAreaBorder_PointerPressed(object sender, PointerRoutedEventArgs e)
@@ -495,15 +689,15 @@ namespace MediaBase.Controls
                 if (point.Properties.IsLeftButtonPressed && !isCtrlPressed)
                 {
                     _prevLeftMousePosition = point.Position;
-                    _isPointerCapturedForImage = RenderAreaBorder.CapturePointer(e.Pointer);
+                    _isPointerCapturedForFrame = RenderAreaBorder.CapturePointer(e.Pointer);
                     ProtectedCursor = _dragCursor;
                 }
                 else if (point.Properties.IsLeftButtonPressed && isCtrlPressed)
                 {
                     var centerX = RenderAreaBorder.ActualWidth / 2;
                     var centerY = RenderAreaBorder.ActualHeight / 2;
-                    _imageOffsetX += centerX - point.Position.X;
-                    _imageOffsetY -= centerY - point.Position.Y;
+                    _frameOffsetX += centerX - point.Position.X;
+                    _frameOffsetY -= centerY - point.Position.Y;
                 }
             }
         }
@@ -515,49 +709,49 @@ namespace MediaBase.Controls
             if (point.Properties.PointerUpdateKind == PointerUpdateKind.LeftButtonReleased)
             {
                 RenderAreaBorder.ReleasePointerCapture(e.Pointer);
-                ProtectedCursor = _isPointerOverImage ? _pointerOverCursor : _primaryCursor;
+                ProtectedCursor = _isPointerOverFrame ? _pointerOverCursor : _primaryCursor;
             }
         }
 
         private void RenderAreaBorder_PointerCaptureLost(object sender, PointerRoutedEventArgs e)
         {
-            _isPointerCapturedForImage = false;
+            _isPointerCapturedForFrame = false;
         }
 
         private void RenderAreaBorder_PointerCanceled(object sender, PointerRoutedEventArgs e)
         {
-            _isPointerCapturedForImage = false;
-            _isPointerOverImage = false;
+            _isPointerCapturedForFrame = false;
+            _isPointerOverFrame = false;
         }
 
         private void RenderAreaBorder_PointerMoved(object sender, PointerRoutedEventArgs e)
         {
             var point = e.GetCurrentPoint(RenderAreaBorder);
 
-            _isPointerOverImage = _destRect.Contains(point.Position);
-            if (_isPointerOverImage && ProtectedCursor != _pointerOverCursor)
+            _isPointerOverFrame = _destRect.Contains(point.Position);
+            if (_isPointerOverFrame && ProtectedCursor != _pointerOverCursor)
                 ProtectedCursor = _pointerOverCursor;
-            else if (!_isPointerOverImage && ProtectedCursor != _primaryCursor)
+            else if (!_isPointerOverFrame && ProtectedCursor != _primaryCursor)
                 ProtectedCursor = _primaryCursor;
 
-            if (point.Properties.IsLeftButtonPressed || !_isPointerCapturedForImage)
+            if (!point.Properties.IsLeftButtonPressed || !_isPointerCapturedForFrame)
                 return;
 
             if (ProtectedCursor != _dragCursor)
                 ProtectedCursor = _dragCursor;
 
-            _imageOffsetX += point.Position.X - _prevLeftMousePosition.X;
-            _imageOffsetY -= point.Position.Y - _prevLeftMousePosition.Y;
+            _frameOffsetX += point.Position.X - _prevLeftMousePosition.X;
+            _frameOffsetY -= point.Position.Y - _prevLeftMousePosition.Y;
 
             _prevLeftMousePosition = point.Position;
         }
 
         private void RenderAreaBorder_PointerWheelChanged(object sender, PointerRoutedEventArgs e)
         {
-            if (_isPointerCapturedForImage)
+            if (_isPointerCapturedForFrame)
                 return;
 
-            _imageScale += e.GetCurrentPoint(RenderAreaBorder).Properties.MouseWheelDelta / 120;
+            _frameScale += e.GetCurrentPoint(RenderAreaBorder).Properties.MouseWheelDelta / 120;
         }
         #endregion
 
@@ -632,17 +826,17 @@ namespace MediaBase.Controls
             
         }
 
-        private void EditorCenterImageCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        private void EditorCenterFrameCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
             
         }
 
-        private void EditorImageZoomFitCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        private void EditorFrameZoomFitCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
             
         }
 
-        private void EditorImageZoomFullCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        private void EditorFrameZoomFullCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
             
         }
@@ -729,17 +923,17 @@ namespace MediaBase.Controls
             
         }
 
-        private void EditorCenterImageCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        private void EditorCenterFrameCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
             
         }
 
-        private void EditorImageZoomFitCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        private void EditorFrameZoomFitCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
             
         }
 
-        private void EditorImageZoomFullCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        private void EditorFrameZoomFullCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
             
         }
@@ -828,20 +1022,20 @@ namespace MediaBase.Controls
             ViewModel.EditorPlaybackRateNormalCommand.ExecuteRequested +=
                 EditorPlaybackRateNormalCommand_ExecuteRequested;
 
-            ViewModel.EditorCenterImageCommand.CanExecuteRequested +=
-                EditorCenterImageCommand_CanExecuteRequested;
-            ViewModel.EditorCenterImageCommand.ExecuteRequested +=
-                EditorCenterImageCommand_ExecuteRequested;
+            ViewModel.EditorCenterFrameCommand.CanExecuteRequested +=
+                EditorCenterFrameCommand_CanExecuteRequested;
+            ViewModel.EditorCenterFrameCommand.ExecuteRequested +=
+                EditorCenterFrameCommand_ExecuteRequested;
 
-            ViewModel.EditorImageZoomFitCommand.CanExecuteRequested +=
-                EditorImageZoomFitCommand_CanExecuteRequested;
-            ViewModel.EditorImageZoomFitCommand.ExecuteRequested +=
-                EditorImageZoomFitCommand_ExecuteRequested;
+            ViewModel.EditorFrameZoomFitCommand.CanExecuteRequested +=
+                EditorFrameZoomFitCommand_CanExecuteRequested;
+            ViewModel.EditorFrameZoomFitCommand.ExecuteRequested +=
+                EditorFrameZoomFitCommand_ExecuteRequested;
 
-            ViewModel.EditorImageZoomFullCommand.CanExecuteRequested +=
-                EditorImageZoomFullCommand_CanExecuteRequested;
-            ViewModel.EditorImageZoomFullCommand.ExecuteRequested +=
-                EditorImageZoomFullCommand_ExecuteRequested;
+            ViewModel.EditorFrameZoomFullCommand.CanExecuteRequested +=
+                EditorFrameZoomFullCommand_CanExecuteRequested;
+            ViewModel.EditorFrameZoomFullCommand.ExecuteRequested +=
+                EditorFrameZoomFullCommand_ExecuteRequested;
 
             ViewModel.EditorTimelineZoomOutCommand.CanExecuteRequested +=
                 EditorTimelineZoomOutCommand_CanExecuteRequested;
@@ -856,21 +1050,7 @@ namespace MediaBase.Controls
 
         private void RegisterMessages()
         {
-            var messenger = App.Current.Services.GetService<IMessenger>();
-
-            messenger.Register<PropertyChangedMessage<MBMediaSource>>(this, (r, m) =>
-            {
-                if (m.Sender != ViewModel || m.PropertyName != nameof(Project.ActiveMediaSource))
-                    return;
-
-                EditorCommandBar.Visibility = ViewModel.ActiveMediaSource != null
-                    ? Visibility.Visible
-                    : Visibility.Collapsed;
-
-                Timeline.Visibility = ViewModel.ActiveMediaSource.Duration > 0
-                    ? Visibility.Visible
-                    : Visibility.Collapsed;
-            });
+            
         }
 
         private void SetScaleToFit(uint widthInPixels, uint heightInPixels)
@@ -879,7 +1059,7 @@ namespace MediaBase.Controls
             var destHeight = SwapChainCanvas.SwapChain.SizeInPixels.Height;
             var scaleW = 10 * Math.Log((double)destWidth / widthInPixels) / Math.Log(2.0);
             var scaleH = 10 * Math.Log((double)destHeight / heightInPixels) / Math.Log(2.0);
-            _imageScale = Math.Min(scaleW, scaleH);
+            _frameScale = Math.Min(scaleW, scaleH);
         }
 
         private void ScaleCurrentFrame()
@@ -889,19 +1069,19 @@ namespace MediaBase.Controls
             var destWidth = SwapChainCanvas.SwapChain.SizeInPixels.Width;
             var destHeight = SwapChainCanvas.SwapChain.SizeInPixels.Height;
 
-            _scaleFactor = Math.Pow(2, 0.1 * _imageScale);
+            _scaleFactor = Math.Pow(2, 0.1 * _frameScale);
             var scaledSourceWidth = Math.Round(sourceWidth * _scaleFactor, 6);
             if (scaledSourceWidth <= destWidth)
             {
                 _sourceRect.Width = sourceWidth;
                 _sourceRect.X = 0;
                 _destRect.Width = scaledSourceWidth;
-                _destRect.X = ((destWidth - scaledSourceWidth) / 2) + _imageOffsetX;
+                _destRect.X = ((destWidth - scaledSourceWidth) / 2) + _frameOffsetX;
             }
             else
             {
                 _sourceRect.Width = destWidth / _scaleFactor;
-                _sourceRect.X = ((sourceWidth - _sourceRect.Width) / 2) - (_imageOffsetX / _scaleFactor);
+                _sourceRect.X = ((sourceWidth - _sourceRect.Width) / 2) - (_frameOffsetX / _scaleFactor);
                 _destRect.Width = destWidth;
                 _destRect.X = 0;
 
@@ -923,12 +1103,12 @@ namespace MediaBase.Controls
                 _sourceRect.Height = sourceHeight;
                 _sourceRect.Y = 0;
                 _destRect.Height = scaledSourceHeight;
-                _destRect.Y = ((destHeight - scaledSourceHeight) / 2) - _imageOffsetY;
+                _destRect.Y = ((destHeight - scaledSourceHeight) / 2) - _frameOffsetY;
             }
             else
             {
                 _sourceRect.Height = destHeight / _scaleFactor;
-                _sourceRect.Y = ((sourceHeight - _sourceRect.Height) / 2) + (_imageOffsetY / _scaleFactor);
+                _sourceRect.Y = ((sourceHeight - _sourceRect.Height) / 2) + (_frameOffsetY / _scaleFactor);
                 _destRect.Height = destHeight;
                 _destRect.Y = 0;
 

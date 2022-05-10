@@ -12,8 +12,10 @@ using Windows.Storage;
 
 namespace MediaBase.ViewModel
 {
-    /// <inheritdoc cref="IMediaFile"/>
-    public abstract class MediaFile : MBMediaSource, IMediaFile
+    /// <summary>
+    /// Represents a multimedia file.
+    /// </summary>
+    public abstract class MediaFile : MBMediaSource
     {
         #region Fields
         private string _path;
@@ -21,6 +23,7 @@ namespace MediaBase.ViewModel
         #endregion
 
         #region Properties
+        /// <inheritdoc cref="StorageFile.Path"/>
         [ViewModelObject(nameof(Path), XmlNodeType.Element)]
         public string Path
         {
@@ -28,6 +31,10 @@ namespace MediaBase.ViewModel
             set => SetProperty(ref _path, value);
         }
 
+        /// <summary>
+        /// Gets the underlying <see cref="StorageFile"/>
+        /// represented by this <see cref="MediaFile"/>.
+        /// </summary>
         public StorageFile File
         {
             get => _file;
@@ -43,11 +50,17 @@ namespace MediaBase.ViewModel
             _file = file;
             _path = file?.Path;
             Name = file?.DisplayName;
-            FramesPerSecond = double.NaN;
         }
         #endregion
 
         #region Public Methods
+        /// <summary>
+        /// Asynchronously instantiates <see cref="File"/>.
+        /// </summary>
+        /// <returns>
+        /// <b><c>true</c></b> if the file was loaded successfully,
+        /// <b><c>false</c></b> otherwise.
+        /// </returns>
         public async Task<bool> LoadFileFromPathAsync()
         {
             if (string.IsNullOrEmpty(Path))
@@ -69,6 +82,16 @@ namespace MediaBase.ViewModel
             return await LoadMediaPropertiesAsync();
         }
 
+        /// <summary>
+        /// Asynchronously loads the media properties
+        /// associated with this <see cref="MediaFile"/>.
+        /// When overridden in a derived class,
+        /// use this method to populate media-related properties.
+        /// </summary>
+        /// <returns>
+        /// <b><c>true</c></b> if the properties were loaded successfully,
+        /// <b><c>false</c></b> otherwise.
+        /// </returns>
         public abstract Task<bool> LoadMediaPropertiesAsync();
         #endregion
 
