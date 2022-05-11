@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Xml;
 
+using JLR.Utility.WinUI.Messaging;
 using JLR.Utility.WinUI.ViewModel;
 
 using Microsoft.Toolkit.Mvvm.Messaging;
@@ -189,18 +190,18 @@ namespace MediaBase.ViewModel
         #region Event Handlers
         private void Tags_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
-            var tagMessage = new MediaSourceTagCollectionChangedMessage();
+            var tagMessage = new CollectionChangedMessage<int>(this, nameof(Tags));
 
             if (e.OldItems != null)
             {
                 foreach (int oldTag in e.OldItems)
-                    tagMessage.RemovedTags.Add(oldTag);
+                    tagMessage.OldValue.Add(oldTag);
             }
 
             if (e.NewItems != null)
             {
                 foreach (int newTag in e.NewItems)
-                    tagMessage.AddedTags.Add(newTag);
+                    tagMessage.NewValue.Add(newTag);
             }
 
             Messenger.Send(tagMessage);
@@ -209,25 +210,71 @@ namespace MediaBase.ViewModel
 
         private void Markers_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
+            var markerMessage = new CollectionChangedMessage<Marker>(this, nameof(Markers));
+
+            if (e.OldItems != null)
+            {
+                foreach (Marker oldMarker in e.OldItems)
+                    markerMessage.OldValue.Add(oldMarker);
+            }
+
+            if (e.NewItems != null)
+            {
+                foreach (Marker newMarker in e.NewItems)
+                    markerMessage.NewValue.Add(newMarker);
+            }
+
+            Messenger.Send(markerMessage);
             NotifySerializedCollectionChanged(nameof(Markers));
         }
 
         private void Cuts_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
             EvaluateCuts();
+
+            var cutMessage = new CollectionChangedMessage<(decimal start, decimal end)>(this, nameof(Cuts));
+
+            if (e.OldItems != null)
+            {
+                foreach ((decimal start, decimal end) oldCut in e.OldItems)
+                    cutMessage.OldValue.Add(oldCut);
+            }
+
+            if (e.NewItems != null)
+            {
+                foreach ((decimal start, decimal end) newCut in e.NewItems)
+                    cutMessage.NewValue.Add(newCut);
+            }
+
+            Messenger.Send(cutMessage);
             NotifySerializedCollectionChanged(nameof(Cuts));
         }
 
         private void Keyframes_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
+            if (Keyframes.Count > 0)
+            {
+                var maxTime = Keyframes.Max(x => x.Time);
+                if (maxTime > Duration)
+                    Duration = maxTime;
+            }
+
+            var keyframeMessage = new CollectionChangedMessage<ImageAnimationKeyframe>(this, nameof(Keyframes));
+
+            if (e.OldItems != null)
+            {
+                foreach (ImageAnimationKeyframe oldKeyframe in e.OldItems)
+                    keyframeMessage.OldValue.Add(oldKeyframe);
+            }
+
+            if (e.NewItems != null)
+            {
+                foreach (ImageAnimationKeyframe newKeyframe in e.NewItems)
+                    keyframeMessage.NewValue.Add(newKeyframe);
+            }
+
+            Messenger.Send(keyframeMessage);
             NotifySerializedCollectionChanged(nameof(Keyframes));
-
-            if (Keyframes.Count == 0)
-                return;
-
-            var maxTime = Keyframes.Max(x => x.Time);
-            if (maxTime > Duration)
-                Duration = maxTime;
         }
         #endregion
 
@@ -281,24 +328,5 @@ namespace MediaBase.ViewModel
             // TODO: Keyframes need to be adjusted here as well
         }
         #endregion
-    }
-
-    public sealed class MediaSourceTagCollectionChangedMessage
-    {
-        public List<int> AddedTags { get; }
-        public List<int> RemovedTags { get; }
-
-        public MediaSourceTagCollectionChangedMessage()
-        {
-            AddedTags = new List<int>();
-            RemovedTags = new List<int>();
-        }
-
-        public MediaSourceTagCollectionChangedMessage(IList<int> addedTags,
-                                                    IList<int> removedTags) : this()
-        {
-            AddedTags.AddRange(addedTags);
-            RemovedTags.AddRange(removedTags);
-        }
     }
 }

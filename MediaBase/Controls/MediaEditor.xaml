@@ -47,7 +47,8 @@
                                 Grid.Row="1" Grid.Column="0"
                                 PositionFollowMode="Advance"
                                 Visibility="Collapsed"
-                                FramesPerSecond="{x:Bind RefreshRate, Mode=OneWay}"/>
+                                FramesPerSecond="{x:Bind RefreshRate, Mode=OneWay}"
+                                SelectedMarker="{x:Bind SelectedMarker, Mode=TwoWay}"/>
 
         <!-- Command Bar -->
         <CommandBar x:Name="EditorCommandBar" Grid.Row="2"
@@ -56,11 +57,11 @@
                     FlowDirection="RightToLeft"
                     Visibility="Collapsed">
             <CommandBar.PrimaryCommands>
-                <AppBarButton x:Name="CenterImageButton" Width="40"
+                <AppBarButton x:Name="CenterFrameButton" Width="40"
                               Command="{x:Bind ViewModel.EditorCenterFrameCommand}"/>
-                <AppBarButton x:Name="ImageZoomFullButton" Width="40"
+                <AppBarButton x:Name="FrameZoomFullButton" Width="40"
                               Command="{x:Bind ViewModel.EditorFrameZoomFullCommand}"/>
-                <AppBarButton x:Name="ImageZoomFitButton" Width="40"
+                <AppBarButton x:Name="FrameZoomFitButton" Width="40"
                               Command="{x:Bind ViewModel.EditorFrameZoomFitCommand}"/>
                 <AppBarButton x:Name="TimelineZoomOutButton" Width="40"
                               Command="{x:Bind ViewModel.EditorTimelineZoomOutCommand}"/>

@@ -100,15 +100,14 @@
                           RightTapped="ProjectBrowserTreeView_RightTapped">
                 <TreeViewItem.Content>
                     <StackPanel Orientation="Horizontal">
-                        <SymbolIcon Symbol="Important"
-                                    Foreground="Red"
-                                    Margin="0,0,10,0"
-                                    Visibility="{x:Bind File,
-                                                        Converter={StaticResource NullToVisibleConverter},
-                                                        Mode=OneWay}"/>
+                        <ProgressRing IsActive="True" Width="20" Height="20"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center"
+                                      Visibility="{x:Bind File,
+                                                          Converter={StaticResource NullToVisibleConverter},
+                                                          Mode=OneWay}"/>
                         <FontIcon FontFamily="Segoe Fluent Icons"
                                   Glyph="&#xEB9F;"
-                                  Margin="0,0,10,0"/>
+                                  Margin="5,0,10,0"/>
                         <TextBlock HorizontalAlignment="Left"
                                    VerticalAlignment="Center"
                                    Text="{x:Bind Name, Mode=OneWay}"/>
@@ -123,15 +122,14 @@
                           RightTapped="ProjectBrowserTreeView_RightTapped">
                 <TreeViewItem.Content>
                     <StackPanel Orientation="Horizontal">
-                        <SymbolIcon Symbol="Important"
-                                    Foreground="Red"
-                                    Margin="0,0,10,0"
-                                    Visibility="{x:Bind File,
-                                                        Converter={StaticResource NullToVisibleConverter},
-                                                        Mode=OneWay}"/>
+                        <ProgressRing IsActive="True" Width="20" Height="20"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center"
+                                      Visibility="{x:Bind File,
+                                                          Converter={StaticResource NullToVisibleConverter},
+                                                          Mode=OneWay}"/>
                         <FontIcon FontFamily="Segoe Fluent Icons"
                                   Glyph="&#xE8B2;"
-                                  Margin="0,0,10,0"/>
+                                  Margin="5,0,10,0"/>
                         <TextBlock HorizontalAlignment="Left"
                                    VerticalAlignment="Center"
                                    Text="{x:Bind Name, Mode=OneWay}"/>

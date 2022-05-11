@@ -38,9 +38,17 @@ namespace MediaBase.ViewModel
         private StorageFile _file;
         private ViewModelNode _activeProjectNode;
         private MBMediaSource _activeMediaSource;
+        private Marker _selectedMarker;
+        private ImageAnimationKeyframe _selectedKeyframe;
         #endregion
 
         #region Properties
+        /// <summary>
+        /// Gets the root of this <see cref="Project"/>'s media library.
+        /// </summary>
+        [ViewModelObject(MediaLibraryName, XmlNodeType.Element)]
+        public MediaFolder MediaLibrary { get; set; }
+
         /// <summary>
         /// Gets a value indicating whether or not there are changes to
         /// this <see cref="Project"/> that have yet to be saved.
@@ -62,12 +70,6 @@ namespace MediaBase.ViewModel
         }
 
         /// <summary>
-        /// Gets the root of this <see cref="Project"/>'s media library.
-        /// </summary>
-        [ViewModelObject(MediaLibraryName, XmlNodeType.Element)]
-        public MediaFolder MediaLibrary { get; set; }
-
-        /// <summary>
         /// Gets or sets a reference to the currently active project item.
         /// </summary>
         public ViewModelNode ActiveNode
@@ -83,6 +85,24 @@ namespace MediaBase.ViewModel
         {
             get => _activeMediaSource;
             set => SetProperty(ref _activeMediaSource, value, true);
+        }
+
+        /// <summary>
+        /// Gets or sets a reference to the currently selected marker.
+        /// </summary>
+        public Marker SelectedMarker
+        {
+            get => _selectedMarker;
+            set => SetProperty(ref _selectedMarker, value, true);
+        }
+
+        /// <summary>
+        /// Gets or sets a reference to the currently selected keyframe.
+        /// </summary>
+        public ImageAnimationKeyframe SelectedKeyframe
+        {
+            get => _selectedKeyframe;
+            set => SetProperty(ref _selectedKeyframe, value, true);
         }
         #endregion
 
@@ -142,6 +162,8 @@ namespace MediaBase.ViewModel
             _file = null;
             _activeProjectNode = null;
             _activeMediaSource = null;
+            _selectedMarker = null;
+            _selectedKeyframe = null;
             MediaLibrary = new MediaFolder { Name = MediaLibraryName };
 
             InitializeCommands();
