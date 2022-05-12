@@ -52,6 +52,7 @@
                         <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectSaveAsCommand}"/>
                     </MenuBarItem>
                     <MenuBarItem Title="Tools" Margin="0" VerticalAlignment="Bottom">
+                        <MenuFlyoutItem Command="{x:Bind ViewModel.ToolsAnimateImageCommand}"/>
                     </MenuBarItem>
                     <MenuBarItem Title="View" Margin="0" VerticalAlignment="Bottom">
                         <RadioMenuFlyoutItem GroupName="Presenter"

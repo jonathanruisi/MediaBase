@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
-using System.Linq;
-using System.Text;
+
 using System.Threading.Tasks;
 using System.Xml;
 
@@ -11,10 +8,8 @@ using JLR.Utility.WinUI.ViewModel;
 
 using Windows.Media.Core;
 using Windows.Media.Editing;
-using Windows.Media.MediaProperties;
 using Windows.Media.Playback;
 using Windows.Storage;
-using Windows.Storage.Streams;
 
 namespace MediaBase.ViewModel
 {
@@ -80,7 +75,7 @@ namespace MediaBase.ViewModel
                 }
             }
 
-            var encodingProfile = MediaEncodingProfile.CreateHevc(VideoEncodingQuality.Uhd2160p);
+            var encodingProfile = composition.CreateDefaultEncodingProfile();
             var mediaStreamSource = composition.GenerateMediaStreamSource(encodingProfile);
             return MediaSource.CreateFromMediaStreamSource(mediaStreamSource);
         }

@@ -65,7 +65,9 @@ namespace MediaBase.ViewModel
                 TimeSpan.FromSeconds(decimal.ToDouble(Duration)));
             composition.Clips.Add(clip);
 
-            var encodingProfile = MediaEncodingProfile.CreateHevc(VideoEncodingQuality.Uhd2160p);
+            var encodingProfile = MediaEncodingProfile.CreateHevc(VideoEncodingQuality.Uhd4320p);
+            encodingProfile.Video.Width = WidthInPixels;
+            encodingProfile.Video.Height = HeightInPixels;
             var mediaStreamSource = composition.GenerateMediaStreamSource(encodingProfile);
             return MediaSource.CreateFromMediaStreamSource(mediaStreamSource);
         }

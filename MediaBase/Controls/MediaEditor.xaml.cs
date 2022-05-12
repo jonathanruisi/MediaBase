@@ -5,6 +5,8 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 
+using CommunityToolkit.WinUI.Helpers;
+
 using JLR.Utility.WinUI;
 using JLR.Utility.WinUI.Controls;
 using JLR.Utility.WinUI.Dialogs;
@@ -238,7 +240,7 @@ namespace MediaBase.Controls
             DependencyProperty.Register("TextOverlayFontSize",
                                         typeof(float),
                                         typeof(MediaEditor),
-                                        new PropertyMetadata(14.0f));
+                                        new PropertyMetadata(24.0f));
 
         public FontStretch TextOverlayFontStretch
         {
@@ -333,6 +335,7 @@ namespace MediaBase.Controls
                 editor._player.Pause();
 
             editor.EditorCommandBar.Visibility = Visibility.Visible;
+            editor.Timeline.IsSelectionEnabled = false;
 
             if (editor.Source.Duration == 0)
             {
@@ -366,7 +369,7 @@ namespace MediaBase.Controls
             editor.Timeline.Visibility = Visibility.Visible;
 
             editor.PlayButton.Visibility = Visibility.Visible;
-            editor.PauseButton.Visibility = Visibility.Visible;
+            editor.PauseButton.Visibility = Visibility.Collapsed;
             editor.PreviousFrameButton.Visibility = Visibility.Visible;
             editor.NextFrameButton.Visibility = Visibility.Visible;
             editor.PreviousMarkerButton.Visibility = Visibility.Visible;
@@ -381,51 +384,25 @@ namespace MediaBase.Controls
             editor.TimelineZoomOutButton.Visibility = Visibility.Visible;
             editor.TimelineZoomInButton.Visibility = Visibility.Visible;
 
-            switch(editor.Mode)
+            if (editor.Mode == EditorMode.View)
             {
-                case EditorMode.Animate:
-                    editor.TrimAndEditButtonSeparator.Visibility = Visibility.Visible;
-                    editor.ToggleActiveSelectionButton.Visibility = Visibility.Collapsed;
-                    editor.NewMarkerButton.Visibility = Visibility.Collapsed;
-                    editor.NewClipButton.Visibility = Visibility.Collapsed;
-                    editor.NewKeyframeButton.Visibility = Visibility.Visible;
-                    editor.CutSelectedButton.Visibility = Visibility.Collapsed;
-                    editor.Timeline.IsSelectionAdjustmentEnabled = false;
-                    editor.Timeline.IsSelectionEnabled = false;
-                    break;
-
-                case EditorMode.Edit:
-                    editor.TrimAndEditButtonSeparator.Visibility = Visibility.Visible;
-                    editor.ToggleActiveSelectionButton.Visibility = Visibility.Visible;
-                    editor.NewMarkerButton.Visibility = Visibility.Visible;
-                    editor.NewClipButton.Visibility = Visibility.Visible;
-                    editor.NewKeyframeButton.Visibility = Visibility.Collapsed;
-                    editor.CutSelectedButton.Visibility = Visibility.Collapsed;
-                    editor.Timeline.IsSelectionAdjustmentEnabled = true;
-                    editor.Timeline.IsSelectionEnabled = true;
-                    break;
-
-                case EditorMode.Trim:
-                    editor.TrimAndEditButtonSeparator.Visibility = Visibility.Visible;
-                    editor.ToggleActiveSelectionButton.Visibility = Visibility.Visible;
-                    editor.NewMarkerButton.Visibility = Visibility.Collapsed;
-                    editor.NewClipButton.Visibility = Visibility.Collapsed;
-                    editor.NewKeyframeButton.Visibility = Visibility.Collapsed;
-                    editor.CutSelectedButton.Visibility = Visibility.Visible;
-                    editor.Timeline.IsSelectionAdjustmentEnabled = true;
-                    editor.Timeline.IsSelectionEnabled = true;
-                    break;
-
-                case EditorMode.View:
-                    editor.TrimAndEditButtonSeparator.Visibility = Visibility.Collapsed;
-                    editor.ToggleActiveSelectionButton.Visibility = Visibility.Collapsed;
-                    editor.NewMarkerButton.Visibility = Visibility.Collapsed;
-                    editor.NewClipButton.Visibility = Visibility.Collapsed;
-                    editor.NewKeyframeButton.Visibility = Visibility.Collapsed;
-                    editor.CutSelectedButton.Visibility = Visibility.Collapsed;
-                    editor.Timeline.IsSelectionAdjustmentEnabled = false;
-                    editor.Timeline.IsSelectionEnabled = false;
-                    break;
+                editor.TrimAndEditButtonSeparator.Visibility = Visibility.Collapsed;
+                editor.ToggleActiveSelectionButton.Visibility = Visibility.Collapsed;
+                editor.NewMarkerButton.Visibility = Visibility.Collapsed;
+                editor.NewClipButton.Visibility = Visibility.Collapsed;
+                editor.NewKeyframeButton.Visibility = Visibility.Collapsed;
+                editor.CutSelectedButton.Visibility = Visibility.Collapsed;
+                editor.Timeline.IsSelectionAdjustmentEnabled = false;
+            }
+            else if (editor.Mode == EditorMode.Edit)
+            {
+                editor.TrimAndEditButtonSeparator.Visibility = Visibility.Visible;
+                editor.ToggleActiveSelectionButton.Visibility = Visibility.Visible;
+                editor.NewMarkerButton.Visibility = Visibility.Visible;
+                editor.NewClipButton.Visibility = Visibility.Visible;
+                editor.NewKeyframeButton.Visibility = Visibility.Visible;
+                editor.CutSelectedButton.Visibility = Visibility.Visible;
+                editor.Timeline.IsSelectionAdjustmentEnabled = true;
             }
         }
 
@@ -470,10 +447,12 @@ namespace MediaBase.Controls
             if (editor.Source == null)
             {
                 editor.Mode = EditorMode.None;
+                return;
             }
-            else if (editor.Source.ContentType == MediaContentType.Image)
+
+            if (editor.Source.ContentType == MediaContentType.Image)
             {
-                editor.Mode = EditorMode.Animate;
+                editor.Mode = EditorMode.Edit;
                 editor.RefreshRate = App.RefreshRate;
 
                 if (editor.Source.Duration > 0)
@@ -493,6 +472,35 @@ namespace MediaBase.Controls
                 editor.Mode = EditorMode.Edit;
                 editor.RefreshRate = (int)Math.Ceiling(editor.Source.FramesPerSecond);
                 editor._player.Source = await editor.Source.GetMediaSourceAsync();
+
+                foreach (var marker in editor.Source.Markers)
+                {
+                    editor.Timeline.Markers.Add(marker);
+                }
+            }
+
+            // Add markers to timeline
+            foreach (var marker in editor.Source.Markers)
+            {
+                editor.Timeline.Markers.Add(marker);
+            }
+
+            // Add keyframes to timeline
+            foreach (var keyframe in editor.Source.Keyframes)
+            {
+                editor.Timeline.Markers.Add(new Marker
+                {
+                    Position = keyframe.Time,
+                    Duration = 0,
+                    Track = 0,
+                    Name = "Keyframe"
+                });
+            }
+
+            // Add cuts to timeline as selections
+            foreach (var (start, end) in editor.Source.Cuts)
+            {
+                editor.Timeline.AddSelection(start, end);
             }
         }
 
@@ -542,14 +550,7 @@ namespace MediaBase.Controls
             if (d is not MediaEditor editor)
                 return;
 
-            var isRunning = editor._redrawTimer.IsRunning;
-            if (isRunning)
-                editor._redrawTimer.Stop();
-
             editor._redrawTimer.Interval = TimeSpan.FromTicks((int)(1.0 / editor.RefreshRate * 10000000));
-
-            if (isRunning)
-                editor._redrawTimer.Start();
         }
 
         private static void OnFrameOffsetChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -697,10 +698,10 @@ namespace MediaBase.Controls
 
             DispatcherQueue.TryEnqueue(DispatcherQueuePriority.High, () =>
             {
-                if (sender.PlaybackState is MediaPlaybackState.Playing or MediaPlaybackState.Paused)
-                    _redrawTimer.Start();
-                else
+                if (sender.PlaybackState is MediaPlaybackState.None)
                     _redrawTimer.Stop();
+                else
+                    _redrawTimer.Start();
 
                 RefreshAllCommands();
             });
@@ -714,6 +715,8 @@ namespace MediaBase.Controls
             DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
             {
                 Timeline.Position = (decimal)sender.Position.TotalSeconds;
+                ViewModel.EditorPreviousMarkerCommand.NotifyCanExecuteChanged();
+                ViewModel.EditorNextMarkerCommand.NotifyCanExecuteChanged();
             });
         }
 
@@ -724,11 +727,9 @@ namespace MediaBase.Controls
 
             DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, () =>
             {
-                var timelinePos = TimeSpan.FromSeconds(decimal.ToDouble(Timeline.Position));
-                var difference = Math.Abs(sender.Position.TotalMilliseconds - timelinePos.TotalMilliseconds);
-
-                if (difference >= Timeline.FrameDuration.TotalMilliseconds)
-                    sender.Position = timelinePos;
+                sender.Position = TimeSpan.FromSeconds(decimal.ToDouble(Timeline.Position));
+                ViewModel.EditorPreviousMarkerCommand.NotifyCanExecuteChanged();
+                ViewModel.EditorNextMarkerCommand.NotifyCanExecuteChanged();
             });
         }
 
@@ -752,9 +753,11 @@ namespace MediaBase.Controls
             if (_currentFrame == null)
                 return;
 
-            ScaleCurrentFrame();
-
             using var ds = SwapChainCanvas.SwapChain.CreateDrawingSession(Colors.Black);
+
+            if (_player.PlaybackSession.PlaybackState == MediaPlaybackState.Playing)
+                UpdateFramePositionAndScale();
+            ScaleCurrentFrame();
             ds.DrawImage(_currentFrame, _destRect, _sourceRect);
 
             if (Source.Duration > 0)
@@ -793,11 +796,11 @@ namespace MediaBase.Controls
         #region Event Handlers (Timeline)
         private void Timeline_PositionChanged(object sender, decimal e)
         {
-            if (_player.PlaybackSession.PlaybackState == MediaPlaybackState.Paused)
-            {
-                ViewModel.EditorNextFrameCommand.NotifyCanExecuteChanged();
-                ViewModel.EditorPreviousFrameCommand.NotifyCanExecuteChanged();
-            }
+            ViewModel.EditorNextFrameCommand.NotifyCanExecuteChanged();
+            ViewModel.EditorPreviousFrameCommand.NotifyCanExecuteChanged();
+
+            if (_isScrubbing)
+                UpdateFramePositionAndScale();
         }
 
         private void Timeline_SelectionChanged(object sender, (decimal start, decimal end, bool isEnabled) e)
@@ -827,6 +830,8 @@ namespace MediaBase.Controls
                 _player.PlaybackSession.Position = pos;
             });
 
+            UpdateFramePositionAndScale();
+
             _isScrubbing = true;
         }
 
@@ -843,6 +848,8 @@ namespace MediaBase.Controls
                 _player.PlaybackSession.Position = pos;
                 _player.PlaybackSession.PlaybackRate = _previousPlaybackRate;
             });
+
+            UpdateFramePositionAndScale();
 
             _isScrubbing = false;
         }
@@ -866,8 +873,19 @@ namespace MediaBase.Controls
 
                 if (index >= 0)
                 {
-                    Source.Markers[index].Position = Timeline.SelectionStart;
-                    Source.Markers[index].Duration = Timeline.SelectionEnd - Timeline.SelectionStart;
+                    ViewModel.SelectedMarker = null;
+
+                    var newMarker = new Marker
+                    {
+                        Name = Source.Markers[index].Name,
+                        Position = Timeline.SelectionStart,
+                        Duration = Timeline.SelectionEnd - Timeline.SelectionStart,
+                        Track = Source.Markers[index].Track
+                    };
+
+                    Source.Markers.RemoveAt(index);
+                    Source.Markers.Insert(index, newMarker);
+                    ViewModel.SelectedMarker = Source.Markers[index];
                 }
             }
 
@@ -1067,14 +1085,14 @@ namespace MediaBase.Controls
         {
             args.CanExecute = IsMediaReadyToPlay &&
                               _player.PlaybackSession.PlaybackState == MediaPlaybackState.Playing &&
-                              _player.PlaybackSession.PlaybackRate < 3.0;
+                              _player.PlaybackSession.PlaybackRate > 0.5;
         }
 
         private void EditorPlaybackRateIncreaseCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
             args.CanExecute = IsMediaReadyToPlay &&
                               _player.PlaybackSession.PlaybackState == MediaPlaybackState.Playing &&
-                              _player.PlaybackSession.PlaybackRate > 0.5;
+                              _player.PlaybackSession.PlaybackRate < 3.0;
         }
 
         private void EditorPlaybackRateNormalCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
@@ -1108,17 +1126,26 @@ namespace MediaBase.Controls
         {
             args.CanExecute = IsMediaReadyToPlay;
         }
+
+        private void ToolsAnimateImageCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = IsLoaded && Source != null;
+        }
         #endregion
 
         #region Event Handlers (Commands - ExecuteRequested)
         private void EditorPlayCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
             _player.Play();
+            PlayButton.Visibility = Visibility.Collapsed;
+            PauseButton.Visibility = Visibility.Visible;
         }
 
         private void EditorPauseCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
             _player.Pause();
+            PlayButton.Visibility = Visibility.Visible;
+            PauseButton.Visibility = Visibility.Collapsed;
         }
 
         private void EditorPreviousFrameCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
@@ -1137,8 +1164,8 @@ namespace MediaBase.Controls
             if (marker != null)
             {
                 if (SelectedMarker == marker)
-                    SelectedMarker = null;
-                SelectedMarker = marker;
+                    ViewModel.SelectedMarker = null;
+                ViewModel.SelectedMarker = marker;
             }
         }
 
@@ -1148,14 +1175,20 @@ namespace MediaBase.Controls
             if (marker != null)
             {
                 if (SelectedMarker == marker)
-                    SelectedMarker = null;
-                SelectedMarker = marker;
+                    ViewModel.SelectedMarker = null;
+                ViewModel.SelectedMarker = marker;
             }
         }
 
         private void EditorToggleActiveSelectionCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+            if ((Timeline.SelectionStart <= Timeline.ZoomEnd &&
+                 Timeline.SelectionEnd >= Timeline.ZoomStart) ||
+                !Timeline.IsSelectionEnabled)
+                return;
+
+            Timeline.SelectionStart = Timeline.ZoomStart + ((Timeline.ZoomEnd - Timeline.ZoomStart) / 3);
+            Timeline.SelectionEnd = Timeline.ZoomEnd - ((Timeline.ZoomEnd - Timeline.ZoomStart) / 3);
         }
 
         private void EditorCutSelectedCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
@@ -1200,7 +1233,7 @@ namespace MediaBase.Controls
 
         private async void EditorNewClipCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            SelectedMarker = null;
+            ViewModel.SelectedMarker = null;
 
             if (_player.PlaybackSession.PlaybackState == MediaPlaybackState.Playing)
                 _player.Pause();
@@ -1220,7 +1253,7 @@ namespace MediaBase.Controls
                 var marker = new Marker
                 {
                     Name = dlg.Text,
-                    Position = Timeline.Position,
+                    Position = Timeline.SelectionStart,
                     Duration = Timeline.SelectionEnd - Timeline.SelectionStart,
                     Track = 1   // TODO: This needs to be assigned from somewhere else
                 };
@@ -1237,7 +1270,25 @@ namespace MediaBase.Controls
 
         private void EditorNewKeyframeCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+            var keyframe = new ImageAnimationKeyframe
+            {
+                Time = Timeline.Position,
+                OffsetX = FrameOffsetX,
+                OffsetY = FrameOffsetY,
+                Scale = FrameScale,
+                Name = "Keyframe"
+            };
+
+            if (Source.Keyframes.Any(x => x.Time == keyframe.Time))
+                return;
+
+            var insertionIndex = 0;
+            while (insertionIndex < Source.Keyframes.Count && Source.Keyframes[insertionIndex].Time <= keyframe.Time)
+            {
+                insertionIndex++;
+            }
+
+            Source.Keyframes.Insert(insertionIndex, keyframe);
         }
 
         private void EditorPlaybackRateDecreaseCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
@@ -1285,6 +1336,18 @@ namespace MediaBase.Controls
         {
             Timeline.VisibleDuration *= 0.5;
             Timeline.CenterVisibleWindow(Timeline.Position);
+        }
+
+        private void ToolsAnimateImageCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            if (Source.Duration == 0)
+            {
+                var source = Source;
+                ViewModel.ActiveMediaSource = null;
+
+                source.Duration = 5;
+                ViewModel.ActiveMediaSource = source;
+            }
         }
         #endregion
 
@@ -1393,6 +1456,11 @@ namespace MediaBase.Controls
                 EditorTimelineZoomInCommand_CanExecuteRequested;
             ViewModel.EditorTimelineZoomInCommand.ExecuteRequested +=
                 EditorTimelineZoomInCommand_ExecuteRequested;
+
+            ViewModel.ToolsAnimateImageCommand.CanExecuteRequested +=
+                ToolsAnimateImageCommand_CanExecuteRequested;
+            ViewModel.ToolsAnimateImageCommand.ExecuteRequested +=
+                ToolsAnimateImageCommand_ExecuteRequested;
         }
 
         private void RefreshAllCommands()
@@ -1416,6 +1484,7 @@ namespace MediaBase.Controls
             ViewModel.EditorFrameZoomFullCommand.NotifyCanExecuteChanged();
             ViewModel.EditorTimelineZoomInCommand.NotifyCanExecuteChanged();
             ViewModel.EditorTimelineZoomOutCommand.NotifyCanExecuteChanged();
+            ViewModel.ToolsAnimateImageCommand.NotifyCanExecuteChanged();
         }
 
         private void RegisterMessages()
@@ -1443,14 +1512,14 @@ namespace MediaBase.Controls
 
                 foreach (var keyframe in m.OldValue)
                 {
-                    var queryResult = Timeline.Markers.Where(x => x.Track == 0 && x.Position == keyframe.Time && string.IsNullOrEmpty(x.Name));
+                    var queryResult = Timeline.Markers.Where(x => x.Track == 0 && x.Position == keyframe.Time && x.Name == keyframe.Name);
                     if (queryResult.Any())
                         Timeline.Markers.Remove(queryResult.First());
                 }
 
                 foreach (var keyframe in m.NewValue)
                 {
-                    Timeline.Markers.Add(new Marker { Name = null, Track = 0, Duration = 0, Position = keyframe.Time });
+                    Timeline.Markers.Add(new Marker { Name = keyframe.Name, Track = 0, Duration = 0, Position = keyframe.Time });
                 }
             });
 
@@ -1466,6 +1535,60 @@ namespace MediaBase.Controls
                 foreach (var (start, end) in m.NewValue)
                     Timeline.AddSelection(start, end);
             });
+        }
+
+        private void UpdateFramePositionAndScale()
+        {
+            // Source has no keyframes
+            if (Source.Keyframes.Count == 0)
+                return;
+
+            // Source only has one keyframe
+            if (Source.Keyframes.Count == 1)
+            {
+                FrameOffsetX = Source.Keyframes[0].OffsetX;
+                FrameOffsetY = Source.Keyframes[0].OffsetY;
+                FrameScale = Source.Keyframes[0].Scale;
+                return;
+            }
+
+            var i = 0;
+            var currentTime = (decimal)_player.PlaybackSession.Position.TotalSeconds;
+            while (i < Source.Keyframes.Count && Source.Keyframes[i].Time <= currentTime)
+            {
+                i++;
+            }
+
+            // At or past last keyframe
+            if (i == Source.Keyframes.Count)
+            {
+                FrameOffsetX = Source.Keyframes[Source.Keyframes.Count - 1].OffsetX;
+                FrameOffsetY = Source.Keyframes[Source.Keyframes.Count - 1].OffsetY;
+                FrameScale = Source.Keyframes[Source.Keyframes.Count - 1].Scale;
+                return;
+            }
+
+            FrameOffsetX = CalculateValue(Source.Keyframes[i - 1].Time,
+                                          Source.Keyframes[i].Time,
+                                          Source.Keyframes[i - 1].OffsetX,
+                                          Source.Keyframes[i].OffsetX);
+
+            FrameOffsetY = CalculateValue(Source.Keyframes[i - 1].Time,
+                                          Source.Keyframes[i].Time,
+                                          Source.Keyframes[i - 1].OffsetY,
+                                          Source.Keyframes[i].OffsetY);
+
+            FrameScale = CalculateValue(Source.Keyframes[i - 1].Time,
+                                        Source.Keyframes[i].Time,
+                                        Source.Keyframes[i - 1].Scale,
+                                        Source.Keyframes[i].Scale);
+
+            double CalculateValue(decimal startTime, decimal endTime, double startValue, double endValue)
+            {
+                var t0 = decimal.ToDouble(startTime);
+                var t1 = decimal.ToDouble(endTime);
+                return ((endValue - startValue) / (t1 - t0) * _player.PlaybackSession.Position.TotalSeconds) + startValue;
+            }
         }
 
         private void SetScaleToFit(uint widthInPixels, uint heightInPixels)

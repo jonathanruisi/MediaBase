@@ -11,8 +11,6 @@
     {
         None,
         View,
-        Trim,
         Edit,
-        Animate
     }
 }

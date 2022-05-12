@@ -67,7 +67,7 @@ namespace MediaBase.ViewModel
         public virtual decimal Duration
         {
             get => _duration;
-            protected set
+            set
             {
                 SetProperty(ref _duration, value);
                 if (_duration == 0)
@@ -281,10 +281,25 @@ namespace MediaBase.ViewModel
         #region Method Overrides (ViewModelElement)
         protected override object CustomPropertyParser(string propertyName, string content)
         {
-            if (propertyName != nameof(Id))
+            if (propertyName == nameof(Id))
+                return Guid.Parse(content);
+
+            if (propertyName == nameof(Cuts))
+            {
+                var cutStrings = content.Split(':');
+                return (decimal.Parse(cutStrings[0]), decimal.Parse(cutStrings[1]));
+            }
+
+            return null;
+        }
+
+        protected override string CustomPropertyWriter(string propertyName, object value)
+        {
+            if (propertyName != nameof(Cuts))
                 return null;
 
-            return Guid.Parse(content);
+            var (start, end) = ((decimal start, decimal end))value;
+            return $"{start}:{end}";
         }
         #endregion
 

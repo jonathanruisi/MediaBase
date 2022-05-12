@@ -126,6 +126,7 @@ namespace MediaBase.ViewModel
         public XamlUICommand ViewFullscreenCommand { get; private set; }
 
         // Tools
+        public XamlUICommand ToolsAnimateImageCommand { get; private set; }
 
         // Help
         public XamlUICommand HelpAboutCommand { get; private set; }
@@ -391,7 +392,11 @@ namespace MediaBase.ViewModel
             #endregion
 
             #region Tool Commands
-
+            ToolsAnimateImageCommand = new XamlUICommand
+            {
+                Label = "Animate Current...",
+                Description = "Animate media position and scale"
+            };
             #endregion
 
             #region View Commands
@@ -588,7 +593,7 @@ namespace MediaBase.ViewModel
             {
                 Label = "Cut Selected",
                 Description = "Add selection to cut list",
-                IconSource = new SymbolIconSource { Symbol = (Symbol)0xF406 }
+                IconSource = new SymbolIconSource { Symbol = Symbol.Trim }
             };
 
             EditorCutSelectedCommand.KeyboardAccelerators.Add(new KeyboardAccelerator

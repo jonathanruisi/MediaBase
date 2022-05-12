@@ -23,6 +23,15 @@
             </toolkit_converters:EmptyObjectToObjectConverter.NotEmptyValue>
         </toolkit_converters:EmptyObjectToObjectConverter>
 
+        <toolkit_converters:EmptyCollectionToObjectConverter x:Key="EmptyCollectionToVisibilityConverter">
+            <toolkit_converters:EmptyCollectionToObjectConverter.EmptyValue>
+                <xaml:Visibility>Collapsed</xaml:Visibility>
+            </toolkit_converters:EmptyCollectionToObjectConverter.EmptyValue>
+            <toolkit_converters:EmptyCollectionToObjectConverter.NotEmptyValue>
+                <xaml:Visibility>Visible</xaml:Visibility>
+            </toolkit_converters:EmptyCollectionToObjectConverter.NotEmptyValue>
+        </toolkit_converters:EmptyCollectionToObjectConverter>
+
         <!-- Context Flyouts -->
         <MenuFlyout x:Key="MenuFlyout_ProjectBrowserActions">
             <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectNewFolderCommand}"/>
@@ -108,6 +117,11 @@
                         <FontIcon FontFamily="Segoe Fluent Icons"
                                   Glyph="&#xEB9F;"
                                   Margin="5,0,10,0"/>
+                        <SymbolIcon Symbol="Permissions"
+                                    Margin="5,0,10,0"
+                                    Visibility="{x:Bind Keyframes,
+                                                        Converter={StaticResource EmptyCollectionToVisibilityConverter},
+                                                        Mode=OneWay}"/>
                         <TextBlock HorizontalAlignment="Left"
                                    VerticalAlignment="Center"
                                    Text="{x:Bind Name, Mode=OneWay}"/>
@@ -130,6 +144,11 @@
                         <FontIcon FontFamily="Segoe Fluent Icons"
                                   Glyph="&#xE8B2;"
                                   Margin="5,0,10,0"/>
+                        <SymbolIcon Symbol="Permissions"
+                                    Margin="5,0,10,0"
+                                    Visibility="{x:Bind Keyframes,
+                                                        Converter={StaticResource EmptyCollectionToVisibilityConverter},
+                                                        Mode=OneWay}"/>
                         <TextBlock HorizontalAlignment="Left"
                                    VerticalAlignment="Center"
                                    Text="{x:Bind Name, Mode=OneWay}"/>
