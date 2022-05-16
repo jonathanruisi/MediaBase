@@ -120,10 +120,7 @@
 
             <!-- Media Editor -->
             <controls:MediaEditor x:Name="Editor" Grid.Row="0" Grid.Column="1"
-                                  HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                                  Source="{x:Bind ViewModel.ActiveMediaSource, Mode=OneWay}"
-                                  SelectedMarker="{x:Bind ViewModel.SelectedMarker, Mode=TwoWay}"
-                                  SelectedKeyframe="{x:Bind ViewModel.SelectedKeyframe, Mode=TwoWay}"/>
+                                  HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
         </Grid>
 
         <!-- Info Bar -->

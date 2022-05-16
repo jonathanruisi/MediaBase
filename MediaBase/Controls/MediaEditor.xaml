@@ -46,9 +46,7 @@
         <controls:MediaTimeline x:Name="Timeline" MinHeight="100"
                                 Grid.Row="1" Grid.Column="0"
                                 PositionFollowMode="Advance"
-                                Visibility="Collapsed"
-                                FramesPerSecond="{x:Bind RefreshRate, Mode=OneWay}"
-                                SelectedMarker="{x:Bind SelectedMarker, Mode=TwoWay}"/>
+                                Visibility="Collapsed"/>
 
         <!-- Command Bar -->
         <CommandBar x:Name="EditorCommandBar" Grid.Row="2"

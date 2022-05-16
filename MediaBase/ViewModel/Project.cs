@@ -126,7 +126,7 @@ namespace MediaBase.ViewModel
         public XamlUICommand ViewFullscreenCommand { get; private set; }
 
         // Tools
-        public XamlUICommand ToolsAnimateImageCommand { get; private set; }
+        public XamlUICommand ToolsAnimateMediaCommand { get; private set; }
 
         // Help
         public XamlUICommand HelpAboutCommand { get; private set; }
@@ -392,9 +392,9 @@ namespace MediaBase.ViewModel
             #endregion
 
             #region Tool Commands
-            ToolsAnimateImageCommand = new XamlUICommand
+            ToolsAnimateMediaCommand = new XamlUICommand
             {
-                Label = "Animate Current...",
+                Label = "Animate...",
                 Description = "Animate media position and scale"
             };
             #endregion
