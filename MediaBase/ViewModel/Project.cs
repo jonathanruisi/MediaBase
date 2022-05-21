@@ -39,7 +39,6 @@ namespace MediaBase.ViewModel
         private ViewModelNode _activeProjectNode;
         private MBMediaSource _activeMediaSource;
         private Marker _selectedMarker;
-        private ImageAnimationKeyframe _selectedKeyframe;
         #endregion
 
         #region Properties
@@ -94,15 +93,6 @@ namespace MediaBase.ViewModel
         {
             get => _selectedMarker;
             set => SetProperty(ref _selectedMarker, value, true);
-        }
-
-        /// <summary>
-        /// Gets or sets a reference to the currently selected keyframe.
-        /// </summary>
-        public ImageAnimationKeyframe SelectedKeyframe
-        {
-            get => _selectedKeyframe;
-            set => SetProperty(ref _selectedKeyframe, value, true);
         }
         #endregion
 
@@ -164,7 +154,6 @@ namespace MediaBase.ViewModel
             _activeProjectNode = null;
             _activeMediaSource = null;
             _selectedMarker = null;
-            _selectedKeyframe = null;
             MediaLibrary = new MediaFolder { Name = MediaLibraryName };
 
             InitializeCommands();

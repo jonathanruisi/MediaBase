@@ -58,18 +58,9 @@ namespace MediaBase.ViewModel
         #endregion
 
         #region Method Overrides (MBMediaSource)
-        public override async Task<IMediaPlaybackSource> GetMediaSourceAsync()
+        public override Task<IMediaPlaybackSource> GetMediaSourceAsync()
         {
-            var composition = new MediaComposition();
-            var clip = await MediaClip.CreateFromImageFileAsync(File,
-                TimeSpan.FromSeconds(decimal.ToDouble(Duration)));
-            composition.Clips.Add(clip);
-
-            var encodingProfile = MediaEncodingProfile.CreateHevc(VideoEncodingQuality.Uhd4320p);
-            encodingProfile.Video.Width = WidthInPixels;
-            encodingProfile.Video.Height = HeightInPixels;
-            var mediaStreamSource = composition.GenerateMediaStreamSource(encodingProfile);
-            return MediaSource.CreateFromMediaStreamSource(mediaStreamSource);
+            return null;
         }
         #endregion
     }

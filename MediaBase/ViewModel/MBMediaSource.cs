@@ -113,6 +113,11 @@ namespace MediaBase.ViewModel
         }
 
         /// <summary>
+        /// Gets the total number of frames in the media.
+        /// </summary>
+        public int TotalFrames => (int)(Duration * (decimal)FramesPerSecond);
+
+        /// <summary>
         /// Gets a collection of optional tags used to describe the media.
         /// </summary>
         /// <remarks>
@@ -138,10 +143,10 @@ namespace MediaBase.ViewModel
 
         /// <summary>
         /// Gets a collection of keyframes used to animate
-        /// pan and zoom of the media.
+        /// a property of the media.
         /// </summary>
         [ViewModelCollection(nameof(Keyframes), "Keyframe")]
-        public ObservableCollection<ImageAnimationKeyframe> Keyframes { get; }
+        public ObservableCollection<Keyframe> Keyframes { get; }
 
         /// <summary>
         /// Gets a list of time ranges that have <b>NOT</b> been cut from the media.
@@ -170,7 +175,7 @@ namespace MediaBase.ViewModel
             Cuts = new ObservableCollection<(decimal start, decimal end)>();
             Cuts.CollectionChanged += Cuts_CollectionChanged;
 
-            Keyframes = new ObservableCollection<ImageAnimationKeyframe>();
+            Keyframes = new ObservableCollection<Keyframe>();
             Keyframes.CollectionChanged += Keyframes_CollectionChanged;
         }
         #endregion
@@ -181,7 +186,7 @@ namespace MediaBase.ViewModel
         /// <see cref="MBMediaSource"/> so that it can be played
         /// using <see cref="MediaPlayer"/>.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>A <see cref="MediaPlayer"/>-compatible object.</returns>
         public abstract Task<IMediaPlaybackSource> GetMediaSourceAsync();
 
         // TODO: Implement a static method to create a new IVideoSource (like a VideoClip or something) from the cuts applied to this VideoFile
@@ -259,17 +264,17 @@ namespace MediaBase.ViewModel
                     Duration = maxTime;
             }
 
-            var keyframeMessage = new CollectionChangedMessage<ImageAnimationKeyframe>(this, nameof(Keyframes));
+            var keyframeMessage = new CollectionChangedMessage<Keyframe>(this, nameof(Keyframes));
 
             if (e.OldItems != null)
             {
-                foreach (ImageAnimationKeyframe oldKeyframe in e.OldItems)
+                foreach (Keyframe oldKeyframe in e.OldItems)
                     keyframeMessage.OldValue.Add(oldKeyframe);
             }
 
             if (e.NewItems != null)
             {
-                foreach (ImageAnimationKeyframe newKeyframe in e.NewItems)
+                foreach (Keyframe newKeyframe in e.NewItems)
                     keyframeMessage.NewValue.Add(newKeyframe);
             }
 

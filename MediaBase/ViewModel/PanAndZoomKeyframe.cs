@@ -10,34 +10,20 @@ using JLR.Utility.WinUI.ViewModel;
 namespace MediaBase.ViewModel
 {
     /// <summary>
-    /// Defines an image's scale and translation at
-    /// a specific point in time.
+    /// Defines the scale and translation of a media
+    /// object at a specific point in time.
     /// </summary>
-    [ViewModelObject("Keyframe", XmlNodeType.Element)]
-    public sealed class ImageAnimationKeyframe : ViewModelElement
+    [ViewModelObject(nameof(PanAndZoomKeyframe), XmlNodeType.Element)]
+    public sealed class PanAndZoomKeyframe : Keyframe
     {
-        #region Fields
-        private decimal _time;
         private double _scale, _offsetX, _offsetY;
-        #endregion
-
-        #region Properties
-        /// <summary>
-        /// Gets or sets the time where the keyframe occurs.
-        /// </summary>
-        [ViewModelObject(nameof(Time), XmlNodeType.Attribute)]
-        public decimal Time
-        {
-            get => _time;
-            set => SetProperty(ref _time, value);
-        }
 
         /// <summary>
-        /// Gets or sets the image scale.
+        /// Gets or sets the scale.
         /// </summary>
         /// <remarks>
         /// This is a log-normalized value.
-        /// <b>Zero</b> is equivalent to the original image size,
+        /// <b>Zero</b> is equivalent to the original size,
         /// values <b>greater than zero</b> are larger than the original size,
         /// and values <b>less than zero</b> are smaller than the original size.
         /// </remarks>
@@ -67,24 +53,17 @@ namespace MediaBase.ViewModel
             get => _offsetY;
             set => SetProperty(ref _offsetY, value);
         }
-        #endregion
 
-        #region Constructor
-        public ImageAnimationKeyframe()
+        public PanAndZoomKeyframe()
         {
-            Name = string.Empty;
-            _time = 0;
             _scale = 0;
             _offsetX = 0;
             _offsetY = 0;
         }
-        #endregion
 
-        #region Method Overrides (System.Object)
         public override string ToString()
         {
-            return $"{Time:0.0####},{Scale:0.0####},{OffsetX:0.0####},{OffsetY:0.0####}";
+            return $"{base.ToString()} (Scale={Scale:0.000}, X={OffsetX:0.000}, Y={OffsetY:0.000})";
         }
-        #endregion
     }
 }
