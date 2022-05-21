@@ -9,8 +9,8 @@ namespace MediaBase.ViewModel
     /// <summary>
     /// Represents a point in time (or span of time) in a video.
     /// </summary>
-    [ViewModelObject("Marker", XmlNodeType.Element)]
-    public sealed class Marker : ViewModelElement, ITimelineMarker
+    [ViewModelObject(nameof(Marker), XmlNodeType.Element)]
+    public class Marker : ViewModelElement, ITimelineMarker
     {
         #region Fields
         private decimal _position, _duration;
@@ -63,11 +63,13 @@ namespace MediaBase.ViewModel
         #endregion
 
         #region Constructor
-        public Marker()
+        public Marker() : this(0) { }
+
+        public Marker(decimal position, decimal duration = 0M, int track = 0)
         {
-            _position = 0;
-            _duration = 0;
-            _track = 0;
+            _position = position;
+            _duration = duration;
+            _track = track;
         }
         #endregion
 

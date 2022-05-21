@@ -1,9 +1,13 @@
-﻿namespace MediaBase.ViewModel
+﻿using System;
+
+namespace MediaBase.ViewModel
 {
-    public enum MediaContentType
+    [Flags]
+    public enum MediaContentType : short
     {
-        Audio,
-        Image,
-        Video
+        None = 0,
+        Audio = 1,
+        Image = 2,
+        Video = 4
     }
 }

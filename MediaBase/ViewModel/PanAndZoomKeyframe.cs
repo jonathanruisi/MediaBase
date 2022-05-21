@@ -14,10 +14,13 @@ namespace MediaBase.ViewModel
     /// object at a specific point in time.
     /// </summary>
     [ViewModelObject(nameof(PanAndZoomKeyframe), XmlNodeType.Element)]
-    public sealed class PanAndZoomKeyframe : Keyframe
+    public sealed class PanAndZoomKeyframe : Marker
     {
+        #region Fields
         private double _scale, _offsetX, _offsetY;
+        #endregion
 
+        #region Properties
         /// <summary>
         /// Gets or sets the scale.
         /// </summary>
@@ -53,17 +56,28 @@ namespace MediaBase.ViewModel
             get => _offsetY;
             set => SetProperty(ref _offsetY, value);
         }
+        #endregion
 
-        public PanAndZoomKeyframe()
+        #region Constructors
+        public PanAndZoomKeyframe() : this(0) { }
+
+        public PanAndZoomKeyframe(decimal position,
+                                  double scale = 0.0,
+                                  double offsetX = 0.0,
+                                  double offsetY = 0.0)
+            : base(position, 0, 0)
         {
-            _scale = 0;
-            _offsetX = 0;
-            _offsetY = 0;
+            _scale = scale;
+            _offsetX = offsetX;
+            _offsetY = offsetY;
         }
+        #endregion
 
+        #region Method Overrides (System.Object)
         public override string ToString()
         {
             return $"{base.ToString()} (Scale={Scale:0.000}, X={OffsetX:0.000}, Y={OffsetY:0.000})";
         }
+        #endregion
     }
 }

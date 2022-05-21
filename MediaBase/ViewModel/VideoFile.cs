@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-
+using System.IO;
 using System.Threading.Tasks;
 using System.Xml;
 
@@ -17,21 +17,58 @@ namespace MediaBase.ViewModel
     /// Contains properties and methods needed for accessing video files
     /// </summary>
     [ViewModelObject("Video", XmlNodeType.Element)]
-    public class VideoFile : MediaFile
+    public class VideoFile : VideoSource, IMediaFile
     {
+        #region Fields
+        private string _path;
+        private StorageFile _file;
+        #endregion
+
         #region Properties
-        public override MediaContentType ContentType => MediaContentType.Video;
+        [ViewModelObject(nameof(Path), XmlNodeType.Element)]
+        public string Path
+        {
+            get => _path;
+            set => SetProperty(ref _path, value);
+        }
+
+        public StorageFile File
+        {
+            get => _file;
+            set => SetProperty(ref _file, value);
+        }
         #endregion
 
         #region Constructors
         public VideoFile() : this(null) { }
 
-        public VideoFile(StorageFile file) : base(file) { }
+        public VideoFile(StorageFile file)
+        {
+            _file = file;
+            _path = file?.Path;
+            Name = file?.DisplayName;
+        }
         #endregion
 
-        #region Method Overrides (MediaFile)
-        public override async Task<bool> LoadMediaPropertiesAsync()
+        #region Public Methods
+        public async Task<bool> LoadFileFromPathAsync()
         {
+            if (string.IsNullOrEmpty(Path))
+                return false;
+
+            try
+            {
+                File = await StorageFile.GetFileFromPathAsync(Path);
+                Name = File.DisplayName;
+            }
+            catch (FileNotFoundException) { return false; }
+            catch (UnauthorizedAccessException) { return false; }
+            catch (ArgumentException) { return false; }
+
+            var contentTypeString = Enum.GetName(ContentType);
+            if (!File.ContentType.Contains(contentTypeString.ToLower()))
+                throw new InvalidOperationException($"{contentTypeString} file expected");
+
             try
             {
                 var strWidth = "System.Video.FrameWidth";
@@ -46,17 +83,12 @@ namespace MediaBase.ViewModel
                 FramesPerSecond = (uint)propResultList[strFps] / 1000.0;
                 Duration = (ulong)propResultList[strDuration] / 10000000.0M;
             }
-            catch (Exception)
-            {
-                return false;
-            }
+            catch (Exception) { return false; }
 
             return true;
         }
-        #endregion
 
-        #region Method Overrides (MBMediaSource)
-        public override async Task<IMediaPlaybackSource> GetMediaSourceAsync()
+        public override async Task<IMediaPlaybackSource> GetPlaybackSourceAsync()
         {
             var composition = new MediaComposition();
 

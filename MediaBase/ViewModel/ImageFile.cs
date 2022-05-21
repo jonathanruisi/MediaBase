@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -23,21 +24,60 @@ namespace MediaBase.ViewModel
     /// Contains properties and methods needed for accessing image files
     /// </summary>
     [ViewModelObject("Image", XmlNodeType.Element)]
-    public class ImageFile : MediaFile
+    public class ImageFile : MBMediaSource, IMediaFile
     {
+        #region Fields
+        private string _path;
+        private StorageFile _file;
+        #endregion
+
         #region Properties
         public override MediaContentType ContentType => MediaContentType.Image;
+
+        [ViewModelObject(nameof(Path), XmlNodeType.Element)]
+        public string Path
+        {
+            get => _path;
+            set => SetProperty(ref _path, value);
+        }
+
+        public StorageFile File
+        {
+            get => _file;
+            set => SetProperty(ref _file, value);
+        }
         #endregion
 
         #region Constructors
         public ImageFile() : this(null) { }
 
-        public ImageFile(StorageFile file) : base(file) { }
+        public ImageFile(StorageFile file)
+        {
+            _file = file;
+            _path = file?.Path;
+            Name = file?.DisplayName;
+        }
         #endregion
 
-        #region Method Overrides (MediaFile)
-        public override async Task<bool> LoadMediaPropertiesAsync()
+        #region Public Methods
+        public async Task<bool> LoadFileFromPathAsync()
         {
+            if (string.IsNullOrEmpty(Path))
+                return false;
+
+            try
+            {
+                File = await StorageFile.GetFileFromPathAsync(Path);
+                Name = File.DisplayName;
+            }
+            catch (FileNotFoundException) { return false; }
+            catch (UnauthorizedAccessException) { return false; }
+            catch (ArgumentException) { return false; }
+
+            var contentTypeString = Enum.GetName(ContentType);
+            if (!File.ContentType.Contains(contentTypeString.ToLower()))
+                throw new InvalidOperationException($"{contentTypeString} file expected");
+
             try
             {
                 var strWidth = "System.Image.HorizontalSize";
@@ -48,19 +88,17 @@ namespace MediaBase.ViewModel
                 WidthInPixels = (uint)propResultList[strWidth];
                 HeightInPixels = (uint)propResultList[strHeight];
             }
-            catch (Exception)
-            {
-                return false;
-            }
+            catch (Exception) { return false; }
 
             return true;
         }
         #endregion
 
-        #region Method Overrides (MBMediaSource)
-        public override Task<IMediaPlaybackSource> GetMediaSourceAsync()
+        #region Method Overrides (System.Object)
+        public override string ToString()
         {
-            return null;
+            var filename = (bool)(File?.IsAvailable) ? File.Name : "FILE NOT LOADED";
+            return $"{base.ToString()} ({filename})";
         }
         #endregion
     }

@@ -30,18 +30,23 @@ namespace MediaBase.ViewModel
         private decimal _duration;
         private uint _widthInPixels, _heightInPixels;
         private double _framesPerSecond;
-        private decimal _trimmedDuration;
         #endregion
 
         #region Properties
         /// <summary>
-        /// Uniquely identifies this object.
+        /// Defines the type of media that is expected
+        /// to be provided by this <see cref="MBMediaSource"/>.
+        /// </summary>
+        public abstract MediaContentType ContentType { get; }
+
+        /// <summary>
+        /// Gets a <see cref="Guid"/> which uniquely identifies this object.
         /// </summary>
         [ViewModelObject(nameof(Id), XmlNodeType.Attribute, true)]
         public Guid Id
         {
             get => _id;
-            set => SetProperty(ref _id, value);
+            protected set => SetProperty(ref _id, value);
         }
 
         /// <summary>
@@ -56,33 +61,17 @@ namespace MediaBase.ViewModel
         }
 
         /// <summary>
-        /// Defines the type of media that is expected
-        /// to be provided by this <see cref="MBMediaSource"/>.
-        /// </summary>
-        public abstract MediaContentType ContentType { get; }
-
-        /// <summary>
         /// Gets the duration of the media, in seconds.
         /// </summary>
         public virtual decimal Duration
         {
             get => _duration;
-            set
+            protected set
             {
                 SetProperty(ref _duration, value);
                 if (_duration == 0)
                     Keyframes.Clear();
             }
-        }
-
-        /// <summary>
-        /// Gets a value indicating what the duration of the
-        /// video will be after all cuts are applied.
-        /// </summary>
-        public decimal TrimmedDuration
-        {
-            get => _trimmedDuration;
-            private set => SetProperty(ref _trimmedDuration, value);
         }
 
         /// <summary>
@@ -104,7 +93,7 @@ namespace MediaBase.ViewModel
         }
 
         /// <summary>
-        /// Gets the refresh rate of the media.
+        /// Gets the refresh rate of the media, in frames/second.
         /// </summary>
         public virtual double FramesPerSecond
         {
@@ -128,30 +117,11 @@ namespace MediaBase.ViewModel
         public ObservableCollection<int> Tags { get; }
 
         /// <summary>
-        /// Gets a collection of <see cref="Marker"/> objects
-        /// used to define chapters and clips.
-        /// </summary>
-        [ViewModelCollection(nameof(Markers), "Marker")]
-        public ObservableCollection<Marker> Markers { get; }
-
-        /// <summary>
-        /// Gets a collection used to specify spans of time
-        /// intended to be cut from the media.
-        /// </summary>
-        [ViewModelCollection(nameof(Cuts), "Cut", true, true)]
-        public ObservableCollection<(decimal start, decimal end)> Cuts { get; }
-
-        /// <summary>
-        /// Gets a collection of keyframes used to animate
-        /// a property of the media.
+        /// Gets a collection of keyframes used to trigger
+        /// various actions at specified times in the media.
         /// </summary>
         [ViewModelCollection(nameof(Keyframes), "Keyframe")]
         public ObservableCollection<Keyframe> Keyframes { get; }
-
-        /// <summary>
-        /// Gets a list of time ranges that have <b>NOT</b> been cut from the media.
-        /// </summary>
-        protected List<(decimal start, decimal end)> PlayableRanges { get; }
         #endregion
 
         #region Constructor
@@ -163,33 +133,13 @@ namespace MediaBase.ViewModel
             _widthInPixels = 0;
             _heightInPixels = 0;
             _framesPerSecond = 0;
-            _trimmedDuration = 0;
-            PlayableRanges = new List<(decimal start, decimal end)>();
 
             Tags = new ObservableCollection<int>();
             Tags.CollectionChanged += Tags_CollectionChanged;
 
-            Markers = new ObservableCollection<Marker>();
-            Markers.CollectionChanged += Markers_CollectionChanged;
-
-            Cuts = new ObservableCollection<(decimal start, decimal end)>();
-            Cuts.CollectionChanged += Cuts_CollectionChanged;
-
             Keyframes = new ObservableCollection<Keyframe>();
             Keyframes.CollectionChanged += Keyframes_CollectionChanged;
         }
-        #endregion
-
-        #region Public Methods
-        /// <summary>
-        /// Constructs an <see cref="IMediaPlaybackSource"/> from this
-        /// <see cref="MBMediaSource"/> so that it can be played
-        /// using <see cref="MediaPlayer"/>.
-        /// </summary>
-        /// <returns>A <see cref="MediaPlayer"/>-compatible object.</returns>
-        public abstract Task<IMediaPlaybackSource> GetMediaSourceAsync();
-
-        // TODO: Implement a static method to create a new IVideoSource (like a VideoClip or something) from the cuts applied to this VideoFile
         #endregion
 
         #region Event Handlers
@@ -211,48 +161,6 @@ namespace MediaBase.ViewModel
 
             Messenger.Send(tagMessage);
             NotifySerializedCollectionChanged(nameof(Tags));
-        }
-
-        private void Markers_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
-        {
-            var markerMessage = new CollectionChangedMessage<Marker>(this, nameof(Markers));
-
-            if (e.OldItems != null)
-            {
-                foreach (Marker oldMarker in e.OldItems)
-                    markerMessage.OldValue.Add(oldMarker);
-            }
-
-            if (e.NewItems != null)
-            {
-                foreach (Marker newMarker in e.NewItems)
-                    markerMessage.NewValue.Add(newMarker);
-            }
-
-            Messenger.Send(markerMessage);
-            NotifySerializedCollectionChanged(nameof(Markers));
-        }
-
-        private void Cuts_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
-        {
-            EvaluateCuts();
-
-            var cutMessage = new CollectionChangedMessage<(decimal start, decimal end)>(this, nameof(Cuts));
-
-            if (e.OldItems != null)
-            {
-                foreach ((decimal start, decimal end) oldCut in e.OldItems)
-                    cutMessage.OldValue.Add(oldCut);
-            }
-
-            if (e.NewItems != null)
-            {
-                foreach ((decimal start, decimal end) newCut in e.NewItems)
-                    cutMessage.NewValue.Add(newCut);
-            }
-
-            Messenger.Send(cutMessage);
-            NotifySerializedCollectionChanged(nameof(Cuts));
         }
 
         private void Keyframes_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
@@ -289,63 +197,7 @@ namespace MediaBase.ViewModel
             if (propertyName == nameof(Id))
                 return Guid.Parse(content);
 
-            if (propertyName == nameof(Cuts))
-            {
-                var cutStrings = content.Split(':');
-                return (decimal.Parse(cutStrings[0]), decimal.Parse(cutStrings[1]));
-            }
-
             return null;
-        }
-
-        protected override string CustomPropertyWriter(string propertyName, object value)
-        {
-            if (propertyName != nameof(Cuts))
-                return null;
-
-            var (start, end) = ((decimal start, decimal end))value;
-            return $"{start}:{end}";
-        }
-        #endregion
-
-        #region Private Methods
-        private void EvaluateCuts()
-        {
-            decimal lastStart = 0;
-            PlayableRanges.Clear();
-
-            foreach (var cut in Cuts.OrderBy(x => x.start))
-            {
-                if (lastStart >= Duration)
-                    break;
-
-                if (cut.start <= 0)
-                {
-                    lastStart = cut.end;
-                    continue;
-                }
-
-                PlayableRanges.Add((lastStart, cut.start));
-                lastStart = cut.end;
-            }
-
-            if (lastStart > 0 && lastStart < Duration)
-                PlayableRanges.Add((lastStart, Duration));
-
-            if (PlayableRanges.Count == 0)
-                TrimmedDuration = Duration;
-            else
-            {
-                decimal trimmedDuration = 0;
-                foreach (var range in PlayableRanges)
-                {
-                    trimmedDuration += range.end - range.start;
-                }
-
-                TrimmedDuration = trimmedDuration;
-            }
-
-            // TODO: Keyframes need to be adjusted here as well
         }
         #endregion
     }
