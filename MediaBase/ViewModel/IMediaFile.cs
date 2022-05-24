@@ -30,5 +30,16 @@ namespace MediaBase.ViewModel
         /// <b><c>false</c></b> otherwise.
         /// </returns>
         Task<bool> LoadFileFromPathAsync();
+
+        /// <summary>
+        /// Asynchronously reads any data from <see cref="File"/>
+        /// that is needed by this <see cref="IMediaFile"/>.
+        /// </summary>
+        /// <returns>
+        /// <b><c>true</c></b> if all needed information
+        /// was successfully read from the file,
+        /// <b><c>false</c></b> otherwise.
+        /// </returns>
+        Task<bool> ReadPropertiesFromFileAsync();
     }
 }

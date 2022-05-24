@@ -348,7 +348,7 @@ namespace MediaBase
         private async Task LoadMediaFiles()
         {
             var messenger = App.Current.Services.GetService<IMessenger>();
-            var mediaFileEnumerator = ViewModel.MediaLibrary.DepthFirstEnumerable().OfType<MediaFile>();
+            var mediaFileEnumerator = ViewModel.MediaLibrary.DepthFirstEnumerable().OfType<IMediaFile>();
             var mediaFileCount = mediaFileEnumerator.Count();
 
             int index = 1, errors = 0;
@@ -357,7 +357,7 @@ namespace MediaBase
                 messenger.Send(new SetInfoBarMessage
                 {
                     Title = "Opening Project",
-                    Message = $"Loading file {index} of {mediaFileCount}: {mediaFile.Name}",
+                    Message = $"Loading file {index} of {mediaFileCount}: {((ViewModelElement)mediaFile).Name}",
                     Severity = InfoBarSeverity.Informational,
                     IsCloseable = false
                 });

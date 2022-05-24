@@ -69,6 +69,11 @@ namespace MediaBase.ViewModel
             if (!File.ContentType.Contains(contentTypeString.ToLower()))
                 throw new InvalidOperationException($"{contentTypeString} file expected");
 
+            return await ReadPropertiesFromFileAsync();
+        }
+
+        public async Task<bool> ReadPropertiesFromFileAsync()
+        {
             try
             {
                 var strWidth = "System.Video.FrameWidth";

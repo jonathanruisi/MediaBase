@@ -1,13 +1,22 @@
-﻿using System;
+﻿//#define SHOW_DEBUG_MESSAGES
+
+using System;
+using System.Diagnostics;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 using JLR.Utility.WinUI.Controls;
+using JLR.Utility.WinUI.Dialogs;
+using JLR.Utility.WinUI.Messaging;
 
 using MediaBase.ViewModel;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Graphics.Canvas;
 using Microsoft.Graphics.Canvas.Text;
+using Microsoft.Toolkit.Mvvm.Messaging;
+using Microsoft.Toolkit.Mvvm.Messaging.Messages;
 using Microsoft.UI;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Input;
@@ -34,12 +43,11 @@ namespace MediaBase.Controls
         private SoftwareBitmap _frameSizingBitmap;
         private CanvasBitmap _frameBitmap;
         private InputCursor _primaryCursor, _hoverCursor, _dragCursor;
-        private bool _isPointerOverFrame, _isPointerCapturedForFrame, _isScrubbing, _isImageAnimationPlaying;
+        private bool _isPointerCapturedForFrame, _isScrubbing;
         private Point _prevLeftMousePosition;
-        private double _scaleFactor, _playbackRate;
+        private double _scaleFactor, _prevPlaybackRate;
         private Rect _sourceRect, _destRect;
         private FollowMode _prevFollowMode;
-        private int _framesPerSecond, _imageAnimationFrame;
         #endregion
 
         #region Properties
@@ -47,14 +55,16 @@ namespace MediaBase.Controls
 
         public int FramesPerSecond
         {
-            get => _framesPerSecond;
-            private set
-            {
-                _framesPerSecond = value;
-                Timeline.FramesPerSecond = _framesPerSecond;
-                _redrawTimer.Interval = TimeSpan.FromTicks((int)(1.0 / _framesPerSecond * 10000000));
-            }
+            get => (int)GetValue(FramesPerSecondProperty);
+            private set => SetValue(FramesPerSecondProperty, value);
         }
+
+        public static readonly DependencyProperty FramesPerSecondProperty =
+            DependencyProperty.Register("FramesPerSecond",
+                                        typeof(int),
+                                        typeof(MediaEditor),
+                                        new PropertyMetadata(App.RefreshRate,
+                                            OnFramesPerSecondChanged));
 
         public MBMediaSource Source
         {
@@ -69,18 +79,51 @@ namespace MediaBase.Controls
                                         new PropertyMetadata(null,
                                             OnSourceChanged));
 
-        public Marker SelectedMarker
+        public MediaPlaybackState PlaybackState
         {
-            get => (Marker)GetValue(SelectedMarkerProperty);
-            set => SetValue(SelectedMarkerProperty, value);
+            get => (MediaPlaybackState)GetValue(PlaybackStateProperty);
+            private set => SetValue(PlaybackStateProperty, value);
         }
 
-        public static readonly DependencyProperty SelectedMarkerProperty =
-            DependencyProperty.Register("SelectedMarker",
-                                        typeof(Marker),
+        public static readonly DependencyProperty PlaybackStateProperty =
+            DependencyProperty.Register("PlaybackState",
+                                        typeof(MediaPlaybackState),
                                         typeof(MediaEditor),
-                                        new PropertyMetadata(null,
-                                            OnSelectedMarkerChanged));
+                                        new PropertyMetadata(MediaPlaybackState.None,
+                                            OnPlaybackStateChanged));
+
+        public double PlaybackRate
+        {
+            get => (double)GetValue(PlaybackRateProperty);
+            set => SetValue(PlaybackRateProperty, value);
+        }
+
+        public static readonly DependencyProperty PlaybackRateProperty =
+            DependencyProperty.Register("PlaybackRate",
+                                        typeof(double),
+                                        typeof(MediaEditor),
+                                        new PropertyMetadata(0.0,
+                                            OnPlaybackRateChanged));
+
+        public TimeSpan CurrentPosition
+        {
+            get => TimeSpan.FromSeconds(decimal.ToDouble((decimal)CurrentFrame / FramesPerSecond));
+            private set => CurrentFrame =
+                decimal.ToInt32(decimal.Round((decimal)value.TotalSeconds * FramesPerSecond));
+        }
+
+        public int CurrentFrame
+        {
+            get => (int)GetValue(CurrentFrameProperty);
+            private set => SetValue(CurrentFrameProperty, value);
+        }
+
+        public static readonly DependencyProperty CurrentFrameProperty =
+            DependencyProperty.Register("CurrentFrame",
+                                        typeof(int),
+                                        typeof(MediaEditor),
+                                        new PropertyMetadata(0,
+                                            OnCurrentFrameChanged));
 
         public double FrameScale
         {
@@ -120,6 +163,18 @@ namespace MediaBase.Controls
                                         new PropertyMetadata(0.0,
                                             OnFrameOffsetChanged));
 
+        public bool IsPanAndZoomEnabled
+        {
+            get => (bool)GetValue(IsPanAndZoomEnabledProperty);
+            set => SetValue(IsPanAndZoomEnabledProperty, value);
+        }
+
+        public static readonly DependencyProperty IsPanAndZoomEnabledProperty =
+            DependencyProperty.Register("IsPanAndZoomEnabled",
+                                        typeof(bool),
+                                        typeof(MediaEditor),
+                                        new PropertyMetadata(false));
+
         public InputSystemCursorShape PrimaryCursorShape
         {
             get => (InputSystemCursorShape)GetValue(PrimaryCursorShapeProperty);
@@ -158,6 +213,18 @@ namespace MediaBase.Controls
                                         typeof(MediaEditor),
                                         new PropertyMetadata(InputSystemCursorShape.SizeAll,
                                             OnCursorShapeChanged));
+
+        public TimeDisplayFormat TimeDisplayMode
+        {
+            get => (TimeDisplayFormat)GetValue(TimeDisplayModeProperty);
+            set => SetValue(TimeDisplayModeProperty, value);
+        }
+
+        public static readonly DependencyProperty TimeDisplayModeProperty =
+            DependencyProperty.Register("TimeDisplayMode",
+                                        typeof(TimeDisplayFormat),
+                                        typeof(MediaEditor),
+                                        new PropertyMetadata(TimeDisplayFormat.None));
 
         public Color TextOverlayColor
         {
@@ -262,115 +329,128 @@ namespace MediaBase.Controls
             _primaryCursor = InputSystemCursor.Create(PrimaryCursorShape);
             _hoverCursor = InputSystemCursor.Create(HoverCursorShape);
             _dragCursor = InputSystemCursor.Create(DragCursorShape);
-            
+
             InitializeCommands();
             RegisterMessages();
         }
         #endregion
 
         #region Dependency Property Callbacks
+        private static void OnFramesPerSecondChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is not MediaEditor editor || editor._redrawTimer is null)
+                return;
+
+            editor._redrawTimer.Interval =
+                TimeSpan.FromTicks((int)(1.0 / editor.FramesPerSecond * 10000000));
+
+            // Timeline's FPS value is set through data binding
+#if DEBUG && SHOW_DEBUG_MESSAGES
+            Debug.WriteLine($"FPS changed: {editor.FramesPerSecond}");
+#endif
+        }
+
         private static async void OnSourceChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             if (d is not MediaEditor editor)
                 return;
 
-            // Stop any current playback and halt all timers
-            if (editor._player.PlaybackSession.PlaybackState is
-                MediaPlaybackState.Opening or
-                MediaPlaybackState.Buffering or
-                MediaPlaybackState.Playing)
-                editor._player.Pause();
-            editor._redrawTimer.Stop();
-            editor._isImageAnimationPlaying = false;
-            editor._imageAnimationFrame = 0;
-
-            // De-select markers/keyframes
-            editor.ViewModel.SelectedMarker = null;
-
-            // Cleanup resources used by the previous media source (if needed)
-            if (editor._player.Source is MediaSource oldSource && oldSource != null)
-            {
-                oldSource.Dispose();
-                editor._player.Source = null;
-            }
-
-            if (editor._frameBitmap != null)
-            {
-                editor._frameBitmap.Dispose();
-                editor._frameBitmap = null;
-            }
-
-            // Reset frame position and scale
-            editor.FrameScale = 0;
-            editor.FrameOffsetX = 0;
-            editor.FrameOffsetY = 0;
-
-            // Reset timeline
-            editor.Timeline.Reset();
-
-            if (editor.Source == null)
-            {
-                editor.FramesPerSecond = App.RefreshRate;
-                editor.RefreshCommandStates();
-                return;
-            }
-
-            if (editor.Source.ContentType == MediaContentType.Image)
-            {
-                editor.FramesPerSecond = App.RefreshRate;
-                editor._frameBitmap = await CanvasBitmap.LoadAsync(editor.SwapChainCanvas.SwapChain.Device,
-                    await ((MediaFile)editor.Source).File.OpenReadAsync());
-                editor.ScaleFrameToFit(editor._frameBitmap.SizeInPixels.Width,
-                                       editor._frameBitmap.SizeInPixels.Height);
-                editor.ApplyFramePositionAndScale();
-                editor._redrawTimer.Start();
-            }
-            else if (editor.Source.ContentType == MediaContentType.Video)
-            {
-                editor.FramesPerSecond = (int)Math.Ceiling(editor.Source.FramesPerSecond);
-                editor._player.Source = await editor.Source.GetMediaSourceAsync();
-            }
-
-            // Add markers to timeline
-            foreach (var marker in editor.Source.Markers)
-            {
-                editor.Timeline.Markers.Add(marker);
-            }
-
-            // Add keyframes to timeline
-            foreach (var keyframe in editor.Source.Keyframes)
-            {
-                editor.Timeline.Markers.Add(new Marker
-                {
-                    Position = keyframe.Time,
-                    Duration = 0,
-                    Track = 0,
-                    Name = keyframe.GetType().Name
-                });
-            }
-
-            // Add cuts to timeline as selections
-            foreach (var (start, end) in editor.Source.Cuts)
-            {
-                editor.Timeline.AddSelection(start, end);
-            }
+            // Free resources used by previous source,
+            // reset the editor, then prepare the editor
+            // for the new source.
+            editor.ResetEditor();
+            await editor.PrepareEditorForSource();
 
             // Refresh commands and UI state
             editor.RefreshCommandStates();
-            editor.RefreshUIState();
+            editor.RefreshUI();
+#if DEBUG && SHOW_DEBUG_MESSAGES
+            Debug.WriteLine($"Source changed: {editor.Source}");
+#endif
         }
 
-        private static void OnSelectedMarkerChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        private static void OnPlaybackStateChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             if (d is not MediaEditor editor)
                 return;
+#if DEBUG && SHOW_DEBUG_MESSAGES
+            Debug.WriteLine($"Playback state changed: {Enum.GetName(editor.PlaybackState)}");
+#endif
+            if (editor.PlaybackState == MediaPlaybackState.None)
+                editor._redrawTimer.Stop();
+            else
+                editor._redrawTimer.Start();
+
+            if (editor.PlaybackState == MediaPlaybackState.Playing)
+            {
+                editor.PlayButton.Visibility = Visibility.Collapsed;
+                editor.PauseButton.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                editor.PlayButton.Visibility = Visibility.Visible;
+                editor.PauseButton.Visibility = Visibility.Collapsed;
+            }
+#if DEBUG && SHOW_DEBUG_MESSAGES
+            Debug.WriteLine($"    Redraw timer running: {editor._redrawTimer.IsRunning}");
+#endif
+            editor.RefreshCommandStates();
+        }
+
+        private static void OnPlaybackRateChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is not MediaEditor editor)
+                return;
+#if DEBUG && SHOW_DEBUG_MESSAGES
+            Debug.WriteLine($"Playback rate changed: {editor.PlaybackRate}");
+#endif
+            editor.ViewModel.EditorPlaybackRateDecreaseCommand.NotifyCanExecuteChanged();
+            editor.ViewModel.EditorPlaybackRateNormalCommand.NotifyCanExecuteChanged();
+            editor.ViewModel.EditorPlaybackRateIncreaseCommand.NotifyCanExecuteChanged();
+        }
+
+        private static void OnCurrentFrameChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is not MediaEditor editor)
+                return;
+#if DEBUG && SHOW_DEBUG_MESSAGES
+            if (editor.PlaybackState != MediaPlaybackState.Playing)
+                Debug.WriteLine($"CURRENT FRAME: {editor.CurrentFrame}");
+#endif
+            // Frame change was not due to the user interacting with the timeline,
+            // therefore the timeline needs to be synchronized to the frame count.
+            if (!editor._isScrubbing)
+            {
+                editor.Timeline.Position = (decimal)editor.CurrentPosition.TotalSeconds;
+            }
+
+            // If an animated image has reached its last frame, pause playback.
+            if (editor.Source.ContentType == MediaContentType.Image &&
+                editor.PlaybackState == MediaPlaybackState.Playing &&
+                editor.CurrentFrame == editor.Source.TotalFrames)
+            {
+                editor.PlaybackState = MediaPlaybackState.Paused;
+                editor.ViewModel.EditorPlayCommand.NotifyCanExecuteChanged();
+                editor.ViewModel.EditorPauseCommand.NotifyCanExecuteChanged();
+                editor.ViewModel.EditorNewKeyframeCommand.NotifyCanExecuteChanged();
+                editor.ViewModel.EditorPlaybackRateDecreaseCommand.NotifyCanExecuteChanged();
+                editor.ViewModel.EditorPlaybackRateNormalCommand.NotifyCanExecuteChanged();
+                editor.ViewModel.EditorPlaybackRateIncreaseCommand.NotifyCanExecuteChanged();
+            }
+
+            editor.ViewModel.EditorPreviousFrameCommand.NotifyCanExecuteChanged();
+            editor.ViewModel.EditorNextFrameCommand.NotifyCanExecuteChanged();
+            editor.ViewModel.EditorPreviousMarkerCommand.NotifyCanExecuteChanged();
+            editor.ViewModel.EditorNextMarkerCommand.NotifyCanExecuteChanged();
         }
 
         private static void OnFrameOffsetChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             if (d is not MediaEditor editor)
                 return;
-
+#if DEBUG && SHOW_DEBUG_MESSAGES
+            Debug.WriteLine($"Frame offset changed: ({editor.FrameOffsetX}, {editor.FrameOffsetY})");
+#endif
             editor.ViewModel.EditorCenterFrameCommand.NotifyCanExecuteChanged();
         }
 
@@ -378,11 +458,13 @@ namespace MediaBase.Controls
         {
             if (d is not MediaEditor editor)
                 return;
-
+#if DEBUG && SHOW_DEBUG_MESSAGES
+            Debug.WriteLine($"Cursor changed: {e.Property}");
+#endif
             if (e.Property == PrimaryCursorShapeProperty)
             {
                 editor._primaryCursor = InputSystemCursor.Create((InputSystemCursorShape)e.NewValue);
-                if (!editor._isPointerCapturedForFrame && !editor._isPointerOverFrame)
+                if (!editor._isPointerCapturedForFrame && !editor.TestPointOverFrame(editor._prevLeftMousePosition))
                     editor.ProtectedCursor = editor._primaryCursor;
             }
             else if (e.Property == DragCursorShapeProperty)
@@ -394,7 +476,7 @@ namespace MediaBase.Controls
             else if (e.Property == HoverCursorShapeProperty)
             {
                 editor._hoverCursor = InputSystemCursor.Create((InputSystemCursorShape)e.NewValue);
-                if (editor._isPointerOverFrame)
+                if (editor.TestPointOverFrame(editor._prevLeftMousePosition))
                     editor.ProtectedCursor = editor._hoverCursor;
             }
         }
@@ -403,16 +485,20 @@ namespace MediaBase.Controls
         #region Event Handlers (UserControl)
         private void UserControl_Loaded(object sender, RoutedEventArgs e)
         {
+#if DEBUG && SHOW_DEBUG_MESSAGES
+            Debug.WriteLine("LOADED");
+#endif
             // Initialize timeline
             Timeline.PositionChanged += Timeline_PositionChanged;
-            Timeline.SelectionChanged += Timeline_SelectionChanged;
-            Timeline.ZoomChanged += Timeline_ZoomChanged;
             Timeline.PositionDragStarted += Timeline_PositionDragStarted;
             Timeline.PositionDragCompleted += Timeline_PositionDragCompleted;
+            Timeline.SelectionChanged += Timeline_SelectionChanged;
             Timeline.SelectionDragStarted += Timeline_SelectionDragStarted;
             Timeline.SelectionDragCompleted += Timeline_SelectionDragCompleted;
+            Timeline.ZoomChanged += Timeline_ZoomChanged;
             Timeline.ZoomDragStarted += Timeline_ZoomDragStarted;
             Timeline.ZoomDragCompleted += Timeline_ZoomDragCompleted;
+            Timeline.TrackCountChanged += Timeline_TrackCountChanged;
 
             // Initialize swap chain
             SwapChainCanvas.SwapChain = new CanvasSwapChain(CanvasDevice.GetSharedDevice(),
@@ -420,12 +506,15 @@ namespace MediaBase.Controls
                                                             (float)SwapChainCanvas.ActualHeight,
                                                             PInvoke.User32.GetDpiForWindow(App.WindowHandle));
 
-            // Set initial (default) refresh rate
+            // Set the editor's initial refresh rate
             FramesPerSecond = App.RefreshRate;
         }
 
         private void UserControl_Unloaded(object sender, RoutedEventArgs e)
         {
+#if DEBUG && SHOW_DEBUG_MESSAGES
+            Debug.WriteLine($"UNLOADED");
+#endif
             SwapChainCanvas.RemoveFromVisualTree();
             SwapChainCanvas.SwapChain = null;
         }
@@ -434,46 +523,91 @@ namespace MediaBase.Controls
         #region Event Handlers (Media Player)
         private void Player_MediaOpened(MediaPlayer sender, object args)
         {
+#if DEBUG && SHOW_DEBUG_MESSAGES
+            Debug.WriteLine($"MEDIA OPENED");
+#endif
             if (DispatcherQueue == null)
                 return;
 
             DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, () =>
             {
                 Timeline.Duration = sender.PlaybackSession.NaturalDuration;
+                Timeline.IsSelectionEnabled = false;
                 Timeline.IsPositionAdjustmentEnabled = true;
+                Timeline.IsSelectionAdjustmentEnabled = true;
                 Timeline.IsZoomAdjustmentEnabled = true;
                 Timeline.ZoomOutFull();
-
-                Timeline.Position = Timeline.GetNearestSnapValue(
-                    (decimal)sender.PlaybackSession.Position.TotalSeconds,
-                    false, SnapInterval.Frame);
                 RefreshCommandStates();
             });
         }
 
         private void Player_MediaEnded(MediaPlayer sender, object args)
         {
-            if (DispatcherQueue == null)
-                return;
-
-            DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, () =>
-            {
-                _redrawTimer.Stop();
-                RefreshCommandStates();
-            });
+#if DEBUG && SHOW_DEBUG_MESSAGES
+            Debug.WriteLine($"MEDIA ENDED");
+#endif
+            if (DispatcherQueue != null)
+                DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, RefreshCommandStates);
         }
 
         private void Player_MediaFailed(MediaPlayer sender, MediaPlayerFailedEventArgs args)
         {
-            if (DispatcherQueue == null)
-                return;
+#if DEBUG && SHOW_DEBUG_MESSAGES
+            Debug.WriteLine($"MEDIA FAILED");
+#endif
+            if (DispatcherQueue != null)
+                DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, RefreshCommandStates);
+        }
 
-            DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, () =>
+        private void PlaybackSession_PlaybackStateChanged(MediaPlaybackSession sender, object args)
+        {
+#if DEBUG && SHOW_DEBUG_MESSAGES
+            Debug.WriteLine($"Playback state changed (MediaPlayer): {Enum.GetName(sender.PlaybackState)}");
+#endif
+            if (DispatcherQueue != null)
+                DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, () =>
+                {
+                    PlaybackState = sender.PlaybackState;
+                });
+        }
+
+        private void PlaybackSession_PlaybackRateChanged(MediaPlaybackSession sender, object args)
+        {
+#if DEBUG && SHOW_DEBUG_MESSAGES
+            Debug.WriteLine($"Playback rate changed (MediaPlayer): {sender.PlaybackRate}");
+#endif
+            if (DispatcherQueue != null)
+                DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, () =>
+                {
+                    PlaybackRate = sender.PlaybackRate;
+                });
+        }
+
+        private void PlaybackSession_PositionChanged(MediaPlaybackSession sender, object args)
+        {
+            if (DispatcherQueue != null)
+                DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, () =>
+                {
+#if DEBUG && SHOW_DEBUG_MESSAGES
+                    if (PlaybackState != MediaPlaybackState.Playing)
+                        Debug.WriteLine($"Position changed (MediaPlayer): {sender.Position}");
+#endif
+                    CurrentPosition = sender.Position;
+                });
+        }
+
+        private void PlaybackSession_SeekCompleted(MediaPlaybackSession sender, object args)
+        {
+#if DEBUG && SHOW_DEBUG_MESSAGES
+            Debug.WriteLine($"Seek completed (MediaPlayer)");
+#endif
+            if (DispatcherQueue != null && _isScrubbing)
             {
-                _redrawTimer.Stop();
-                Timeline.Reset();
-                RefreshCommandStates();
-            });
+                DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, () =>
+                {
+                    sender.Position = TimeSpan.FromSeconds(decimal.ToDouble(Timeline.Position));
+                });
+            }
         }
 
         private void Player_VideoFrameAvailable(MediaPlayer sender, object args)
@@ -485,9 +619,14 @@ namespace MediaBase.Controls
             {
                 if (_frameSizingBitmap == null)
                 {
+                    int width = (int)(IsPanAndZoomEnabled
+                        ? Source.WidthInPixels
+                        : SwapChainCanvas.ActualWidth);
+                    int height = (int)(IsPanAndZoomEnabled
+                        ? Source.HeightInPixels
+                        : SwapChainCanvas.ActualHeight);
                     _frameSizingBitmap = new SoftwareBitmap(BitmapPixelFormat.Rgba8,
-                                                            (int)SwapChainCanvas.ActualWidth,
-                                                            (int)SwapChainCanvas.ActualHeight,
+                                                            width, height,
                                                             BitmapAlphaMode.Ignore);
                 }
 
@@ -502,32 +641,6 @@ namespace MediaBase.Controls
                 _player.CopyFrameToVideoSurface(_frameBitmap);
             });
         }
-
-        private void PlaybackSession_PlaybackStateChanged(MediaPlaybackSession sender, object args)
-        {
-            if (DispatcherQueue == null)
-                return;
-        }
-
-        private void PlaybackSession_PositionChanged(MediaPlaybackSession sender, object args)
-        {
-            if (DispatcherQueue == null)
-                return;
-        }
-
-        private void PlaybackSession_SeekCompleted(MediaPlaybackSession sender, object args)
-        {
-            if (DispatcherQueue == null)
-                return;
-        }
-
-        private void PlaybackSession_PlaybackRateChanged(MediaPlaybackSession sender, object args)
-        {
-            if (DispatcherQueue == null)
-                return;
-
-            _playbackRate = sender.PlaybackRate;
-        }
         #endregion
 
         #region Event Handlers (Timers)
@@ -537,25 +650,37 @@ namespace MediaBase.Controls
                 return;
 
             using var ds = SwapChainCanvas.SwapChain.CreateDrawingSession(Colors.Black);
+            var isAnimatedImagePlaying = Source.ContentType == MediaContentType.Image &&
+                                         PlaybackState == MediaPlaybackState.Playing &&
+                                         CurrentFrame < Source.TotalFrames;
 
-            if (_isImageAnimationPlaying)
-            {
-                if (_imageAnimationFrame < Source.TotalFrames)
-                    _imageAnimationFrame++;
-                else
-                    _isImageAnimationPlaying = false;
-            }
+            // Increment the frame count if we are playing an animated image
+            if (isAnimatedImagePlaying)
+                CurrentFrame++;
 
-            if (_isImageAnimationPlaying || _player.PlaybackSession.PlaybackState == MediaPlaybackState.Playing)
-                UpdateFramePositionAndScale();
-            ApplyFramePositionAndScale();
+            // Adjust frame position and scale using keyframes (if enabled)
+            if (IsPanAndZoomEnabled &&
+                (PlaybackState == MediaPlaybackState.Playing ||
+                (PlaybackState == MediaPlaybackState.Paused && _isScrubbing)))
+                CalculateFrameScaleAndPosition();
+            ApplyFrameScaleAndPosition();
+
+            // Draw the image
             ds.DrawImage(_frameBitmap, _destRect, _sourceRect);
 
-            if (Source.Duration > 0)
+            // Draw timecode/frame count
+            if (IsPlaybackPossible && TimeDisplayMode != TimeDisplayFormat.None)
             {
-                var positionString = Source.ContentType == MediaContentType.Video
-                    ? _player.PlaybackSession.Position.TotalSeconds.ToTimecodeString(FramesPerSecond)
-                    : _imageAnimationFrame.ToString();
+                var timeStr = TimeDisplayMode switch
+                {
+                    TimeDisplayFormat.FrameNumber
+                        => CurrentFrame.ToString(),
+                    TimeDisplayFormat.TimecodeWithFrame
+                        => CurrentPosition.TotalSeconds.ToTimecodeString(FramesPerSecond),
+                    TimeDisplayFormat.TimecodeWithMillis
+                        => CurrentPosition.TotalSeconds.ToTimecodeString(FramesPerSecond, true),
+                      _ => string.Empty
+                };
 
                 using var positionTextFormat = new CanvasTextFormat
                 {
@@ -567,7 +692,7 @@ namespace MediaBase.Controls
                     HorizontalAlignment = CanvasHorizontalAlignment.Left
                 };
 
-                ds.DrawText(positionString, 5, 5, TextOverlayColor, positionTextFormat);
+                ds.DrawText(timeStr, 5, 5, TextOverlayColor, positionTextFormat);
             }
 
             SwapChainCanvas.SwapChain.Present();
@@ -590,47 +715,109 @@ namespace MediaBase.Controls
         #region Event Handlers (Timeline)
         private void Timeline_PositionChanged(object sender, decimal e)
         {
-            
-        }
-
-        private void Timeline_SelectionChanged(object sender, (decimal start, decimal end, bool isEnabled) e)
-        {
-            
-        }
-
-        private void Timeline_ZoomChanged(object sender, (decimal start, decimal end) e)
-        {
-            
+            if (_isScrubbing)
+                CurrentFrame = decimal.ToInt32(decimal.Round(e * FramesPerSecond));
         }
 
         private void Timeline_PositionDragStarted(object sender, EventArgs e)
         {
-            
+#if DEBUG && SHOW_DEBUG_MESSAGES
+            Debug.WriteLine($"Position drag started (Timeline)");
+#endif
+            _prevPlaybackRate = PlaybackRate;
+            _prevFollowMode = Timeline.PositionFollowMode;
+            Timeline.PositionFollowMode = FollowMode.NoFollow;
+            _isScrubbing = true;
+
+            if (Source.ContentType == MediaContentType.Video)
+            {
+                _player.PlaybackSession.PlaybackRate = 0;
+                _player.PlaybackSession.Position =
+                    TimeSpan.FromSeconds(decimal.ToDouble(Timeline.Position));
+            }
+            else
+            {
+                CurrentFrame = decimal.ToInt32(decimal.Round(Timeline.Position * FramesPerSecond));
+            }
         }
 
         private void Timeline_PositionDragCompleted(object sender, EventArgs e)
         {
-            
+#if DEBUG && SHOW_DEBUG_MESSAGES
+            Debug.WriteLine($"Position drag completed (Timeline)");
+#endif
+            if (Source.ContentType == MediaContentType.Video)
+            {
+                _player.PlaybackSession.Position =
+                    TimeSpan.FromSeconds(decimal.ToDouble(Timeline.Position));
+                _player.PlaybackSession.PlaybackRate = _prevPlaybackRate;
+            }
+            else
+            {
+                CurrentFrame = decimal.ToInt32(decimal.Round(Timeline.Position * FramesPerSecond));
+            }
+
+            Timeline.PositionFollowMode = _prevFollowMode;
+
+            _isScrubbing = false;
+        }
+
+        private void Timeline_SelectionChanged(object sender, (decimal start, decimal end, bool isEnabled) e)
+        {
+#if DEBUG && SHOW_DEBUG_MESSAGES
+            Debug.WriteLine($"Selection changed (Timeline): ({Timeline.SelectionStart:0.000}, {Timeline.SelectionEnd:0.000})");
+#endif
+            ViewModel.EditorNewClipCommand.NotifyCanExecuteChanged();
         }
 
         private void Timeline_SelectionDragStarted(object sender, EventArgs e)
         {
-            
+#if DEBUG && SHOW_DEBUG_MESSAGES
+            Debug.WriteLine($"Selection drag started (Timeline)");
+#endif
+            _prevFollowMode = Timeline.PositionFollowMode;
+            Timeline.PositionFollowMode = FollowMode.NoFollow;
         }
 
         private void Timeline_SelectionDragCompleted(object sender, EventArgs e)
         {
-            
+#if DEBUG && SHOW_DEBUG_MESSAGES
+            Debug.WriteLine($"Selection drag completed (Timeline)");
+#endif
+            Timeline.PositionFollowMode = _prevFollowMode;
+        }
+
+        private void Timeline_ZoomChanged(object sender, (decimal start, decimal end) e)
+        {
+#if DEBUG && SHOW_DEBUG_MESSAGES
+            Debug.WriteLine($"Zoom changed (Timeline): ({Timeline.ZoomStart:0.000}, {Timeline.ZoomEnd:0.000})");
+#endif
+            ViewModel.EditorTimelineZoomInCommand.NotifyCanExecuteChanged();
+            ViewModel.EditorTimelineZoomOutCommand.NotifyCanExecuteChanged();
         }
 
         private void Timeline_ZoomDragStarted(object sender, EventArgs e)
         {
-            
+#if DEBUG && SHOW_DEBUG_MESSAGES
+            Debug.WriteLine($"Zoom drag started (Timeline)");
+#endif
+            _prevFollowMode = Timeline.PositionFollowMode;
+            Timeline.PositionFollowMode = FollowMode.NoFollow;
         }
 
         private void Timeline_ZoomDragCompleted(object sender, EventArgs e)
         {
-            
+#if DEBUG && SHOW_DEBUG_MESSAGES && DEBUG
+            Debug.WriteLine($"Zoom drag completed (Timeline)");
+#endif
+            Timeline.PositionFollowMode = _prevFollowMode;
+        }
+
+        private void Timeline_TrackCountChanged(object sender, int e)
+        {
+#if DEBUG && SHOW_DEBUG_MESSAGES
+            Debug.WriteLine($"Track count changed: {e}");
+#endif
         }
         #endregion
 
@@ -645,21 +832,24 @@ namespace MediaBase.Controls
 
         private void RenderAreaBorder_PointerExited(object sender, PointerRoutedEventArgs e)
         {
-            _isPointerOverFrame = false;
+            _prevLeftMousePosition = new Point(double.NaN, double.NaN);
+
+            if (_isPointerCapturedForFrame)
+                return;
+
+            ProtectedCursor = _primaryCursor;
         }
 
         private void RenderAreaBorder_PointerPressed(object sender, PointerRoutedEventArgs e)
         {
             var point = e.GetCurrentPoint(RenderAreaBorder);
 
-            if (_destRect.Contains(point.Position))
+            if (_destRect.Contains(point.Position) && IsPanAndZoomEnabled)
             {
-                var isCtrlPressed = InputKeyboardSource.GetKeyStateForCurrentThread(Windows.System.VirtualKey.Control)
-                                                       .HasFlag(CoreVirtualKeyStates.Down);
+                var isCtrlPressed = TestKeyStates(Windows.System.VirtualKey.Control, CoreVirtualKeyStates.Down);
 
                 if (point.Properties.IsLeftButtonPressed && !isCtrlPressed)
                 {
-                    _prevLeftMousePosition = point.Position;
                     _isPointerCapturedForFrame = RenderAreaBorder.CapturePointer(e.Pointer);
                     ProtectedCursor = _dragCursor;
                 }
@@ -671,6 +861,8 @@ namespace MediaBase.Controls
                     FrameOffsetY -= centerY - point.Position.Y;
                 }
             }
+
+            _prevLeftMousePosition = point.Position;
         }
 
         private void RenderAreaBorder_PointerReleased(object sender, PointerRoutedEventArgs e)
@@ -680,8 +872,12 @@ namespace MediaBase.Controls
             if (point.Properties.PointerUpdateKind == PointerUpdateKind.LeftButtonReleased)
             {
                 RenderAreaBorder.ReleasePointerCapture(e.Pointer);
-                ProtectedCursor = _isPointerOverFrame ? _hoverCursor : _primaryCursor;
+                ProtectedCursor = TestPointOverFrame(point.Position) && IsPanAndZoomEnabled
+                    ? _hoverCursor
+                    : _primaryCursor;
             }
+
+            _prevLeftMousePosition = point.Position;
         }
 
         private void RenderAreaBorder_PointerCaptureLost(object sender, PointerRoutedEventArgs e)
@@ -692,34 +888,34 @@ namespace MediaBase.Controls
         private void RenderAreaBorder_PointerCanceled(object sender, PointerRoutedEventArgs e)
         {
             _isPointerCapturedForFrame = false;
-            _isPointerOverFrame = false;
+            _prevLeftMousePosition = new Point(double.NaN, double.NaN);
         }
 
         private void RenderAreaBorder_PointerMoved(object sender, PointerRoutedEventArgs e)
         {
             var point = e.GetCurrentPoint(RenderAreaBorder);
+            var isPointerOverFrame = TestPointOverFrame(point.Position);
 
-            _isPointerOverFrame = _destRect.Contains(point.Position);
-            if (_isPointerOverFrame && ProtectedCursor != _hoverCursor)
+            if (isPointerOverFrame && IsPanAndZoomEnabled && ProtectedCursor != _hoverCursor)
                 ProtectedCursor = _hoverCursor;
-            else if (!_isPointerOverFrame && ProtectedCursor != _primaryCursor)
+            else if ((!isPointerOverFrame || !IsPanAndZoomEnabled) && ProtectedCursor != _primaryCursor)
                 ProtectedCursor = _primaryCursor;
 
-            if (!point.Properties.IsLeftButtonPressed || !_isPointerCapturedForFrame)
-                return;
+            if (IsPanAndZoomEnabled && point.Properties.IsLeftButtonPressed && _isPointerCapturedForFrame)
+            {
+                if (ProtectedCursor != _dragCursor)
+                    ProtectedCursor = _dragCursor;
 
-            if (ProtectedCursor != _dragCursor)
-                ProtectedCursor = _dragCursor;
-
-            FrameOffsetX += point.Position.X - _prevLeftMousePosition.X;
-            FrameOffsetY -= point.Position.Y - _prevLeftMousePosition.Y;
+                FrameOffsetX += point.Position.X - _prevLeftMousePosition.X;
+                FrameOffsetY -= point.Position.Y - _prevLeftMousePosition.Y;
+            }
 
             _prevLeftMousePosition = point.Position;
         }
 
         private void RenderAreaBorder_PointerWheelChanged(object sender, PointerRoutedEventArgs e)
         {
-            if (_isPointerCapturedForFrame)
+            if (!IsPanAndZoomEnabled || _isPointerCapturedForFrame)
                 return;
 
             FrameScale += e.GetCurrentPoint(RenderAreaBorder).Properties.MouseWheelDelta / 120;
@@ -729,131 +925,96 @@ namespace MediaBase.Controls
         #region Event Handlers (Commands - CanExecuteRequested)
         private void EditorPlayCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = IsMediaPlayable &&
-                              Source.ContentType == MediaContentType.Image
-                                ? !_isImageAnimationPlaying
-                                : _player.PlaybackSession.PlaybackState == MediaPlaybackState.Paused;
+            args.CanExecute = IsPlaybackPossible && PlaybackState == MediaPlaybackState.Paused;
         }
 
         private void EditorPauseCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = IsMediaPlayable &&
-                              Source.ContentType == MediaContentType.Image
-                                ? _isImageAnimationPlaying
-                                : _player.PlaybackSession.CanPause &&
-                                  _player.PlaybackSession.PlaybackState == MediaPlaybackState.Playing;
+            args.CanExecute = IsPlaybackPossible && PlaybackState == MediaPlaybackState.Playing;
         }
 
         private void EditorPreviousFrameCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = IsMediaPlayable &&
-                              Source.ContentType == MediaContentType.Image
-                                ? !_isImageAnimationPlaying
-                                : _player.PlaybackSession.PlaybackState == MediaPlaybackState.Paused &&
-                                  _player.PlaybackSession.Position >= Timeline.FrameDuration;
+            args.CanExecute = IsPlaybackPossible && CurrentFrame > 0;
         }
 
         private void EditorNextFrameCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = IsMediaPlayable &&
-                              Source.ContentType == MediaContentType.Image
-                                ? !_isImageAnimationPlaying
-                                : _player.PlaybackSession.PlaybackState == MediaPlaybackState.Paused &&
-                                  _player.PlaybackSession.NaturalDuration - _player.PlaybackSession.Position
-                                    >= Timeline.FrameDuration;
+            args.CanExecute = IsPlaybackPossible && CurrentFrame < Source.TotalFrames;
         }
 
         private void EditorPreviousMarkerCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = IsMediaPlayable &&
+            args.CanExecute = IsPlaybackPossible &&
                               Source.ContentType == MediaContentType.Image
-                                ? GetPreviousKeyframeFromCurrentPosition(0.5M) != null
-                                : (_player.PlaybackSession.PlaybackState == MediaPlaybackState.Playing ||
-                                   _player.PlaybackSession.PlaybackState == MediaPlaybackState.Paused) &&
-                                  GetPreviousMarkerFromCurrentPosition(0.5M) != null;
+                                ? Timeline.GetClosestMarkerBeforeCurrentPosition<PanAndZoomKeyframe>(0.5M) != null
+                                : Timeline.GetClosestMarkerBeforeCurrentPosition<Marker>(0.5M) != null;
         }
 
         private void EditorNextMarkerCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = IsMediaPlayable &&
+            args.CanExecute = IsPlaybackPossible &&
                               Source.ContentType == MediaContentType.Image
-                                ? GetNextKeyframeFromCurrentPosition() != null
-                                : (_player.PlaybackSession.PlaybackState == MediaPlaybackState.Playing ||
-                                   _player.PlaybackSession.PlaybackState == MediaPlaybackState.Paused) &&
-                                  GetNextMarkerFromCurrentPosition() != null;
+                                ? Timeline.GetClosestMarkerAfterCurrentPosition<PanAndZoomKeyframe>(0.1M) != null
+                                : Timeline.GetClosestMarkerAfterCurrentPosition<Marker>(0.1M) != null;
         }
 
         private void EditorToggleActiveSelectionCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = IsMediaPlayable &&
-                              Source.ContentType == MediaContentType.Video &&
-                              (_player.PlaybackSession.PlaybackState == MediaPlaybackState.Playing ||
-                               _player.PlaybackSession.PlaybackState == MediaPlaybackState.Paused);
+            args.CanExecute = IsPlaybackPossible && Source.ContentType == MediaContentType.Video;
         }
 
         private void EditorCutSelectedCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = IsMediaPlayable &&
+            args.CanExecute = IsPlaybackPossible &&
                               Source.ContentType == MediaContentType.Video &&
-                              (_player.PlaybackSession.PlaybackState == MediaPlaybackState.Playing ||
-                               _player.PlaybackSession.PlaybackState == MediaPlaybackState.Paused) &&
                               Timeline.IsSelectionEnabled &&
                               Timeline.SelectionStart != Timeline.SelectionEnd;
         }
 
         private void EditorNewMarkerCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = IsMediaPlayable &&
-                              Source.ContentType == MediaContentType.Video &&
-                              (_player.PlaybackSession.PlaybackState == MediaPlaybackState.Playing ||
-                               _player.PlaybackSession.PlaybackState == MediaPlaybackState.Paused);
+            args.CanExecute = IsPlaybackPossible && Source.ContentType == MediaContentType.Video;
         }
 
         private void EditorNewClipCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = IsMediaPlayable &&
+            args.CanExecute = IsPlaybackPossible &&
                               Source.ContentType == MediaContentType.Video &&
-                              (_player.PlaybackSession.PlaybackState == MediaPlaybackState.Playing ||
-                               _player.PlaybackSession.PlaybackState == MediaPlaybackState.Paused) &&
                               Timeline.IsSelectionEnabled &&
                               Timeline.SelectionStart != Timeline.SelectionEnd;
         }
 
         private void EditorNewKeyframeCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = IsMediaPlayable &&
-                              Source.ContentType == MediaContentType.Image ||
-                              _player.PlaybackSession.PlaybackState == MediaPlaybackState.Playing ||
-                              _player.PlaybackSession.PlaybackState == MediaPlaybackState.Paused;
+            args.CanExecute = IsPlaybackPossible &&
+                              (PlaybackState == MediaPlaybackState.Playing ||
+                               PlaybackState == MediaPlaybackState.Paused);
         }
 
         private void EditorPlaybackRateDecreaseCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = IsMediaPlayable &&
+            args.CanExecute = IsPlaybackPossible &&
+                              PlaybackState == MediaPlaybackState.Playing &&
                               Source.ContentType == MediaContentType.Image
-                                ? _isImageAnimationPlaying &&
-                                  _playbackRate > 0.25
-                                : _player.PlaybackSession.PlaybackState == MediaPlaybackState.Playing &&
-                                  _playbackRate > 0.5;
+                                ? PlaybackRate > 0.25
+                                : PlaybackRate > 0.5;
         }
 
         private void EditorPlaybackRateIncreaseCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = IsMediaPlayable &&
+            args.CanExecute = IsPlaybackPossible &&
+                              PlaybackState == MediaPlaybackState.Playing &&
                               Source.ContentType == MediaContentType.Image
-                                ? _isImageAnimationPlaying &&
-                                  _playbackRate < 4.0
-                                : _player.PlaybackSession.PlaybackState == MediaPlaybackState.Playing &&
-                                  _playbackRate < 3.0;
+                                ? PlaybackRate < 4.0
+                                : PlaybackRate < 3.0;
         }
 
         private void EditorPlaybackRateNormalCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = IsMediaPlayable &&
-                              _playbackRate != 1.0 &&
-                              Source.ContentType == MediaContentType.Image
-                                ? _isImageAnimationPlaying
-                                : _player.PlaybackSession.PlaybackState == MediaPlaybackState.Playing;
+            args.CanExecute = IsPlaybackPossible &&
+                              PlaybackState == MediaPlaybackState.Playing &&
+                              PlaybackRate != 1.0;
         }
 
         private void EditorCenterFrameCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
@@ -873,17 +1034,17 @@ namespace MediaBase.Controls
 
         private void EditorTimelineZoomOutCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = IsMediaPlayable;
+            args.CanExecute = IsPlaybackPossible;
         }
 
         private void EditorTimelineZoomInCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = IsMediaPlayable;
+            args.CanExecute = IsPlaybackPossible;
         }
 
         private void ToolsAnimateMediaCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = IsLoaded && Source != null;
+            args.CanExecute = IsLoaded && Source != null && Source.Duration == 0;
         }
         #endregion
 
@@ -891,158 +1052,241 @@ namespace MediaBase.Controls
         private void EditorPlayCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
             if (Source.ContentType == MediaContentType.Image)
-                _isImageAnimationPlaying = true;
+                PlaybackState = MediaPlaybackState.Playing;
             else
                 _player.Play();
-
-            PlayButton.Visibility = Visibility.Collapsed;
-            PauseButton.Visibility = Visibility.Visible;
         }
 
         private void EditorPauseCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
             if (Source.ContentType == MediaContentType.Image)
-                _isImageAnimationPlaying = false;
+                PlaybackState = MediaPlaybackState.Paused;
             else
                 _player.Pause();
-
-            PlayButton.Visibility = Visibility.Visible;
-            PauseButton.Visibility = Visibility.Collapsed;
         }
 
         private void EditorPreviousFrameCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            _player.PlaybackSession.Position -= TimeSpan.FromSeconds(1.0 / FramesPerSecond);
+            if (Source.ContentType == MediaContentType.Image)
+                CurrentFrame--;
+            else
+                _player.PlaybackSession.Position -= Timeline.FrameDuration;
         }
 
         private void EditorNextFrameCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            _player.PlaybackSession.Position += TimeSpan.FromSeconds(1.0 / FramesPerSecond);
+            if (Source.ContentType == MediaContentType.Image)
+                CurrentFrame++;
+            else
+                _player.PlaybackSession.Position += Timeline.FrameDuration;
         }
 
         private void EditorPreviousMarkerCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
             if (Source.ContentType == MediaContentType.Image)
-            {
-                var keyframe = GetPreviousKeyframeFromCurrentPosition(0.5M);
-                /*if (keyframe != null)
-                    ViewModel.SelectedKeyframe = keyframe;*/
-            }
+                SeekToMarker(Timeline.GetClosestMarkerBeforeCurrentPosition<PanAndZoomKeyframe>(0.5M));
             else
-            {
-                var marker = GetPreviousMarkerFromCurrentPosition(0.5M);
-                if (marker != null)
-                    ViewModel.SelectedMarker = marker;
-            }
+                SeekToMarker(Timeline.GetClosestMarkerBeforeCurrentPosition<Marker>(0.5M));
         }
 
         private void EditorNextMarkerCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
             if (Source.ContentType == MediaContentType.Image)
-            {
-                var keyframe = GetNextKeyframeFromCurrentPosition();
-                /*if (keyframe != null)
-                    ViewModel.SelectedKeyframe = keyframe;*/
-            }
+                SeekToMarker(Timeline.GetClosestMarkerAfterCurrentPosition<PanAndZoomKeyframe>(0.5M));
             else
-            {
-                var marker = GetNextMarkerFromCurrentPosition();
-                if (marker != null)
-                    ViewModel.SelectedMarker = marker;
-            }
+                SeekToMarker(Timeline.GetClosestMarkerAfterCurrentPosition<Marker>(0.5M));
         }
 
         private void EditorToggleActiveSelectionCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+            if ((Timeline.SelectionStart <= Timeline.ZoomEnd &&
+                 Timeline.SelectionEnd >= Timeline.ZoomStart) ||
+                !Timeline.IsSelectionEnabled)
+                return;
+
+            Timeline.SelectionStart = Timeline.ZoomStart + ((Timeline.ZoomEnd - Timeline.ZoomStart) / 3);
+            Timeline.SelectionEnd = Timeline.ZoomEnd - ((Timeline.ZoomEnd - Timeline.ZoomStart) / 3);
         }
 
         private void EditorCutSelectedCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+            if (Source is not VideoSource video)
+                return;
+
+            video.Cuts.Add((Timeline.SelectionStart, Timeline.SelectionEnd));
         }
 
-        private void EditorNewMarkerCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        private async void EditorNewMarkerCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+            if (Source is not VideoSource video)
+                return;
+
+            // Record current position here so that the new marker reflects
+            // the time at which the command was invoked, as opposed to the time
+            // at which the user completes the process of adding the marker.
+            var pos = CurrentPosition;
+
+            var dlg = new TextPromptDialog
+            {
+                Title = "New Marker",
+                PromptText = "Enter a name for the marker",
+                PrimaryButtonText = "OK",
+                CloseButtonText = "Cancel",
+                XamlRoot = Content.XamlRoot
+            };
+
+            var result = await dlg.ShowAsync();
+            if (result != ContentDialogResult.Primary)
+                return;
+
+            var marker = new Marker
+            {
+                Name = dlg.Text,
+                Position = (decimal)pos.TotalSeconds,
+                Duration = 0,
+                Track = 0
+            };
+
+            var index = 0;
+            while (index < video.Markers.Count && video.Markers[index].Position <= marker.Position)
+                index++;
+
+            video.Markers.Insert(index, marker);
         }
 
-        private void EditorNewClipCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        private async void EditorNewClipCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+            if (Source is not VideoSource video)
+                return;
+
+            var dlg = new TextPromptDialog
+            {
+                Title = "New Clip",
+                PromptText = "Enter a name for the clip",
+                PrimaryButtonText = "OK",
+                CloseButtonText = "Cancel",
+                XamlRoot = Content.XamlRoot
+            };
+
+            var result = await dlg.ShowAsync();
+            if (result != ContentDialogResult.Primary)
+                return;
+
+            var marker = new Marker
+            {
+                Name = dlg.Text,
+                Position = Timeline.SelectionStart,
+                Duration = Timeline.SelectionEnd - Timeline.SelectionStart,
+                Track = 1  // TODO: This needs to be assigned from somewhere else
+            };
+
+            var index = 0;
+            while (index < video.Markers.Count && video.Markers[index].Position <= marker.Position)
+                index++;
+
+            video.Markers.Insert(index, marker);
         }
 
         private void EditorNewKeyframeCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+            var keyframe = new PanAndZoomKeyframe
+            {
+                Name = "Keyframe",
+                Position = Timeline.Position,
+                OffsetX = FrameOffsetX,
+                OffsetY = FrameOffsetY,
+                Scale = FrameScale
+            };
+
+            if (Source.Keyframes.Any(x => x.Position == keyframe.Position))
+                return;
+
+            var index = 0;
+            while (index < Source.Keyframes.Count && Source.Keyframes[index].Position <= keyframe.Position)
+                index++;
+
+            Source.Keyframes.Insert(index, keyframe);
         }
 
         private void EditorPlaybackRateDecreaseCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+            if (Source.ContentType == MediaContentType.Image)
+                PlaybackRate -= 0.5;
+            else
+                _player.PlaybackSession.PlaybackRate -= 0.5;
         }
 
         private void EditorPlaybackRateIncreaseCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+            if (Source.ContentType == MediaContentType.Image)
+                PlaybackRate += 0.5;
+            else
+                _player.PlaybackSession.PlaybackRate += 0.5;
         }
 
         private void EditorPlaybackRateNormalCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+            if (Source.ContentType == MediaContentType.Image)
+                PlaybackRate = 1.0;
+            else
+                _player.PlaybackSession.PlaybackRate = 1.0;
         }
 
         private void EditorCenterFrameCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+            FrameOffsetX = 0;
+            FrameOffsetY = 0;
         }
 
         private void EditorFrameZoomFitCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+            FrameOffsetX = 0;
+            FrameOffsetY = 0;
+            ScaleFrameToFit(Source.WidthInPixels, Source.HeightInPixels);
         }
 
         private void EditorFrameZoomFullCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+            FrameOffsetX = 0;
+            FrameOffsetY = 0;
+            FrameScale = 0;
         }
 
         private void EditorTimelineZoomOutCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+            Timeline.VisibleDuration *= 2;
+            Timeline.CenterVisibleWindow(Timeline.Position);
         }
 
         private void EditorTimelineZoomInCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+            Timeline.VisibleDuration *= 0.5;
+            Timeline.CenterVisibleWindow(Timeline.Position);
         }
 
-        private void ToolsAnimateMediaCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        private async void ToolsAnimateMediaCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+            ResetEditor();
+            Source.Duration = 5;
+            await PrepareEditorForSource();
+            RefreshCommandStates();
+            RefreshUI();
         }
         #endregion
 
         #region Private Properties
-        private bool IsMediaPlayable
+        private bool IsPlaybackPossible
         {
             get
             {
-                if (IsLoaded && Source != null)
-                {
-                    if (Source is MediaFile file && file == null)
-                        return false;
+                if (!IsLoaded || Source == null || (Source is IMediaFile file && file.File == null))
+                    return false;
 
-                    if (Source.ContentType == MediaContentType.Image)
-                        return Source.Duration > 0;
-
-                    return _player.Source != null &&
-                           _player.Source is MediaSource source &&
-                           source.IsOpen &&
-                           source.State == MediaSourceState.Opened;
-                }
-
-                return false;
+                return Source.ContentType == MediaContentType.Image
+                    ? Source.Duration > 0
+                    : _player.Source != null &&
+                       (PlaybackState == MediaPlaybackState.Playing ||
+                        PlaybackState == MediaPlaybackState.Paused);
             }
         }
         #endregion
@@ -1150,7 +1394,7 @@ namespace MediaBase.Controls
             ViewModel.ToolsAnimateMediaCommand.ExecuteRequested +=
                 ToolsAnimateMediaCommand_ExecuteRequested;
         }
-
+        
         private void RefreshCommandStates()
         {
             ViewModel.EditorPlayCommand.NotifyCanExecuteChanged();
@@ -1175,7 +1419,7 @@ namespace MediaBase.Controls
             ViewModel.ToolsAnimateMediaCommand.NotifyCanExecuteChanged();
         }
 
-        private void RefreshUIState()
+        private void RefreshUI()
         {
             if (Source == null)
             {
@@ -1184,44 +1428,236 @@ namespace MediaBase.Controls
                 return;
             }
 
+            // Command bar is always visible when a source is loaded
             EditorCommandBar.Visibility = Visibility.Visible;
-            Timeline.IsSelectionEnabled = false;
 
-            var visibility = Source.Duration > 0 ? Visibility.Visible : Visibility.Collapsed;
+            // Set visibility based on whether or not the source is playable (duration > 0)
+            var vis = Source.Duration > 0 ? Visibility.Visible : Visibility.Collapsed;
 
-            Timeline.Visibility = visibility;
+            Timeline.Visibility = vis;
 
-            PlayButton.Visibility = visibility;
+            PlayButton.Visibility = vis;
             PauseButton.Visibility = Visibility.Collapsed;
-            PreviousFrameButton.Visibility = visibility;
-            NextFrameButton.Visibility = visibility;
-            PreviousMarkerButton.Visibility = visibility;
-            NextMarkerButton.Visibility = visibility;
+            PreviousFrameButton.Visibility = vis;
+            NextFrameButton.Visibility = vis;
+            PreviousMarkerButton.Visibility = vis;
+            NextMarkerButton.Visibility = vis;
 
-            TrimAndEditButtonSeparator.Visibility = visibility;
+            TrimAndEditButtonSeparator.Visibility = vis;
             ToggleActiveSelectionButton.Visibility = Source.ContentType == MediaContentType.Image
-                ? Visibility.Collapsed : visibility;
+                ? Visibility.Collapsed : vis;
             NewMarkerButton.Visibility = Source.ContentType == MediaContentType.Image
-                ? Visibility.Collapsed : visibility;
+                ? Visibility.Collapsed : vis;
             NewClipButton.Visibility = Source.ContentType == MediaContentType.Image
-                ? Visibility.Collapsed : visibility;
-            NewKeyframeButton.Visibility = visibility;
+                ? Visibility.Collapsed : vis;
+            NewKeyframeButton.Visibility = vis;
             CutSelectedButton.Visibility = Source.ContentType == MediaContentType.Image
-                ? Visibility.Collapsed : visibility;
+                ? Visibility.Collapsed : vis;
 
-            PlaybackRateButtonSeparator.Visibility = visibility;
-            PlaybackRateDecreaseButton.Visibility = visibility;
-            PlaybackRateNormalButton.Visibility = visibility;
-            PlaybackRateIncreaseButton.Visibility = visibility;
+            PlaybackRateButtonSeparator.Visibility = vis;
+            PlaybackRateDecreaseButton.Visibility = vis;
+            PlaybackRateIncreaseButton.Visibility = vis;
+            PlaybackRateNormalButton.Visibility = vis;
 
-            ZoomAndPanButtonSeparator.Visibility = visibility;
-            TimelineZoomOutButton.Visibility = visibility;
-            TimelineZoomInButton.Visibility = visibility;
+            ZoomAndPanButtonSeparator.Visibility = vis;
+            TimelineZoomOutButton.Visibility = vis;
+            TimelineZoomInButton.Visibility = vis;
+            FrameZoomFitButton.Visibility = IsPanAndZoomEnabled
+                ? Visibility.Visible : Visibility.Collapsed;
+            FrameZoomFullButton.Visibility = IsPanAndZoomEnabled
+                ? Visibility.Visible : Visibility.Collapsed;
+            CenterFrameButton.Visibility = IsPanAndZoomEnabled
+                ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private void RegisterMessages()
         {
+            var messenger = App.Current.Services.GetService<IMessenger>();
 
+            // Markers/Keyframes collection changed
+            messenger.Register<CollectionChangedMessage<Marker>>(this, (r, m) =>
+            {
+                if (m.Sender != Source ||
+                    (m.PropertyName != nameof(VideoSource.Markers) &&
+                     m.PropertyName != nameof(MBMediaSource.Keyframes)))
+                    return;
+
+                foreach (var marker in m.OldValue)
+                    Timeline.Markers.Remove(marker);
+
+                foreach (var marker in m.NewValue)
+                    Timeline.Markers.Add(marker);
+            });
+
+            // MBMediaSource.Cuts collection changed
+            messenger.Register<CollectionChangedMessage<(decimal start, decimal end)>>(this, (r, m) =>
+            {
+                if (m.Sender != Source || m.PropertyName != nameof(VideoSource.Cuts))
+                    return;
+
+                foreach (var (start, end) in m.OldValue)
+                    Timeline.RemoveSelection(start, end);
+
+                foreach (var (start, end) in m.NewValue)
+                    Timeline.AddSelection(start, end);
+            });
+
+            // Selected marker changed
+            messenger.Register<PropertyChangedMessage<Marker>>(this, (r, m) =>
+            {
+                if (m.Sender != ViewModel ||
+                    m.PropertyName != nameof(Project.SelectedMarker) ||
+                    m.NewValue == null)
+                    return;
+
+                if (Source.ContentType == MediaContentType.Image)
+                {
+                    CurrentPosition = TimeSpan.FromSeconds(decimal.ToDouble(m.NewValue.Position));
+                }
+                else if (Source.ContentType == MediaContentType.Video)
+                {
+                    _player.PlaybackSession.Position =
+                        TimeSpan.FromSeconds(decimal.ToDouble(m.NewValue.Position));
+
+                    if (m.NewValue.Duration > 0)
+                    {
+                        Timeline.SetSelectionFromMarker(m.NewValue);
+                        Timeline.IsSelectionEnabled = true;
+                        Timeline.IsSelectionAdjustmentEnabled = true;
+                    }
+                    else
+                    {
+                        Timeline.IsSelectionEnabled = false;
+                    }
+                }
+            });
+        }
+
+        private void ResetEditor()
+        {
+            // Stop and current playback and halt redraw timer
+            if (_player.PlaybackSession.PlaybackState is
+                MediaPlaybackState.Opening or
+                MediaPlaybackState.Buffering or
+                MediaPlaybackState.Playing)
+            {
+                _player.Pause();
+                while (PlaybackState != MediaPlaybackState.Paused) ; // TODO: Better way perhaps?
+            }
+
+            _redrawTimer.Stop();
+            if (PlaybackState != MediaPlaybackState.None)
+                PlaybackState = MediaPlaybackState.None;
+            CurrentFrame = 0;
+            PlaybackRate = 1;
+            TimeDisplayMode = TimeDisplayFormat.None;
+
+            // De-select markers/keyframes
+            ViewModel.SelectedMarker = null;
+
+            // Cleanup resources used by the previous media source (if needed)
+            if (_player.Source is IDisposable oldSource && oldSource != null)
+            {
+                oldSource.Dispose();
+                _player.Source = null;
+            }
+
+            if (_frameBitmap != null)
+            {
+                _frameBitmap.Dispose();
+                _frameBitmap = null;
+            }
+
+            if (_frameSizingBitmap != null)
+            {
+                _frameSizingBitmap.Dispose();
+                _frameSizingBitmap = null;
+            }
+
+            // Reset frame position and scale
+            FrameScale = 0;
+            FrameOffsetX = 0;
+            FrameOffsetY = 0;
+
+            // Reset timeline
+            Timeline.Reset();
+        }
+
+        private async Task PrepareEditorForSource()
+        {
+            if (Source == null)
+            {
+                FramesPerSecond = App.RefreshRate;
+                IsPanAndZoomEnabled = false;
+                TimeDisplayMode = TimeDisplayFormat.None;
+                RefreshCommandStates();
+                return;
+            }
+
+            FramesPerSecond = (int)Math.Ceiling(Source.FramesPerSecond);
+            if (Source is ImageFile image)
+            {
+                IsPanAndZoomEnabled = true;
+                TimeDisplayMode = TimeDisplayFormat.FrameNumber;
+                _frameBitmap = await CanvasBitmap.LoadAsync(SwapChainCanvas.SwapChain.Device,
+                                                            await image.File.OpenReadAsync());
+
+                ScaleFrameToFit(image.WidthInPixels, image.HeightInPixels);
+                ApplyFrameScaleAndPosition();
+
+                // Configure timeline (if image is animated) and pause image on first frame
+                if (image.Duration > 0)
+                {
+                    Timeline.Duration = TimeSpan.FromSeconds(decimal.ToDouble(image.Duration));
+                    Timeline.Position = 0;
+                    Timeline.IsSelectionEnabled = false;
+                    Timeline.IsPositionAdjustmentEnabled = true;
+                    Timeline.IsSelectionAdjustmentEnabled = false;
+                    Timeline.IsZoomAdjustmentEnabled = true;
+                    Timeline.ZoomOutFull();
+                    PlaybackState = MediaPlaybackState.Paused;
+                }
+                else // Still image - manually start frame timer
+                {
+                    _redrawTimer.Start();
+                }
+            }
+            else if (Source is VideoSource video)
+            {
+                IsPanAndZoomEnabled = false;
+                TimeDisplayMode = TimeDisplayFormat.FrameNumber;
+                _player.Source = await video.GetPlaybackSourceAsync();
+
+                // Add markers to timeline
+                foreach (var marker in video.Markers)
+                {
+                    Timeline.Markers.Add(marker);
+                }
+
+                // Add cuts to timeline as selections
+                foreach (var (start, end) in video.Cuts)
+                {
+                    Timeline.AddSelection(start, end);
+                }
+            }
+
+            // Add keyframes to timeline
+            foreach (var keyframe in Source.Keyframes)
+            {
+                Timeline.Markers.Add(keyframe);
+            }
+        }
+
+        private void SeekToMarker(ITimelineMarker marker)
+        {
+            if (marker == null)
+                return;
+
+            if (Source.ContentType == MediaContentType.Image)
+                CurrentFrame = decimal.ToInt32(decimal.Round(marker.Position * FramesPerSecond));
+            else
+                _player.PlaybackSession.Position =
+                    TimeSpan.FromSeconds(decimal.ToDouble(marker.Position));
         }
 
         private void ScaleFrameToFit(uint widthInPixels, uint heightInPixels)
@@ -1233,22 +1669,20 @@ namespace MediaBase.Controls
             FrameScale = Math.Min(scaleW, scaleH);
         }
 
-        private void UpdateFramePositionAndScale()
+        private void CalculateFrameScaleAndPosition()
         {
-            var keyframes = Source.Keyframes.OfType<PanAndZoomKeyframe>().OrderBy(x => x.Time);
+            var keyframes = Source.Keyframes.OfType<PanAndZoomKeyframe>().OrderBy(x => x.Position);
 
             // Source has no keyframes for position/scale
             if (!keyframes.Any())
                 return;
 
             // Get current playback position
-            var currentPos = Source.ContentType == MediaContentType.Image
-                ? _imageAnimationFrame / (decimal)FramesPerSecond
-                : (decimal)_player.PlaybackSession.Position.TotalSeconds;
+            var currentPos = (decimal)CurrentPosition.TotalSeconds;
 
             // Source has only one keyframe for position/scale,
             // or current position is at or before the 1st keyframe
-            if (keyframes.Count() == 1 || currentPos <= keyframes.First().Time)
+            if (keyframes.Count() == 1 || currentPos <= keyframes.First().Position)
             {
                 var currentKeyframe = keyframes.First();
                 FrameOffsetX = currentKeyframe.OffsetX;
@@ -1258,7 +1692,7 @@ namespace MediaBase.Controls
             }
 
             // Current position is at or after the last keyframe
-            if (currentPos >= keyframes.Last().Time)
+            if (currentPos >= keyframes.Last().Position)
             {
                 var currentKeyframe = keyframes.First();
                 currentKeyframe = keyframes.Last();
@@ -1269,21 +1703,21 @@ namespace MediaBase.Controls
             }
 
             // Current playback position is between two keyframes
-            var prevKeyframe = keyframes.Where(x => x.Time <= currentPos).OrderBy(x => currentPos - x.Time).First();
-            var nextKeyframe = keyframes.Where(x => x.Time > currentPos).OrderBy(x => x.Time - currentPos).First();
+            var prevKeyframe = keyframes.Where(x => x.Position <= currentPos).OrderBy(x => currentPos - x.Position).First();
+            var nextKeyframe = keyframes.Where(x => x.Position > currentPos).OrderBy(x => x.Position - currentPos).First();
 
-            FrameOffsetX = CalculateValue(prevKeyframe.Time,
-                                          nextKeyframe.Time,
+            FrameOffsetX = CalculateValue(prevKeyframe.Position,
+                                          nextKeyframe.Position,
                                           prevKeyframe.OffsetX,
                                           nextKeyframe.OffsetX);
 
-            FrameOffsetY = CalculateValue(prevKeyframe.Time,
-                                          nextKeyframe.Time,
+            FrameOffsetY = CalculateValue(prevKeyframe.Position,
+                                          nextKeyframe.Position,
                                           prevKeyframe.OffsetY,
                                           nextKeyframe.OffsetY);
 
-            FrameScale = CalculateValue(prevKeyframe.Time,
-                                        nextKeyframe.Time,
+            FrameScale = CalculateValue(prevKeyframe.Position,
+                                        nextKeyframe.Position,
                                         prevKeyframe.Scale,
                                         nextKeyframe.Scale);
 
@@ -1295,7 +1729,7 @@ namespace MediaBase.Controls
             }
         }
 
-        private void ApplyFramePositionAndScale()
+        private void ApplyFrameScaleAndPosition()
         {
             var sourceWidth = _frameBitmap.SizeInPixels.Width;
             var sourceHeight = _frameBitmap.SizeInPixels.Height;
@@ -1357,65 +1791,14 @@ namespace MediaBase.Controls
                 }
             }
         }
-
-        private Marker GetPreviousMarkerFromCurrentPosition(decimal minDistanceFromMarker = 0.0M)
+        private bool TestPointOverFrame(Point point)
         {
-            if (Source.Markers.Count == 0)
-                return null;
-
-            var markers = from marker in Source.Markers
-                          where Timeline.Position >= marker.Position + minDistanceFromMarker
-                          orderby Timeline.Position - marker.Position
-                          select marker;
-
-            if (markers.Any())
-                return markers.First();
-            return null;
+            return _destRect.Contains(point);
         }
 
-        private Marker GetNextMarkerFromCurrentPosition()
+        private static bool TestKeyStates(Windows.System.VirtualKey key, CoreVirtualKeyStates states)
         {
-            if (Source.Markers.Count == 0)
-                return null;
-
-            var markers = from marker in Source.Markers
-                          where Timeline.Position < marker.Position
-                          orderby marker.Position - Timeline.Position
-                          select marker;
-
-            if (markers.Any())
-                return markers.First();
-            return null;
-        }
-
-        private Keyframe GetPreviousKeyframeFromCurrentPosition(decimal minDistanceFromKeyframe = 0.0M)
-        {
-            if (Source.Keyframes.Count == 0)
-                return null;
-
-            var keyframes = from keyframe in Source.Keyframes
-                            where Timeline.Position >= keyframe.Time + minDistanceFromKeyframe
-                            orderby Timeline.Position - keyframe.Time
-                            select keyframe;
-
-            if (keyframes.Any())
-                return keyframes.First();
-            return null;
-        }
-
-        private Keyframe GetNextKeyframeFromCurrentPosition()
-        {
-            if (Source.Keyframes.Count == 0)
-                return null;
-
-            var keyframes = from keyframe in Source.Keyframes
-                            where Timeline.Position < keyframe.Time
-                            orderby keyframe.Time - Timeline.Position
-                            select keyframe;
-
-            if (keyframes.Any())
-                return keyframes.First();
-            return null;
+            return InputKeyboardSource.GetKeyStateForCurrentThread(key).HasFlag(states);
         }
         #endregion
     }

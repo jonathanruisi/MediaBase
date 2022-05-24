@@ -47,7 +47,8 @@
                                 Grid.Row="1" Grid.Column="0"
                                 PositionFollowMode="Advance"
                                 Visibility="Collapsed"
-                                SelectedMarker="{x:Bind SelectedMarker, Mode=TwoWay}"/>
+                                FramesPerSecond="{x:Bind FramesPerSecond, Mode=OneWay}"
+                                SelectedMarker="{x:Bind ViewModel.SelectedMarker, Mode=TwoWay}"/>
 
         <!-- Command Bar -->
         <CommandBar x:Name="EditorCommandBar" Grid.Row="2"

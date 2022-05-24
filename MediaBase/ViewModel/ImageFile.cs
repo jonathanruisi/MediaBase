@@ -56,6 +56,7 @@ namespace MediaBase.ViewModel
             _file = file;
             _path = file?.Path;
             Name = file?.DisplayName;
+            FramesPerSecond = App.RefreshRate;  // TODO: Refresh rate should ultimately be equal to monitor
         }
         #endregion
 
@@ -78,6 +79,11 @@ namespace MediaBase.ViewModel
             if (!File.ContentType.Contains(contentTypeString.ToLower()))
                 throw new InvalidOperationException($"{contentTypeString} file expected");
 
+            return await ReadPropertiesFromFileAsync();
+        }
+
+        public async Task<bool> ReadPropertiesFromFileAsync()
+        {
             try
             {
                 var strWidth = "System.Image.HorizontalSize";

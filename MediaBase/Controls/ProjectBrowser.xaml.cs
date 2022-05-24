@@ -138,13 +138,13 @@ namespace MediaBase.Controls
                 if (file.ContentType.Contains("image"))
                 {
                     var imageFile = new ImageFile(file);
-                    await imageFile.LoadMediaPropertiesAsync();
+                    await imageFile.ReadPropertiesFromFileAsync();
                     ViewModel.ActiveNode.Children.Add(imageFile);
                 }
                 else if (file.ContentType.Contains("video"))
                 {
                     var videoFile = new VideoFile(file);
-                    await videoFile.LoadMediaPropertiesAsync();
+                    await videoFile.ReadPropertiesFromFileAsync();
                     ViewModel.ActiveNode.Children.Add(videoFile);
                 }
             }
@@ -213,13 +213,13 @@ namespace MediaBase.Controls
                 if (sourceFile.ContentType.Contains("image"))
                 {
                     var imageFile = new ImageFile(sourceFile);
-                    await imageFile.LoadMediaPropertiesAsync();
+                    await imageFile.ReadPropertiesFromFileAsync();
                     destinationFolder.Children.Add(imageFile);
                 }
                 else if (sourceFile.ContentType.Contains("video"))
                 {
                     var videoFile = new VideoFile(sourceFile);
-                    await videoFile.LoadMediaPropertiesAsync();
+                    await videoFile.ReadPropertiesFromFileAsync();
                     destinationFolder.Children.Add(videoFile);
                 }
             }

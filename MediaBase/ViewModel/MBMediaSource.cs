@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Xml;
 
+using JLR.Utility.WinUI.Controls;
 using JLR.Utility.WinUI.Messaging;
 using JLR.Utility.WinUI.ViewModel;
 
@@ -46,7 +47,7 @@ namespace MediaBase.ViewModel
         public Guid Id
         {
             get => _id;
-            protected set => SetProperty(ref _id, value);
+            set => SetProperty(ref _id, value);
         }
 
         /// <summary>
@@ -66,7 +67,7 @@ namespace MediaBase.ViewModel
         public virtual decimal Duration
         {
             get => _duration;
-            protected set
+            set
             {
                 SetProperty(ref _duration, value);
                 if (_duration == 0)
@@ -121,7 +122,7 @@ namespace MediaBase.ViewModel
         /// various actions at specified times in the media.
         /// </summary>
         [ViewModelCollection(nameof(Keyframes), "Keyframe")]
-        public ObservableCollection<Keyframe> Keyframes { get; }
+        public ObservableCollection<ITimelineMarker> Keyframes { get; }
         #endregion
 
         #region Constructor
@@ -137,7 +138,7 @@ namespace MediaBase.ViewModel
             Tags = new ObservableCollection<int>();
             Tags.CollectionChanged += Tags_CollectionChanged;
 
-            Keyframes = new ObservableCollection<Keyframe>();
+            Keyframes = new ObservableCollection<ITimelineMarker>();
             Keyframes.CollectionChanged += Keyframes_CollectionChanged;
         }
         #endregion
@@ -167,22 +168,22 @@ namespace MediaBase.ViewModel
         {
             if (Keyframes.Count > 0)
             {
-                var maxTime = Keyframes.Max(x => x.Time);
+                var maxTime = Keyframes.Max(x => x.Position);
                 if (maxTime > Duration)
                     Duration = maxTime;
             }
 
-            var keyframeMessage = new CollectionChangedMessage<Keyframe>(this, nameof(Keyframes));
+            var keyframeMessage = new CollectionChangedMessage<ITimelineMarker>(this, nameof(Keyframes));
 
             if (e.OldItems != null)
             {
-                foreach (Keyframe oldKeyframe in e.OldItems)
+                foreach (ITimelineMarker oldKeyframe in e.OldItems)
                     keyframeMessage.OldValue.Add(oldKeyframe);
             }
 
             if (e.NewItems != null)
             {
-                foreach (Keyframe newKeyframe in e.NewItems)
+                foreach (ITimelineMarker newKeyframe in e.NewItems)
                     keyframeMessage.NewValue.Add(newKeyframe);
             }
 
