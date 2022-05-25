@@ -31,6 +31,7 @@ namespace MediaBase.ViewModel
         private decimal _duration;
         private uint _widthInPixels, _heightInPixels;
         private double _framesPerSecond;
+        private bool _isMarkedForDeletion;
         #endregion
 
         #region Properties
@@ -100,6 +101,16 @@ namespace MediaBase.ViewModel
         {
             get => _framesPerSecond;
             protected set => SetProperty(ref _framesPerSecond, value);
+        }
+
+        /// <summary>
+        /// Indicates whether or not this <see cref="MBMediaSource"/>
+        /// has been marked for deletion by the user.
+        /// </summary>
+        public bool IsMarkedForDeletion
+        {
+            get => _isMarkedForDeletion;
+            set => SetProperty(ref _isMarkedForDeletion, value);
         }
 
         /// <summary>

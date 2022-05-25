@@ -23,6 +23,15 @@
             </toolkit_converters:EmptyObjectToObjectConverter.NotEmptyValue>
         </toolkit_converters:EmptyObjectToObjectConverter>
 
+        <toolkit_converters:BoolToVisibilityConverter x:Key="TrueToVisibleConverter">
+            <toolkit_converters:BoolToVisibilityConverter.TrueValue>
+                <xaml:Visibility>Visible</xaml:Visibility>
+            </toolkit_converters:BoolToVisibilityConverter.TrueValue>
+            <toolkit_converters:BoolToVisibilityConverter.FalseValue>
+                <xaml:Visibility>Collapsed</xaml:Visibility>
+            </toolkit_converters:BoolToVisibilityConverter.FalseValue>
+        </toolkit_converters:BoolToVisibilityConverter>
+
         <toolkit_converters:EmptyCollectionToObjectConverter x:Key="EmptyCollectionToVisibilityConverter">
             <toolkit_converters:EmptyCollectionToObjectConverter.EmptyValue>
                 <xaml:Visibility>Collapsed</xaml:Visibility>
@@ -74,6 +83,7 @@
             <TreeViewItem x:Name="Item"
                           ItemsSource="{x:Bind Children}"
                           ContextFlyout="{StaticResource MenuFlyout_ProjectBrowserFolderActions}"
+                          Tapped="ProjectBrowserTreeView_MediaFolderTapped"
                           RightTapped="ProjectBrowserTreeView_RightTapped">
                 <TreeViewItem.Content>
                     <StackPanel Orientation="Horizontal">
@@ -106,6 +116,7 @@
         <DataTemplate x:Key="ProjectImageDataTemplate"
                       x:DataType="viewmodel:ImageFile">
             <TreeViewItem ContextFlyout="{StaticResource MenuFlyout_ProjectBrowserFileActions}"
+                          Tapped="ProjectBrowserTreeView_MediaSourceTapped"
                           RightTapped="ProjectBrowserTreeView_RightTapped">
                 <TreeViewItem.Content>
                     <StackPanel Orientation="Horizontal">
@@ -125,6 +136,13 @@
                         <TextBlock HorizontalAlignment="Left"
                                    VerticalAlignment="Center"
                                    Text="{x:Bind Name, Mode=OneWay}"/>
+                        <FontIcon FontFamily="Segoe Fluent Icons"
+                                  Glyph="&#xE74D;"
+                                  Foreground="Red"
+                                  Margin="10,0,0,0"
+                                  Visibility="{x:Bind IsMarkedForDeletion,
+                                                      Converter={StaticResource TrueToVisibleConverter},
+                                                      Mode=OneWay}"/>
                     </StackPanel>
                 </TreeViewItem.Content>
             </TreeViewItem>
@@ -133,6 +151,7 @@
         <DataTemplate x:Key="ProjectVideoDataTemplate"
                       x:DataType="viewmodel:VideoFile">
             <TreeViewItem ContextFlyout="{StaticResource MenuFlyout_ProjectBrowserFileActions}"
+                          Tapped="ProjectBrowserTreeView_MediaSourceTapped"
                           RightTapped="ProjectBrowserTreeView_RightTapped">
                 <TreeViewItem.Content>
                     <StackPanel Orientation="Horizontal">
@@ -152,6 +171,13 @@
                         <TextBlock HorizontalAlignment="Left"
                                    VerticalAlignment="Center"
                                    Text="{x:Bind Name, Mode=OneWay}"/>
+                        <FontIcon FontFamily="Segoe Fluent Icons"
+                                  Glyph="&#xE74D;"
+                                  Foreground="Red"
+                                  Margin="10,0,0,0"
+                                  Visibility="{x:Bind IsMarkedForDeletion,
+                                                      Converter={StaticResource TrueToVisibleConverter},
+                                                      Mode=OneWay}"/>
                     </StackPanel>
                 </TreeViewItem.Content>
             </TreeViewItem>
@@ -171,6 +197,13 @@
                   ItemTemplateSelector="{StaticResource ProjectItemTemplateSelector}"
                   ContextFlyout="{StaticResource MenuFlyout_ProjectBrowserActions}"
                   ItemInvoked="ProjectBrowserTreeView_ItemInvoked"
-                  RightTapped="ProjectBrowserTreeView_RightTapped"/>
+                  Tapped="ProjectBrowserTreeView_Tapped"
+                  RightTapped="ProjectBrowserTreeView_RightTapped">
+            <TreeView.ItemContainerStyle>
+                <Style TargetType="ListViewItemPresenter">
+                    <Setter Property="SelectionIndicatorVisualEnabled" Value="True"/>
+                </Style>
+            </TreeView.ItemContainerStyle>
+        </TreeView>
     </Grid>
 </UserControl>

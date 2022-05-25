@@ -99,6 +99,13 @@
                               Command="{x:Bind ViewModel.EditorPauseCommand}"/>
                 <AppBarButton x:Name="PlayButton" Width="40"
                               Command="{x:Bind ViewModel.EditorPlayCommand}"/>
+                <AppBarSeparator x:Name="PlaybackButtonSeparator"/>
+                <AppBarButton x:Name="NextItemButton" Width="40"
+                              Command="{x:Bind ViewModel.GeneralNextCommand}"/>
+                <AppBarButton x:Name="PreviousItemButton" Width="40"
+                              Command="{x:Bind ViewModel.GeneralPreviousCommand}"/>
+                <AppBarButton x:Name="DeleteItemButton" Width="40"
+                              Command="{x:Bind ViewModel.GeneralDeleteCommand}"/>
             </CommandBar.PrimaryCommands>
         </CommandBar>
     </Grid>

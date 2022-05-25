@@ -1,6 +1,7 @@
 ﻿//#define SHOW_DEBUG_MESSAGES
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
@@ -48,6 +49,7 @@ namespace MediaBase.Controls
         private double _scaleFactor, _prevPlaybackRate;
         private Rect _sourceRect, _destRect;
         private FollowMode _prevFollowMode;
+        private LinkedListNode<MBMediaSource> _selectedMediaListNode;
         #endregion
 
         #region Properties
@@ -923,6 +925,25 @@ namespace MediaBase.Controls
         #endregion
 
         #region Event Handlers (Commands - CanExecuteRequested)
+        private void GeneralPreviousCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = Source != null &&
+                              _selectedMediaListNode != null &&
+                              _selectedMediaListNode.Previous != null;
+        }
+
+        private void GeneralNextCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = Source != null &&
+                              _selectedMediaListNode != null &&
+                              _selectedMediaListNode.Next != null;
+        }
+
+        private void GeneralDeleteCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = Source != null;
+        }
+
         private void EditorPlayCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
             args.CanExecute = IsPlaybackPossible && PlaybackState == MediaPlaybackState.Paused;
@@ -1049,6 +1070,23 @@ namespace MediaBase.Controls
         #endregion
 
         #region Event Handlers (Commands - ExecuteRequested)
+        private void GeneralPreviousCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            _selectedMediaListNode = _selectedMediaListNode.Previous;
+            Source = _selectedMediaListNode.Value;
+        }
+
+        private void GeneralNextCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            _selectedMediaListNode = _selectedMediaListNode.Next;
+            Source = _selectedMediaListNode.Value;
+        }
+
+        private void GeneralDeleteCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            Source.IsMarkedForDeletion = !Source.IsMarkedForDeletion;
+        }
+
         private void EditorPlayCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
             if (Source.ContentType == MediaContentType.Image)
@@ -1294,6 +1332,21 @@ namespace MediaBase.Controls
         #region Private Methods
         private void InitializeCommands()
         {
+            ViewModel.GeneralPreviousCommand.CanExecuteRequested +=
+                GeneralPreviousCommand_CanExecuteRequested;
+            ViewModel.GeneralPreviousCommand.ExecuteRequested +=
+                GeneralPreviousCommand_ExecuteRequested;
+
+            ViewModel.GeneralNextCommand.CanExecuteRequested +=
+                GeneralNextCommand_CanExecuteRequested;
+            ViewModel.GeneralNextCommand.ExecuteRequested +=
+                GeneralNextCommand_ExecuteRequested;
+
+            ViewModel.GeneralDeleteCommand.CanExecuteRequested +=
+                GeneralDeleteCommand_CanExecuteRequested;
+            ViewModel.GeneralDeleteCommand.ExecuteRequested +=
+                GeneralDeleteCommand_ExecuteRequested;
+
             ViewModel.EditorPlayCommand.CanExecuteRequested +=
                 EditorPlayCommand_CanExecuteRequested;
             ViewModel.EditorPlayCommand.ExecuteRequested +=
@@ -1394,9 +1447,12 @@ namespace MediaBase.Controls
             ViewModel.ToolsAnimateMediaCommand.ExecuteRequested +=
                 ToolsAnimateMediaCommand_ExecuteRequested;
         }
-        
+
         private void RefreshCommandStates()
         {
+            ViewModel.GeneralPreviousCommand.NotifyCanExecuteChanged();
+            ViewModel.GeneralNextCommand.NotifyCanExecuteChanged();
+            ViewModel.GeneralDeleteCommand.NotifyCanExecuteChanged();
             ViewModel.EditorPlayCommand.NotifyCanExecuteChanged();
             ViewModel.EditorPauseCommand.NotifyCanExecuteChanged();
             ViewModel.EditorPreviousFrameCommand.NotifyCanExecuteChanged();
@@ -1468,6 +1524,12 @@ namespace MediaBase.Controls
                 ? Visibility.Visible : Visibility.Collapsed;
             CenterFrameButton.Visibility = IsPanAndZoomEnabled
                 ? Visibility.Visible : Visibility.Collapsed;
+
+            vis = _selectedMediaListNode != null ? Visibility.Visible : Visibility.Collapsed;
+            PreviousItemButton.Visibility = vis;
+            NextItemButton.Visibility = vis;
+            DeleteItemButton.Visibility = vis;
+            PlaybackButtonSeparator.Visibility = vis;
         }
 
         private void RegisterMessages()
@@ -1531,6 +1593,27 @@ namespace MediaBase.Controls
                     }
                 }
             });
+
+            // Selected media changed
+            // TODO: Use this message instead of manually checking the TreeView for selected items
+            messenger.Register<CollectionChangedMessage<LinkedList<MBMediaSource>>>(this, (r, m) =>
+            {
+                if (m.PropertyName != nameof(ViewModel.SelectedMedia))
+                    return;
+
+                if (ViewModel.SelectedMedia.Count == 0)
+                    return;
+
+                if (ViewModel.SelectedMedia.Contains(Source))
+                {
+                    _selectedMediaListNode = ViewModel.SelectedMedia.Find(Source);
+                }
+                else
+                {
+                    _selectedMediaListNode = ViewModel.SelectedMedia.First;
+                    Source = _selectedMediaListNode.Value;
+                }
+            });
         }
 
         private void ResetEditor()
@@ -1591,6 +1674,7 @@ namespace MediaBase.Controls
                 IsPanAndZoomEnabled = false;
                 TimeDisplayMode = TimeDisplayFormat.None;
                 RefreshCommandStates();
+                RefreshUI();
                 return;
             }
 
@@ -1646,6 +1730,9 @@ namespace MediaBase.Controls
             {
                 Timeline.Markers.Add(keyframe);
             }
+
+            RefreshCommandStates();
+            RefreshUI();
         }
 
         private void SeekToMarker(ITimelineMarker marker)

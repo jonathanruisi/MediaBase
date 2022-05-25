@@ -10,6 +10,41 @@
     Unloaded="UserControl_Unloaded">
 
     <Grid>
-        
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" MinWidth="250"/>
+            <ColumnDefinition Width="2*" MinWidth="250"/>
+        </Grid.ColumnDefinitions>
+
+        <Pivot Grid.Column="0">
+            <PivotItem Header="Media Info" >
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock x:Name="MediaInfoNameTextBlock"
+                               Grid.Row="0" Margin="5"
+                               HorizontalAlignment="Left"
+                               FontSize="32" FontWeight="Bold"
+                               Text="{x:Bind ViewModel.ActiveMediaSource.Name, Mode=OneWay}"/>
+
+                    <RatingControl x:Name="MediaInfoRating"
+                                   Grid.Row="1"
+                                   HorizontalAlignment="Left"
+                                   Caption="Rating"
+                                   InitialSetValue="0"
+                                   MaxRating="10"
+                                   Value="{x:Bind ViewModel.ActiveMediaSource.Rating, Mode=TwoWay}"
+                                   IsClearEnabled="True"/>
+                </Grid>
+            </PivotItem>
+            
+            <PivotItem Header="Tags">
+                
+            </PivotItem>
+        </Pivot>
     </Grid>
 </UserControl>

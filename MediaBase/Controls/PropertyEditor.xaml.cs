@@ -4,6 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 
+using MediaBase.ViewModel;
+
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -20,13 +23,14 @@ namespace MediaBase.Controls
     public sealed partial class PropertyEditor : UserControl
     {
         #region Properties
-
+        public Project ViewModel => (Project)DataContext;
         #endregion
 
         #region Constructor
         public PropertyEditor()
         {
             InitializeComponent();
+            DataContext = App.Current.Services.GetService<Project>();
         }
         #endregion
 

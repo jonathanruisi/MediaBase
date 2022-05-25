@@ -94,9 +94,16 @@ namespace MediaBase.ViewModel
             get => _selectedMarker;
             set => SetProperty(ref _selectedMarker, value, true);
         }
+
+        public LinkedList<MBMediaSource> SelectedMedia { get; }
         #endregion
 
         #region Commands
+        // General
+        public XamlUICommand GeneralPreviousCommand { get; private set; }
+        public XamlUICommand GeneralNextCommand { get; private set; }
+        public XamlUICommand GeneralDeleteCommand { get; private set; }
+
         // Project
         public XamlUICommand ProjectNewCommand { get; private set; }
         public XamlUICommand ProjectOpenCommand { get; private set; }
@@ -154,6 +161,7 @@ namespace MediaBase.ViewModel
             _activeProjectNode = null;
             _activeMediaSource = null;
             _selectedMarker = null;
+            SelectedMedia = new LinkedList<MBMediaSource>();
             MediaLibrary = new MediaFolder { Name = MediaLibraryName };
 
             InitializeCommands();
@@ -262,6 +270,47 @@ namespace MediaBase.ViewModel
         #region Private Methods
         private void InitializeCommands()
         {
+            #region General Commands
+            GeneralPreviousCommand = new XamlUICommand
+            {
+                Label = "Previous",
+                Description = "Previous",
+                IconSource = new SymbolIconSource { Symbol = (Symbol)0xF0B0 }
+            };
+
+            GeneralPreviousCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.Left,
+                IsEnabled = true
+            });
+
+            GeneralNextCommand = new XamlUICommand
+            {
+                Label = "Next",
+                Description = "Next",
+                IconSource = new SymbolIconSource { Symbol = (Symbol)0xF0AF }
+            };
+
+            GeneralNextCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.Right,
+                IsEnabled = true
+            });
+
+            GeneralDeleteCommand = new XamlUICommand
+            {
+                Label = "Delete",
+                Description = "Delete",
+                IconSource = new SymbolIconSource { Symbol = Symbol.Delete }
+            };
+
+            GeneralDeleteCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.Delete,
+                IsEnabled = true
+            });
+            #endregion
+
             #region Project Commands
             ProjectNewCommand = new XamlUICommand
             {
