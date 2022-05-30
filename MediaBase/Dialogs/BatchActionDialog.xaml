@@ -1,0 +1,56 @@
+﻿<ContentDialog
+    x:Class="MediaBase.Dialogs.BatchActionDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:mediabase="using:MediaBase"
+    mc:Ignorable="d"
+    IsPrimaryButtonEnabled="True"
+    IsSecondaryButtonEnabled="False"
+    Loaded="ContentDialog_Loaded">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="25"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <ToggleButton x:Name="Category1ToggleButton" Margin="5,0,0,10"
+                      Grid.Row="0" Grid.Column="0" Content="Category 1"
+                      IsChecked="{x:Bind ActOnCategory1, Mode=TwoWay}"/>
+        <ToggleButton x:Name="Category2ToggleButton" Margin="5,0,0,10"
+                      Grid.Row="0" Grid.Column="1" Content="Category 2"
+                      IsChecked="{x:Bind ActOnCategory2, Mode=TwoWay}"/>
+        <ToggleButton x:Name="Category3ToggleButton" Margin="5,0,0,10"
+                      Grid.Row="0" Grid.Column="2" Content="Category 3"
+                      IsChecked="{x:Bind ActOnCategory3, Mode=TwoWay}"/>
+        <ToggleButton x:Name="Category4ToggleButton" Margin="5,0,0,10"
+                      Grid.Row="0" Grid.Column="3" Content="Category 4"
+                      IsChecked="{x:Bind ActOnCategory4, Mode=TwoWay}"/>
+
+        <TextBlock Grid.Row="1" Grid.Column="0" FontSize="24" HorizontalAlignment="Center"
+                   Text="{x:Bind Category1Count, Mode=OneWay}"/>
+        <TextBlock Grid.Row="1" Grid.Column="1" FontSize="24" HorizontalAlignment="Center"
+                   Text="{x:Bind Category2Count, Mode=OneWay}"/>
+        <TextBlock Grid.Row="1" Grid.Column="2" FontSize="24" HorizontalAlignment="Center"
+                   Text="{x:Bind Category3Count, Mode=OneWay}"/>
+        <TextBlock Grid.Row="1" Grid.Column="3" FontSize="24" HorizontalAlignment="Center"
+                   Text="{x:Bind Category4Count, Mode=OneWay}"/>
+
+        <RadioButtons x:Name="BatchActionRadioButtons" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="4"
+                      MaxColumns="3" Header="Action" SelectedIndex="0"
+                      SelectionChanged="BatchActionRadioButtons_SelectionChanged">
+            <x:String>Delete</x:String>
+        </RadioButtons>
+
+    </Grid>
+</ContentDialog>

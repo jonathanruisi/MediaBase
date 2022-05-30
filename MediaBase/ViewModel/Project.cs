@@ -43,7 +43,6 @@ namespace MediaBase.ViewModel
         private ViewModelNode _activeProjectNode;
         private MBMediaSource _activeMediaSource;
         private Marker _selectedMarker;
-        private LinkedList<MBMediaSource> _siblingMediaItems;
         #endregion
 
         #region Properties
@@ -88,7 +87,16 @@ namespace MediaBase.ViewModel
         public MBMediaSource ActiveMediaSource
         {
             get => _activeMediaSource;
-            set => SetProperty(ref _activeMediaSource, value, true);
+            set
+            {
+                SetProperty(ref _activeMediaSource, value, true);
+                GeneralPreviousCommand.NotifyCanExecuteChanged();
+                GeneralNextCommand.NotifyCanExecuteChanged();
+                ToolsMark1Command.NotifyCanExecuteChanged();
+                ToolsMark2Command.NotifyCanExecuteChanged();
+                ToolsMark3Command.NotifyCanExecuteChanged();
+                ToolsMark4Command.NotifyCanExecuteChanged();
+            }
         }
 
         /// <summary>
@@ -102,6 +110,10 @@ namespace MediaBase.ViewModel
         #endregion
 
         #region Commands
+        // General
+        public XamlUICommand GeneralPreviousCommand { get; private set; }
+        public XamlUICommand GeneralNextCommand { get; private set; }
+
         // Project
         public XamlUICommand ProjectNewCommand { get; private set; }
         public XamlUICommand ProjectOpenCommand { get; private set; }
@@ -153,7 +165,6 @@ namespace MediaBase.ViewModel
         public XamlUICommand EditorTimelineZoomInCommand { get; private set; }
         public XamlUICommand EditorAnimateMediaCommand { get; private set; }
         public XamlUICommand EditorTrimMediaCommand { get; private set; }
-        public XamlUICommand EditorMarkMediaCommand { get; private set; }
         #endregion
 
         #region Constructor
@@ -269,11 +280,94 @@ namespace MediaBase.ViewModel
         }
         #endregion
 
+        #region Event Handlers (Commands - CanExecuteRequested)
+        private void GeneralPreviousCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = ActiveMediaSource != null && ActiveMediaSource != ActiveMediaSource.Parent.Children.First();
+        }
+
+        private void GeneralNextCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = ActiveMediaSource != null && ActiveMediaSource != ActiveMediaSource.Parent.Children.Last();
+        }
+
+        private void ToolsMarkCategoryCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = ActiveMediaSource != null;
+        }
+        #endregion
+
+        #region Event Handlers (Commands - ExecuteRequested)
+        private void GeneralPreviousCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            var index = ActiveMediaSource.Parent.Children.IndexOf(ActiveMediaSource);
+            ActiveMediaSource = (MBMediaSource)ActiveMediaSource.Parent.Children[index - 1];
+        }
+
+        private void GeneralNextCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            var index = ActiveMediaSource.Parent.Children.IndexOf(ActiveMediaSource);
+            ActiveMediaSource = (MBMediaSource)ActiveMediaSource.Parent.Children[index + 1];
+        }
+
+        private void ToolsMarkCategoryCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            if (!int.TryParse((string)args.Parameter, out int category))
+                return;
+
+            switch (category)
+            {
+                case 1:
+                    ActiveMediaSource.IsCategory1 = !ActiveMediaSource.IsCategory1;
+                    break;
+                case 2:
+                    ActiveMediaSource.IsCategory2 = !ActiveMediaSource.IsCategory2;
+                    break;
+                case 3:
+                    ActiveMediaSource.IsCategory3 = !ActiveMediaSource.IsCategory3;
+                    break;
+                case 4:
+                    ActiveMediaSource.IsCategory4 = !ActiveMediaSource.IsCategory4;
+                    break;
+            }
+        }
+        #endregion
+
         #region Private Methods
         private void InitializeCommands()
         {
             #region General Commands
-            
+            GeneralPreviousCommand = new XamlUICommand
+            {
+                Label = "Previous",
+                Description = "Previous",
+                IconSource = new SymbolIconSource { Symbol = (Symbol)0xF0B0 }
+            };
+
+            GeneralPreviousCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.Left,
+                IsEnabled = true
+            });
+
+            GeneralPreviousCommand.CanExecuteRequested += GeneralPreviousCommand_CanExecuteRequested;
+            GeneralPreviousCommand.ExecuteRequested += GeneralPreviousCommand_ExecuteRequested;
+
+            GeneralNextCommand = new XamlUICommand
+            {
+                Label = "Next",
+                Description = "Next",
+                IconSource = new SymbolIconSource { Symbol = (Symbol)0xF0AF }
+            };
+
+            GeneralNextCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.Right,
+                IsEnabled = true
+            });
+
+            GeneralNextCommand.CanExecuteRequested += GeneralNextCommand_CanExecuteRequested;
+            GeneralNextCommand.ExecuteRequested += GeneralNextCommand_ExecuteRequested;
             #endregion
 
             #region Project Commands
@@ -400,6 +494,81 @@ namespace MediaBase.ViewModel
                 Label = "Animate...",
                 Description = "Animate media position and scale"
             };
+
+            ToolsCategoryActionCommand = new XamlUICommand
+            {
+                Label = "Category Action...",
+                Description = "Perform an action on a categorized item",
+                IconSource = new SymbolIconSource { Symbol = (Symbol)0xE781 }
+            };
+
+            ToolsCategoryActionCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.A,
+                Modifiers = VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift,
+                IsEnabled = true
+            });
+
+            ToolsMark1Command = new XamlUICommand
+            {
+                Label = "Category 1",
+                Description = "Mark Item as Category 1",
+                IconSource = (PathIconSource)App.Current.Resources["GoldTriangleIconSource"]
+            };
+
+            ToolsMark1Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.NumberPad1,
+                IsEnabled = true
+            });
+
+            ToolsMark2Command = new XamlUICommand
+            {
+                Label = "Category 2",
+                Description = "Mark Item as Category 2",
+                IconSource = (PathIconSource)App.Current.Resources["BlueSquareIconSource"]
+            };
+
+            ToolsMark2Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.NumberPad2,
+                IsEnabled = true
+            });
+
+            ToolsMark3Command = new XamlUICommand
+            {
+                Label = "Category 3",
+                Description = "Mark Item as Category 3",
+                IconSource = (PathIconSource)App.Current.Resources["RedCircleIconSource"]
+            };
+
+            ToolsMark3Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.NumberPad3,
+                IsEnabled = true
+            });
+
+            ToolsMark4Command = new XamlUICommand
+            {
+                Label = "Category 4",
+                Description = "Mark Item as Category 4",
+                IconSource = (PathIconSource)App.Current.Resources["GreenDiamondIconSource"]
+            };
+
+            ToolsMark4Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.NumberPad4,
+                IsEnabled = true
+            });
+
+            ToolsMark1Command.CanExecuteRequested += ToolsMarkCategoryCommand_CanExecuteRequested;
+            ToolsMark1Command.ExecuteRequested += ToolsMarkCategoryCommand_ExecuteRequested;
+            ToolsMark2Command.CanExecuteRequested += ToolsMarkCategoryCommand_CanExecuteRequested;
+            ToolsMark2Command.ExecuteRequested += ToolsMarkCategoryCommand_ExecuteRequested;
+            ToolsMark3Command.CanExecuteRequested += ToolsMarkCategoryCommand_CanExecuteRequested;
+            ToolsMark3Command.ExecuteRequested += ToolsMarkCategoryCommand_ExecuteRequested;
+            ToolsMark4Command.CanExecuteRequested += ToolsMarkCategoryCommand_CanExecuteRequested;
+            ToolsMark4Command.ExecuteRequested += ToolsMarkCategoryCommand_ExecuteRequested;
             #endregion
 
             #region View Commands
@@ -723,13 +892,6 @@ namespace MediaBase.ViewModel
                 Label = "Trim",
                 Description = "Trim current media",
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xE78A }
-            };
-
-            EditorMarkMediaCommand = new XamlUICommand
-            {
-                Label = "Mark",
-                Description = "Define tags, chapters, and clips for the current media",
-                IconSource = new SymbolIconSource { Symbol = (Symbol)0xED63 }
             };
             #endregion
         }

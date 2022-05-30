@@ -106,7 +106,7 @@
                               ExpandDirection="Right" IsExpanded="True"
                               HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
                               Header="Project Browser">
-                <controls:ProjectBrowser x:Name="ProjectBrowser" Grid.Column="0" Width="400"
+                <controls:ProjectBrowser x:Name="ProjectBrowser" Grid.Column="0" Width="500"
                                          HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
             </toolkit:Expander>
 

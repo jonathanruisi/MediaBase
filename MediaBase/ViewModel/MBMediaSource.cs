@@ -31,6 +31,7 @@ namespace MediaBase.ViewModel
         private decimal _duration;
         private uint _widthInPixels, _heightInPixels;
         private double _framesPerSecond;
+        private bool _isCategory1, _isCategory2, _isCategory3, _isCategory4;
         #endregion
 
         #region Properties
@@ -123,6 +124,42 @@ namespace MediaBase.ViewModel
         /// </summary>
         [ViewModelCollection(nameof(Keyframes), "Keyframe")]
         public ObservableCollection<ITimelineMarker> Keyframes { get; }
+
+        /// <summary>
+        /// Indicates a multi-purpose marker of category #1
+        /// </summary>
+        public bool IsCategory1
+        {
+            get => _isCategory1;
+            set => SetProperty(ref _isCategory1, value);
+        }
+
+        /// <summary>
+        /// Indicates a multi-purpose marker of category #2
+        /// </summary>
+        public bool IsCategory2
+        {
+            get => _isCategory2;
+            set => SetProperty(ref _isCategory2, value);
+        }
+
+        /// <summary>
+        /// Indicates a multi-purpose marker of category #3
+        /// </summary>
+        public bool IsCategory3
+        {
+            get => _isCategory3;
+            set => SetProperty(ref _isCategory3, value);
+        }
+
+        /// <summary>
+        /// Indicates a multi-purpose marker of category #4
+        /// </summary>
+        public bool IsCategory4
+        {
+            get => _isCategory4;
+            set => SetProperty(ref _isCategory4, value);
+        }
         #endregion
 
         #region Constructor
@@ -134,6 +171,10 @@ namespace MediaBase.ViewModel
             _widthInPixels = 0;
             _heightInPixels = 0;
             _framesPerSecond = 0;
+            _isCategory1 = false;
+            _isCategory2 = false;
+            _isCategory3 = false;
+            _isCategory4 = false;
 
             Tags = new ObservableCollection<int>();
             Tags.CollectionChanged += Tags_CollectionChanged;

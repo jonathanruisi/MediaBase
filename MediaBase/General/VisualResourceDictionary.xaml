@@ -1,0 +1,48 @@
+﻿<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:MediaBase">
+
+    <PathIconSource x:Key="GoldTriangleIconSource" Foreground="Gold">
+        <PathIconSource.Data>
+            <PathGeometry>
+                <PathGeometry.Figures>
+                    <PathFigure IsClosed="True" IsFilled="True" StartPoint="0,20">
+                        <PathFigure.Segments>
+                            <LineSegment Point="10,0"/>
+                            <LineSegment Point="20,20"/>
+                        </PathFigure.Segments>
+                    </PathFigure>
+                </PathGeometry.Figures>
+            </PathGeometry>
+        </PathIconSource.Data>
+    </PathIconSource>
+
+    <PathIconSource x:Key="BlueSquareIconSource" Foreground="CornflowerBlue">
+        <PathIconSource.Data>
+            <RectangleGeometry Rect="0,0,20,20"/>
+        </PathIconSource.Data>
+    </PathIconSource>
+
+    <PathIconSource x:Key="RedCircleIconSource" Foreground="IndianRed">
+        <PathIconSource.Data>
+            <EllipseGeometry Center="10,10" RadiusX="10" RadiusY="10"/>
+        </PathIconSource.Data>
+    </PathIconSource>
+
+    <PathIconSource x:Key="GreenDiamondIconSource" Foreground="ForestGreen">
+        <PathIconSource.Data>
+            <PathGeometry>
+                <PathGeometry.Figures>
+                    <PathFigure IsClosed="True" IsFilled="True" StartPoint="0,10">
+                        <PathFigure.Segments>
+                            <LineSegment Point="10,0"/>
+                            <LineSegment Point="20,10"/>
+                            <LineSegment Point="10,20"/>
+                        </PathFigure.Segments>
+                    </PathFigure>
+                </PathGeometry.Figures>
+            </PathGeometry>
+        </PathIconSource.Data>
+    </PathIconSource>
+</ResourceDictionary>

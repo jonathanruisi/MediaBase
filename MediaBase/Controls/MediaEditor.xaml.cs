@@ -15,6 +15,7 @@ using MediaBase.ViewModel;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Graphics.Canvas;
+using Microsoft.Graphics.Canvas.Geometry;
 using Microsoft.Graphics.Canvas.Text;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.Toolkit.Mvvm.Messaging.Messages;
@@ -669,6 +670,79 @@ namespace MediaBase.Controls
             // Draw the image
             ds.DrawImage(_frameBitmap, _destRect, _sourceRect);
 
+            // Draw category adornment
+            var totalBorderSize = 12.0f;
+            var catIconSize = 60.0f;
+            var iconSpacing = 5.0f;
+            int catOffset = 0;
+            var numCategories = 0;
+            if (ViewModel.ActiveMediaSource.IsCategory1)
+                numCategories++;
+            if (ViewModel.ActiveMediaSource.IsCategory2)
+                numCategories++;
+            if (ViewModel.ActiveMediaSource.IsCategory3)
+                numCategories++;
+            if (ViewModel.ActiveMediaSource.IsCategory4)
+                numCategories++;
+            float borderThickness = totalBorderSize / numCategories;
+
+            if (numCategories > 0)
+            {
+                if (ViewModel.ActiveMediaSource.IsCategory1)
+                {
+                    // Draw border
+                    DrawBorder(Colors.Gold, borderThickness, catOffset * borderThickness);
+
+                    // Draw icon
+                    var xOffset = (float)_destRect.Left + totalBorderSize + iconSpacing;
+                    var yOffset = (float)_destRect.Top + totalBorderSize + iconSpacing;
+                    using var path = new CanvasPathBuilder(ds);
+                    path.BeginFigure(0, catIconSize);
+                    path.AddLine(catIconSize / 2, 0);
+                    path.AddLine(catIconSize, catIconSize);
+                    path.EndFigure(CanvasFigureLoop.Closed);
+                    using var categoryIconGeometry = CanvasGeometry.CreatePath(path);
+                    ds.FillGeometry(categoryIconGeometry, xOffset, yOffset, Colors.Gold);
+                    catOffset++;
+                }
+
+                if (ViewModel.ActiveMediaSource.IsCategory2)
+                {
+                    DrawBorder(Colors.CornflowerBlue, borderThickness, catOffset * borderThickness);
+
+                    var xOffset = (float)_destRect.Left + totalBorderSize + iconSpacing + (iconSpacing * catOffset) + (catOffset * catIconSize);
+                    var yOffset = (float)_destRect.Top + totalBorderSize + iconSpacing;
+                    ds.FillRectangle(xOffset, yOffset, catIconSize, catIconSize, Colors.CornflowerBlue);
+                    catOffset++;
+                }
+
+                if (ViewModel.ActiveMediaSource.IsCategory3)
+                {
+                    DrawBorder(Colors.IndianRed, borderThickness, catOffset * borderThickness);
+
+                    var xOffset = (float)_destRect.Left + totalBorderSize + iconSpacing + (iconSpacing * catOffset) + (catOffset * catIconSize);
+                    var yOffset = (float)_destRect.Top + totalBorderSize + iconSpacing;
+                    ds.FillEllipse(xOffset + (catIconSize / 2), yOffset + (catIconSize / 2), catIconSize / 2, catIconSize / 2, Colors.IndianRed);
+                    catOffset++;
+                }
+
+                if (ViewModel.ActiveMediaSource.IsCategory4)
+                {
+                    DrawBorder(Colors.ForestGreen, borderThickness, catOffset * borderThickness);
+
+                    var xOffset = (float)_destRect.Left + totalBorderSize + iconSpacing + (iconSpacing * catOffset) + (catOffset * catIconSize);
+                    var yOffset = (float)_destRect.Top + totalBorderSize + iconSpacing;
+                    using var path = new CanvasPathBuilder(ds);
+                    path.BeginFigure(0, catIconSize / 2);
+                    path.AddLine(catIconSize / 2, 0);
+                    path.AddLine(catIconSize, catIconSize / 2);
+                    path.AddLine(catIconSize / 2, catIconSize);
+                    path.EndFigure(CanvasFigureLoop.Closed);
+                    using var categoryIconGeometry = CanvasGeometry.CreatePath(path);
+                    ds.FillGeometry(categoryIconGeometry, xOffset, yOffset, Colors.ForestGreen);
+                }
+            }
+
             // Draw timecode/frame count
             if (IsPlaybackPossible && TimeDisplayMode != TimeDisplayFormat.None)
             {
@@ -697,6 +771,16 @@ namespace MediaBase.Controls
             }
 
             SwapChainCanvas.SwapChain.Present();
+
+            // Local function to draw category adornment border
+            void DrawBorder(Color color, float thickness, float margin)
+            {
+                ds.DrawRectangle(new Rect(_destRect.Left + margin + (thickness / 2),
+                                          _destRect.Top + margin + (thickness / 2),
+                                          _destRect.Width - thickness - margin * 2,
+                                          _destRect.Height - thickness - margin * 2),
+                                 color, thickness);
+            }
         }
         #endregion
 
@@ -1591,8 +1675,6 @@ namespace MediaBase.Controls
                 FramesPerSecond = App.RefreshRate;
                 IsPanAndZoomEnabled = false;
                 TimeDisplayMode = TimeDisplayFormat.None;
-                RefreshCommandStates();
-                RefreshUI();
                 return;
             }
 
@@ -1648,9 +1730,6 @@ namespace MediaBase.Controls
             {
                 Timeline.Markers.Add(keyframe);
             }
-
-            RefreshCommandStates();
-            RefreshUI();
         }
 
         private void SeekToMarker(ITimelineMarker marker)

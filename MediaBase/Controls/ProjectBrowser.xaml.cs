@@ -10,6 +10,7 @@ using JLR.Utility.WinUI.Dialogs;
 using JLR.Utility.WinUI.Messaging;
 using JLR.Utility.WinUI.ViewModel;
 
+using MediaBase.Dialogs;
 using MediaBase.ViewModel;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -82,6 +83,12 @@ namespace MediaBase.Controls
         private void ProjectRenameItemCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
             args.CanExecute = ViewModel != null && ViewModel.IsActive && ViewModel.ActiveNode?.Depth > 0;
+        }
+
+        private void ToolsCategoryActionCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            // TODO: Move all possible CanExecute/Execute handlers into the Project class itself
+            args.CanExecute = true;
         }
         #endregion
 
@@ -286,6 +293,62 @@ namespace MediaBase.Controls
                 ViewModel.ActiveNode.Name = dlg.Text;
             }
         }
+
+        private async void ToolsCategoryActionCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            ViewModel.ActiveMediaSource = null;
+
+            var dlg = new BatchActionDialog
+            {
+                Title = "Perform Batch Action",
+                PrimaryButtonText = "Execute",
+                CloseButtonText = "Cancel",
+                XamlRoot = Content.XamlRoot
+            };
+
+            var result = await dlg.ShowAsync();
+            if (result != ContentDialogResult.Primary)
+                return;
+
+            // TODO: Do this category thing better so that each category can be assigned a unique action
+            // For now, "Delete is the only valid action so we won't check for it
+            var itemsToRemove = new List<MBMediaSource>();
+            if (dlg.ActOnCategory1 && dlg.Category1Count > 0)
+            {
+                itemsToRemove.AddRange(ViewModel.MediaLibrary.DepthFirstEnumerable().OfType<MBMediaSource>().Where(x => x.IsCategory1));
+            }
+
+            if (dlg.ActOnCategory2 && dlg.Category2Count > 0)
+            {
+                itemsToRemove.AddRange(ViewModel.MediaLibrary.DepthFirstEnumerable().OfType<MBMediaSource>().Where(x => x.IsCategory2));
+            }
+
+            if (dlg.ActOnCategory3 && dlg.Category3Count > 0)
+            {
+                itemsToRemove.AddRange(ViewModel.MediaLibrary.DepthFirstEnumerable().OfType<MBMediaSource>().Where(x => x.IsCategory3));
+            }
+
+            if (dlg.ActOnCategory4 && dlg.Category4Count > 0)
+            {
+                itemsToRemove.AddRange(ViewModel.MediaLibrary.DepthFirstEnumerable().OfType<MBMediaSource>().Where(x => x.IsCategory4));
+            }
+
+            foreach (var item in itemsToRemove)
+            {
+                ViewModel.MediaLibrary.Remove(item);
+                await (item as IMediaFile).File.DeleteAsync();
+            }
+
+            // Alert user that the batch operation is complete
+            var messenger = App.Current.Services.GetService<IMessenger>();
+            messenger.Send(new SetInfoBarMessage
+            {
+                Title = "Batch Operation Complete",
+                Message = $"Moved {itemsToRemove.Count} items to the Recycle Bin",
+                Severity = InfoBarSeverity.Success,
+                IsCloseable = true
+            });
+        }
         #endregion
 
         #region Event Handlers (UserControl)
@@ -345,6 +408,11 @@ namespace MediaBase.Controls
                 ProjectRenameItemCommand_CanExecuteRequested;
             ViewModel.ProjectRenameItemCommand.ExecuteRequested +=
                 ProjectRenameItemCommand_ExecuteRequested;
+
+            ViewModel.ToolsCategoryActionCommand.CanExecuteRequested +=
+                ToolsCategoryActionCommand_CanExecuteRequested;
+            ViewModel.ToolsCategoryActionCommand.ExecuteRequested +=
+                ToolsCategoryActionCommand_ExecuteRequested;
         }
         #endregion
     }

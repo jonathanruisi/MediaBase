@@ -57,6 +57,25 @@
                     FlowDirection="RightToLeft"
                     Visibility="Collapsed">
             <CommandBar.PrimaryCommands>
+                <AppBarButton x:Name="CategoryActionButton" Width="40"
+                              Command="{x:Bind ViewModel.ToolsCategoryActionCommand}"/>
+                <AppBarToggleButton x:Name="Category4ToggleButton" Width="40"
+                                    Command="{x:Bind ViewModel.ToolsMark4Command}"
+                                    CommandParameter="4"
+                                    IsChecked="{x:Bind ViewModel.ActiveMediaSource.IsCategory4, Mode=OneWay}"/>
+                <AppBarToggleButton x:Name="Category3ToggleButton" Width="40"
+                                    Command="{x:Bind ViewModel.ToolsMark3Command}"
+                                    CommandParameter="3"
+                                    IsChecked="{x:Bind ViewModel.ActiveMediaSource.IsCategory3, Mode=OneWay}"/>
+                <AppBarToggleButton x:Name="Category2ToggleButton" Width="40"
+                                    Command="{x:Bind ViewModel.ToolsMark2Command}"
+                                    CommandParameter="2"
+                                    IsChecked="{x:Bind ViewModel.ActiveMediaSource.IsCategory2, Mode=OneWay}"/>
+                <AppBarToggleButton x:Name="Category1ToggleButton" Width="40"
+                                    Command="{x:Bind ViewModel.ToolsMark1Command}"
+                                    CommandParameter="1"
+                                    IsChecked="{x:Bind ViewModel.ActiveMediaSource.IsCategory1, Mode=OneWay}"/>
+                <AppBarSeparator/>
                 <AppBarButton x:Name="CenterFrameButton" Width="40"
                               Command="{x:Bind ViewModel.EditorCenterFrameCommand}"/>
                 <AppBarButton x:Name="FrameZoomFullButton" Width="40"
@@ -95,10 +114,15 @@
                               Command="{x:Bind ViewModel.EditorNextFrameCommand}"/>
                 <AppBarButton x:Name="PreviousFrameButton" Width="40"
                               Command="{x:Bind ViewModel.EditorPreviousFrameCommand}"/>
-                <AppBarButton x:Name="PauseButton" Width="40"
+                <AppBarButton x:Name="PauseButton" Width="60"
                               Command="{x:Bind ViewModel.EditorPauseCommand}"/>
-                <AppBarButton x:Name="PlayButton" Width="40"
+                <AppBarButton x:Name="PlayButton" Width="60"
                               Command="{x:Bind ViewModel.EditorPlayCommand}"/>
+                <AppBarSeparator x:Name="TransportButtonSeparator"/>
+                <AppBarButton x:Name="NextButton" Width="40"
+                              Command="{x:Bind ViewModel.GeneralNextCommand}"/>
+                <AppBarButton x:Name="PreviousButton" Width="40"
+                              Command="{x:Bind ViewModel.GeneralPreviousCommand}"/>
             </CommandBar.PrimaryCommands>
         </CommandBar>
     </Grid>

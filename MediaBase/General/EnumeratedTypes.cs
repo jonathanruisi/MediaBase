@@ -7,4 +7,10 @@
         TimecodeWithMillis,
         FrameNumber
     }
+
+    public enum BatchAction
+    {
+        None,
+        Delete
+    }
 }

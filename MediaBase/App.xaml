@@ -9,6 +9,7 @@
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls"/>
                 
                 <!-- Other merged dictionaries here -->
+                <ResourceDictionary Source="General/VisualResourceDictionary.xaml"/>
                 <ResourceDictionary Source="ms-appx:///Utility.WinUI/Controls/TransportElement.xaml"/>
                 <ResourceDictionary Source="ms-appx:///Utility.WinUI/Controls/MediaTimeline.xaml"/>
             </ResourceDictionary.MergedDictionaries>

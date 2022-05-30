@@ -23,6 +23,15 @@
             </toolkit_converters:EmptyObjectToObjectConverter.NotEmptyValue>
         </toolkit_converters:EmptyObjectToObjectConverter>
 
+        <toolkit_converters:BoolToVisibilityConverter x:Key="BoolToVisibleConverter">
+            <toolkit_converters:BoolToVisibilityConverter.TrueValue>
+                <xaml:Visibility>Visible</xaml:Visibility>
+            </toolkit_converters:BoolToVisibilityConverter.TrueValue>
+            <toolkit_converters:BoolToVisibilityConverter.FalseValue>
+                <xaml:Visibility>Collapsed</xaml:Visibility>
+            </toolkit_converters:BoolToVisibilityConverter.FalseValue>
+        </toolkit_converters:BoolToVisibilityConverter>
+
         <toolkit_converters:EmptyCollectionToObjectConverter x:Key="EmptyCollectionToVisibilityConverter">
             <toolkit_converters:EmptyCollectionToObjectConverter.EmptyValue>
                 <xaml:Visibility>Collapsed</xaml:Visibility>
@@ -125,6 +134,18 @@
                         <TextBlock HorizontalAlignment="Left"
                                    VerticalAlignment="Center"
                                    Text="{x:Bind Name, Mode=OneWay}"/>
+                        <Polygon Fill="Gold" Width="15" Height="15" Stretch="Fill" StrokeThickness="0" Margin="3,0,0,0"
+                                 Points="0,20,10,0,20,20" VerticalAlignment="Bottom"
+                                 Visibility="{x:Bind IsCategory1, Converter={StaticResource BoolToVisibleConverter}, Mode=OneWay}"/>
+                        <Rectangle Fill="CornflowerBlue" Width="15" Height="15" Stretch="Fill" StrokeThickness="0" Margin="3,0,0,0"
+                                   VerticalAlignment="Bottom"
+                                   Visibility="{x:Bind IsCategory2, Converter={StaticResource BoolToVisibleConverter}, Mode=OneWay}"/>
+                        <Ellipse Fill="IndianRed" Width="15" Height="15" Stretch="Fill" StrokeThickness="0" Margin="3,0,0,0"
+                                 VerticalAlignment="Bottom"
+                                 Visibility="{x:Bind IsCategory3, Converter={StaticResource BoolToVisibleConverter}, Mode=OneWay}"/>
+                        <Polygon Fill="ForestGreen" Width="15" Height="15" Stretch="Fill" StrokeThickness="0" Margin="3,0,0,0"
+                                 Points="0,10,10,0,20,10,10,20" VerticalAlignment="Bottom"
+                                 Visibility="{x:Bind IsCategory4, Converter={StaticResource BoolToVisibleConverter}, Mode=OneWay}"/>
                     </StackPanel>
                 </TreeViewItem.Content>
             </TreeViewItem>
@@ -152,6 +173,18 @@
                         <TextBlock HorizontalAlignment="Left"
                                    VerticalAlignment="Center"
                                    Text="{x:Bind Name, Mode=OneWay}"/>
+                        <Polygon Fill="Gold" Width="15" Height="15" Stretch="Fill" StrokeThickness="0" Margin="3,0,0,0"
+                                 Points="0,20,10,0,20,20" VerticalAlignment="Bottom"
+                                 Visibility="{x:Bind IsCategory1, Converter={StaticResource BoolToVisibleConverter}, Mode=OneWay}"/>
+                        <Rectangle Fill="CornflowerBlue" Width="15" Height="15" Stretch="Fill" StrokeThickness="0" Margin="3,0,0,0"
+                                   VerticalAlignment="Bottom"
+                                   Visibility="{x:Bind IsCategory2, Converter={StaticResource BoolToVisibleConverter}, Mode=OneWay}"/>
+                        <Ellipse Fill="IndianRed" Width="15" Height="15" Stretch="Fill" StrokeThickness="0" Margin="3,0,0,0"
+                                 VerticalAlignment="Bottom"
+                                 Visibility="{x:Bind IsCategory3, Converter={StaticResource BoolToVisibleConverter}, Mode=OneWay}"/>
+                        <Polygon Fill="ForestGreen" Width="15" Height="15" Stretch="Fill" StrokeThickness="0" Margin="3,0,0,0"
+                                 Points="0,10,10,0,20,10,10,20" VerticalAlignment="Bottom"
+                                 Visibility="{x:Bind IsCategory4, Converter={StaticResource BoolToVisibleConverter}, Mode=OneWay}"/>
                     </StackPanel>
                 </TreeViewItem.Content>
             </TreeViewItem>
