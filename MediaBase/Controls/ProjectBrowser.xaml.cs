@@ -34,10 +34,6 @@ namespace MediaBase.Controls
 {
     public sealed partial class ProjectBrowser : UserControl
     {
-        #region Fields
-        private int _selectedNodeCount;
-        #endregion
-
         #region Properties
         public Project ViewModel => (Project)DataContext;
         #endregion
@@ -70,26 +66,17 @@ namespace MediaBase.Controls
 
         private void ProjectRemoveItemCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = FocusState != FocusState.Unfocused &&
-                              ViewModel != null &&
-                              ViewModel.IsActive &&
-                              ViewModel.ActiveNode?.Depth > 0;
+            args.CanExecute = ViewModel != null && ViewModel.IsActive && ViewModel.ActiveNode?.Depth > 0;
         }
 
         private void ProjectRemoveSelectedCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = FocusState != FocusState.Unfocused &&
-                              ViewModel != null &&
-                              ViewModel.IsActive &&
-                              ProjectBrowserTreeView.SelectedNodes.Count > 0;
+            args.CanExecute = ViewModel != null && ViewModel.IsActive && ProjectBrowserTreeView.SelectedNodes.Count > 0;
         }
 
         private void ProjectRemoveAllCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = FocusState != FocusState.Unfocused &&
-                              ViewModel != null &&
-                              ViewModel.IsActive &&
-                              ViewModel.MediaLibrary.Children.Count > 0;
+            args.CanExecute = ViewModel != null && ViewModel.IsActive && ViewModel.MediaLibrary.Children.Count > 0;
         }
 
         private void ProjectRenameItemCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
@@ -304,38 +291,10 @@ namespace MediaBase.Controls
         #region Event Handlers (UserControl)
         private void ProjectBrowserTreeView_ItemInvoked(TreeView sender, TreeViewItemInvokedEventArgs args)
         {
-            
-        }
-
-        private void ProjectBrowserTreeView_MediaFolderTapped(object sender, TappedRoutedEventArgs e)
-        {
-            
-        }
-
-        private void ProjectBrowserTreeView_MediaSourceTapped(object sender, TappedRoutedEventArgs e)
-        {
-
-        }
-
-        private void ProjectBrowserTreeView_Tapped(object sender, TappedRoutedEventArgs e)
-        {
-            // TODO: Do this differently using the DataTemplate events instead
-            if (sender is not TreeView tree)
+            if (args.InvokedItem is not MBMediaSource mediaSource)
                 return;
 
-            if (tree.SelectedNodes.TryGetNonEnumeratedCount(out int selectedCount) &&
-                selectedCount == _selectedNodeCount)
-                return;
-
-            _selectedNodeCount = selectedCount;
-            ViewModel.SelectedMedia.Clear();
-
-            foreach (var item in tree.SelectedItems.OfType<MBMediaSource>())
-                ViewModel.SelectedMedia.AddLast(item);
-
-            var messenger = App.Current.Services.GetService<IMessenger>();
-            messenger.Send(new CollectionChangedMessage<LinkedList<MBMediaSource>>(ViewModel,
-                nameof(ViewModel.SelectedMedia)));
+            ViewModel.ActiveMediaSource = mediaSource;
         }
 
         private void ProjectBrowserTreeView_RightTapped(object sender, RightTappedRoutedEventArgs e)
