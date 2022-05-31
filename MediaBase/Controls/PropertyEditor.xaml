@@ -31,14 +31,14 @@
                                FontSize="32" FontWeight="Bold"
                                Text="{x:Bind ViewModel.ActiveMediaSource.Name, Mode=OneWay}"/>
 
-                    <RatingControl x:Name="MediaInfoRating"
+                    <!--<RatingControl x:Name="MediaInfoRating"
                                    Grid.Row="1"
                                    HorizontalAlignment="Left"
                                    Caption="Rating"
                                    InitialSetValue="0"
                                    MaxRating="10"
                                    Value="{x:Bind ViewModel.ActiveMediaSource.Rating, Mode=TwoWay}"
-                                   IsClearEnabled="True"/>
+                                   IsClearEnabled="True"/>-->
                 </Grid>
             </PivotItem>
             

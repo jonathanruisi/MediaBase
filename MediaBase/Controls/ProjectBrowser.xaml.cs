@@ -85,6 +85,11 @@ namespace MediaBase.Controls
             args.CanExecute = ViewModel != null && ViewModel.IsActive && ViewModel.ActiveNode?.Depth > 0;
         }
 
+        private void ProjectSelectMultipleCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = ViewModel != null && ViewModel.IsActive;
+        }
+
         private void ToolsCategoryActionCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
             // TODO: Move all possible CanExecute/Execute handlers into the Project class itself
@@ -294,8 +299,17 @@ namespace MediaBase.Controls
             }
         }
 
+        private void ProjectSelectMultipleCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            if (ProjectBrowserTreeView.SelectionMode == TreeViewSelectionMode.Single)
+                ProjectBrowserTreeView.SelectionMode = TreeViewSelectionMode.Multiple;
+            else
+                ProjectBrowserTreeView.SelectionMode = TreeViewSelectionMode.Single;
+        }
+
         private async void ToolsCategoryActionCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
+            var messenger = App.Current.Services.GetService<IMessenger>();
             ViewModel.ActiveMediaSource = null;
 
             var dlg = new BatchActionDialog
@@ -311,40 +325,116 @@ namespace MediaBase.Controls
                 return;
 
             // TODO: Do this category thing better so that each category can be assigned a unique action
-            // For now, "Delete is the only valid action so we won't check for it
-            var itemsToRemove = new List<MBMediaSource>();
+            var itemsToProcess = new List<MBMediaSource>();
             if (dlg.ActOnCategory1 && dlg.Category1Count > 0)
             {
-                itemsToRemove.AddRange(ViewModel.MediaLibrary.DepthFirstEnumerable().OfType<MBMediaSource>().Where(x => x.IsCategory1));
+                itemsToProcess.AddRange(ViewModel.MediaLibrary.DepthFirstEnumerable().OfType<MBMediaSource>().Where(x => x.IsCategory1));
             }
 
             if (dlg.ActOnCategory2 && dlg.Category2Count > 0)
             {
-                itemsToRemove.AddRange(ViewModel.MediaLibrary.DepthFirstEnumerable().OfType<MBMediaSource>().Where(x => x.IsCategory2));
+                itemsToProcess.AddRange(ViewModel.MediaLibrary.DepthFirstEnumerable().OfType<MBMediaSource>().Where(x => x.IsCategory2));
             }
 
             if (dlg.ActOnCategory3 && dlg.Category3Count > 0)
             {
-                itemsToRemove.AddRange(ViewModel.MediaLibrary.DepthFirstEnumerable().OfType<MBMediaSource>().Where(x => x.IsCategory3));
+                itemsToProcess.AddRange(ViewModel.MediaLibrary.DepthFirstEnumerable().OfType<MBMediaSource>().Where(x => x.IsCategory3));
             }
 
             if (dlg.ActOnCategory4 && dlg.Category4Count > 0)
             {
-                itemsToRemove.AddRange(ViewModel.MediaLibrary.DepthFirstEnumerable().OfType<MBMediaSource>().Where(x => x.IsCategory4));
+                itemsToProcess.AddRange(ViewModel.MediaLibrary.DepthFirstEnumerable().OfType<MBMediaSource>().Where(x => x.IsCategory4));
             }
 
-            foreach (var item in itemsToRemove)
+            // Process items based on selected action
+            var currentItem = 1;
+            switch (dlg.Action)
             {
-                ViewModel.MediaLibrary.Remove(item);
-                await (item as IMediaFile).File.DeleteAsync();
+                case BatchAction.Delete:
+                    foreach (var item in itemsToProcess)
+                    {
+                        var message1 = $"Moving {item.Name} to the Recycle Bin (file {currentItem} of {itemsToProcess.Count})";
+                        messenger.Send(new SetInfoBarMessage
+                        {
+                            Title = "Batch Operation Running",
+                            Message = message1.ToString(),
+                            Severity = InfoBarSeverity.Informational,
+                            IsCloseable = false
+                        });
+                        ViewModel.MediaLibrary.Remove(item);
+                        await (item as IMediaFile).File.DeleteAsync();
+                        currentItem++;
+                    }
+                    break;
+
+                case BatchAction.Copy:
+                    foreach (var item in itemsToProcess)
+                    {
+                        var message2 = $"Copying {item.Name} to {dlg.TargetFolder.Path} (file {currentItem} of {itemsToProcess.Count})";
+                        messenger.Send(new SetInfoBarMessage
+                        {
+                            Title = "Batch Operation Running",
+                            Message = message2.ToString(),
+                            Severity = InfoBarSeverity.Informational,
+                            IsCloseable = false
+                        });
+                        await (item as IMediaFile).File.CopyAsync(dlg.TargetFolder);
+                        currentItem++;
+                    }
+                    break;
+
+                case BatchAction.Move:
+                    foreach (var item in itemsToProcess)
+                    {
+                        var message3 = $"Moving {item.Name} to {dlg.TargetFolder.Path} (file {currentItem} of {itemsToProcess.Count})";
+                        messenger.Send(new SetInfoBarMessage
+                        {
+                            Title = "Batch Operation Running",
+                            Message = message3.ToString(),
+                            Severity = InfoBarSeverity.Informational,
+                            IsCloseable = false
+                        });
+                        await (item as IMediaFile).File.MoveAsync(dlg.TargetFolder);
+                        currentItem++;
+                    }
+                    break;
+
+                default:
+                    var messageFail = $"Something went wrong during batch processing";
+                    messenger.Send(new SetInfoBarMessage
+                    {
+                        Title = "Batch Operation Failed",
+                        Message = messageFail.ToString(),
+                        Severity = InfoBarSeverity.Error,
+                        IsCloseable = true
+                    });
+                    return;
             }
 
             // Alert user that the batch operation is complete
-            var messenger = App.Current.Services.GetService<IMessenger>();
+            var summaryMessage = new StringBuilder();
+            if (dlg.Action == BatchAction.Copy)
+                summaryMessage.Append("Copied ");
+            else if (dlg.Action is BatchAction.Delete or BatchAction.Move)
+                summaryMessage.Append("Moved ");
+
+            summaryMessage.Append(itemsToProcess.Count);
+            summaryMessage.Append(" file");
+            if (itemsToProcess.Count != 1)
+                summaryMessage.Append('s');
+
+            if (dlg.Action == BatchAction.Delete)
+                summaryMessage.Append(" to the Recycle Bin");
+            else if (dlg.Action is BatchAction.Copy or BatchAction.Move)
+            {
+                summaryMessage.Append(" to ");
+                summaryMessage.Append(dlg.TargetFolder.Path);
+            }
+
             messenger.Send(new SetInfoBarMessage
             {
                 Title = "Batch Operation Complete",
-                Message = $"Moved {itemsToRemove.Count} items to the Recycle Bin",
+                Message = summaryMessage.ToString(),
                 Severity = InfoBarSeverity.Success,
                 IsCloseable = true
             });
@@ -408,6 +498,11 @@ namespace MediaBase.Controls
                 ProjectRenameItemCommand_CanExecuteRequested;
             ViewModel.ProjectRenameItemCommand.ExecuteRequested +=
                 ProjectRenameItemCommand_ExecuteRequested;
+
+            ViewModel.ProjectSelectMultipleCommand.CanExecuteRequested +=
+                ProjectSelectMultipleCommand_CanExecuteRequested;
+            ViewModel.ProjectSelectMultipleCommand.ExecuteRequested +=
+                ProjectSelectMultipleCommand_ExecuteRequested;
 
             ViewModel.ToolsCategoryActionCommand.CanExecuteRequested +=
                 ToolsCategoryActionCommand_CanExecuteRequested;

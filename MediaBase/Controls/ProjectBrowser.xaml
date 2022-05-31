@@ -52,6 +52,8 @@
                 <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectRemoveSelectedCommand}"/>
                 <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectRemoveAllCommand}"/>
             </MenuFlyoutSubItem>
+            <MenuFlyoutSeparator/>
+            <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectSelectMultipleCommand}"/>
         </MenuFlyout>
 
         <MenuFlyout x:Key="MenuFlyout_ProjectBrowserFolderActions">
@@ -66,6 +68,8 @@
                 <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectRemoveSelectedCommand}"/>
                 <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectRemoveAllCommand}"/>
             </MenuFlyoutSubItem>
+            <MenuFlyoutSeparator/>
+            <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectSelectMultipleCommand}"/>
         </MenuFlyout>
 
         <MenuFlyout x:Key="MenuFlyout_ProjectBrowserFileActions">
@@ -75,6 +79,8 @@
                 <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectRemoveSelectedCommand}"/>
                 <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectRemoveAllCommand}"/>
             </MenuFlyoutSubItem>
+            <MenuFlyoutSeparator/>
+            <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectSelectMultipleCommand}"/>
         </MenuFlyout>
 
         <!-- Data Templates -->
@@ -83,6 +89,7 @@
             <TreeViewItem x:Name="Item"
                           ItemsSource="{x:Bind Children}"
                           ContextFlyout="{StaticResource MenuFlyout_ProjectBrowserFolderActions}"
+                          IsSelected="{Binding IsSelected, Mode=TwoWay}"
                           RightTapped="ProjectBrowserTreeView_RightTapped">
                 <TreeViewItem.Content>
                     <StackPanel Orientation="Horizontal">
@@ -115,6 +122,7 @@
         <DataTemplate x:Key="ProjectImageDataTemplate"
                       x:DataType="viewmodel:ImageFile">
             <TreeViewItem ContextFlyout="{StaticResource MenuFlyout_ProjectBrowserFileActions}"
+                          IsSelected="{Binding IsSelected, Mode=TwoWay}"
                           RightTapped="ProjectBrowserTreeView_RightTapped">
                 <TreeViewItem.Content>
                     <StackPanel Orientation="Horizontal">
@@ -154,6 +162,7 @@
         <DataTemplate x:Key="ProjectVideoDataTemplate"
                       x:DataType="viewmodel:VideoFile">
             <TreeViewItem ContextFlyout="{StaticResource MenuFlyout_ProjectBrowserFileActions}"
+                          IsSelected="{Binding IsSelected, Mode=TwoWay}"
                           RightTapped="ProjectBrowserTreeView_RightTapped">
                 <TreeViewItem.Content>
                     <StackPanel Orientation="Horizontal">
@@ -199,7 +208,7 @@
     <Grid>
         <TreeView x:Name="ProjectBrowserTreeView"
                   HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                  SelectionMode="Multiple"
+                  SelectionMode="Single"
                   ItemsSource="{x:Bind ViewModel.MediaLibrary.Children, Mode=OneWay}"
                   ItemTemplateSelector="{StaticResource ProjectItemTemplateSelector}"
                   ContextFlyout="{StaticResource MenuFlyout_ProjectBrowserActions}"

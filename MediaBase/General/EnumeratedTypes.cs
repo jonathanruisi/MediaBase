@@ -11,6 +11,8 @@
     public enum BatchAction
     {
         None,
-        Delete
+        Delete,
+        Copy,
+        Move
     }
 }

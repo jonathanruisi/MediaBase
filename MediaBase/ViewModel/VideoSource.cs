@@ -155,19 +155,19 @@ namespace MediaBase.ViewModel
             decimal lastStart = 0;
             PlayableRanges.Clear();
 
-            foreach (var cut in Cuts.OrderBy(x => x.start))
+            foreach (var (start, end) in Cuts.OrderBy(x => x.start))
             {
                 if (lastStart >= Duration)
                     break;
 
-                if (cut.start <= 0)
+                if (start <= 0)
                 {
-                    lastStart = cut.end;
+                    lastStart = end;
                     continue;
                 }
 
-                PlayableRanges.Add((lastStart, cut.start));
-                lastStart = cut.end;
+                PlayableRanges.Add((lastStart, start));
+                lastStart = end;
             }
 
             if (lastStart > 0 && lastStart < Duration)
@@ -178,9 +178,9 @@ namespace MediaBase.ViewModel
             else
             {
                 decimal trimmedDuration = 0;
-                foreach (var range in PlayableRanges)
+                foreach (var (start, end) in PlayableRanges)
                 {
-                    trimmedDuration += range.end - range.start;
+                    trimmedDuration += end - start;
                 }
 
                 TrimmedDuration = trimmedDuration;

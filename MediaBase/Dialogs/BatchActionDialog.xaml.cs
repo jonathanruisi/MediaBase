@@ -17,6 +17,10 @@ using Microsoft.UI.Xaml.Navigation;
 
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.Storage;
+using Windows.Storage.Pickers;
+
+using WinRT.Interop;
 
 namespace MediaBase.Dialogs
 {
@@ -131,7 +135,19 @@ namespace MediaBase.Dialogs
             DependencyProperty.Register("Action",
                                         typeof(BatchAction),
                                         typeof(BatchActionDialog),
-                                        new PropertyMetadata(BatchAction.Delete));
+                                        new PropertyMetadata(BatchAction.None));
+
+        public StorageFolder TargetFolder
+        {
+            get => (StorageFolder)GetValue(TargetFolderProperty);
+            set => SetValue(TargetFolderProperty, value);
+        }
+
+        public static readonly DependencyProperty TargetFolderProperty =
+            DependencyProperty.Register("TargetFolder",
+                                        typeof(StorageFolder),
+                                        typeof(BatchActionDialog),
+                                        new PropertyMetadata(null));
         #endregion
 
         #region Constructor
@@ -165,10 +181,26 @@ namespace MediaBase.Dialogs
 
         private void BatchActionRadioButtons_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (e.AddedItems != null && e.AddedItems.Count > 0)
+            if (BatchActionRadioButtons.SelectedItem == null)
+                return;
+
+            Action = (BatchAction)Enum.Parse(typeof(BatchAction), (string)BatchActionRadioButtons.Items[BatchActionRadioButtons.SelectedIndex]);
+        }
+
+        private async void FolderBrowseButton_Click(object sender, RoutedEventArgs e)
+        {
+            var picker = new FolderPicker
             {
-                Action = (BatchAction)Enum.Parse(typeof(BatchAction), (string)e.AddedItems[0]);
-            }
+                ViewMode = PickerViewMode.Thumbnail,
+                SuggestedStartLocation = PickerLocationId.ComputerFolder,
+                CommitButtonText = "Set Target"
+            };
+
+            InitializeWithWindow.Initialize(picker, App.WindowHandle);
+
+            var folder = await picker.PickSingleFolderAsync();
+            if (folder != null)
+                TargetFolder = folder;
         }
         #endregion
     }

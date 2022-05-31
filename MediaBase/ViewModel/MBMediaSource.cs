@@ -23,7 +23,7 @@ namespace MediaBase.ViewModel
     /// The "MB" prefix in the class name is to prevent
     /// confusion with <see cref="Windows.Media.Core.MediaSource"/>.
     /// </remarks>
-    public abstract class MBMediaSource : ViewModelNode
+    public abstract class MBMediaSource : ViewModelNode, IMediaMetadata
     {
         #region Fields
         private Guid _id;
@@ -51,10 +51,6 @@ namespace MediaBase.ViewModel
             set => SetProperty(ref _id, value);
         }
 
-        /// <summary>
-        /// Gets or sets the media's rating on a scale of 1 to 10.
-        /// </summary>
-        /// <remarks>A value of <b>zero</b> indicates the media is not rated.</remarks>
         [ViewModelObject(nameof(Rating), XmlNodeType.Element)]
         public int Rating
         {
@@ -108,13 +104,6 @@ namespace MediaBase.ViewModel
         /// </summary>
         public int TotalFrames => (int)(Duration * (decimal)FramesPerSecond);
 
-        /// <summary>
-        /// Gets a collection of optional tags used to describe the media.
-        /// </summary>
-        /// <remarks>
-        /// This collection contains numeric keys for tag values
-        /// stored in a separate tag database.
-        /// </remarks>
         [ViewModelCollection(nameof(Tags), "Tag")]
         public ObservableCollection<int> Tags { get; }
 

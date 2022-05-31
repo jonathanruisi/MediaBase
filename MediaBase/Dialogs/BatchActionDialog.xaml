@@ -16,6 +16,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="25"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
@@ -50,7 +51,15 @@
                       MaxColumns="3" Header="Action" SelectedIndex="0"
                       SelectionChanged="BatchActionRadioButtons_SelectionChanged">
             <x:String>Delete</x:String>
+            <x:String>Copy</x:String>
+            <x:String>Move</x:String>
         </RadioButtons>
+
+        <Button x:Name="FolderBrowseButton" Grid.Row="4" Grid.Column="0" Margin="5"
+                HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Content="Browse..."
+                Click="FolderBrowseButton_Click"/>
+        <TextBox x:Name="TargetFolderPathTextBox" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="3" IsReadOnly="True"
+                 Text="{x:Bind TargetFolder.Path, Mode=OneWay}"/>
 
     </Grid>
 </ContentDialog>

@@ -89,7 +89,14 @@ namespace MediaBase.ViewModel
             get => _activeMediaSource;
             set
             {
+                if (_activeMediaSource != null)
+                    _activeMediaSource.IsSelected = false;
+
                 SetProperty(ref _activeMediaSource, value, true);
+
+                if (_activeMediaSource != null)
+                    _activeMediaSource.IsSelected = true;
+
                 GeneralPreviousCommand.NotifyCanExecuteChanged();
                 GeneralNextCommand.NotifyCanExecuteChanged();
                 ToolsMark1Command.NotifyCanExecuteChanged();
@@ -126,6 +133,7 @@ namespace MediaBase.ViewModel
         public XamlUICommand ProjectRemoveSelectedCommand { get; private set; }
         public XamlUICommand ProjectRemoveAllCommand { get; private set; }
         public XamlUICommand ProjectRenameItemCommand { get; private set; }
+        public XamlUICommand ProjectSelectMultipleCommand { get; private set; }
 
         // View
         public XamlUICommand ViewNormalCommand { get; private set; }
@@ -485,6 +493,13 @@ namespace MediaBase.ViewModel
                 Label = "Rename...",
                 Description = "Rename this item",
                 IconSource = new SymbolIconSource { Symbol = Symbol.Rename }
+            };
+
+            ProjectSelectMultipleCommand = new XamlUICommand
+            {
+                Label = "Toggle Multi-Select",
+                Description = "Toggle multiple selection mode",
+                IconSource = new SymbolIconSource { Symbol = (Symbol)0xE762 }
             };
             #endregion
 
