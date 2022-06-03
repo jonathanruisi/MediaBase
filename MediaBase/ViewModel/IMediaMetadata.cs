@@ -26,10 +26,6 @@ namespace MediaBase.ViewModel
         /// <summary>
         /// Gets a collection of user-created tags used to describe the media.
         /// </summary>
-        /// <remarks>
-        /// This collection contains numeric keys for tag values
-        /// stored in a separate tag database.
-        /// </remarks>
-        ObservableCollection<int> Tags { get; }
+        ObservableCollection<string> Tags { get; }
     }
 }

@@ -106,6 +106,9 @@
                                     Command="{x:Bind ViewModel.EditorToggleActiveSelectionCommand}"
                                     IsChecked="{x:Bind Timeline.IsSelectionEnabled, Mode=TwoWay}"/>
                 <AppBarSeparator x:Name="TrimAndEditButtonSeparator"/>
+                <AppBarToggleButton x:Name="TogglePlaybackLoopingButton" Width="40"
+                                    Command="{x:Bind ViewModel.EditorToggleLoopingCommand}"
+                                    IsChecked="{x:Bind IsLoopingEnabled, Mode=TwoWay}"/>
                 <AppBarButton x:Name="NextMarkerButton" Width="40"
                               Command="{x:Bind ViewModel.EditorNextMarkerCommand}"/>
                 <AppBarButton x:Name="PreviousMarkerButton" Width="40"
@@ -114,9 +117,9 @@
                               Command="{x:Bind ViewModel.EditorNextFrameCommand}"/>
                 <AppBarButton x:Name="PreviousFrameButton" Width="40"
                               Command="{x:Bind ViewModel.EditorPreviousFrameCommand}"/>
-                <AppBarButton x:Name="PauseButton" Width="60"
+                <AppBarButton x:Name="PauseButton" Width="75"
                               Command="{x:Bind ViewModel.EditorPauseCommand}"/>
-                <AppBarButton x:Name="PlayButton" Width="60"
+                <AppBarButton x:Name="PlayButton" Width="75"
                               Command="{x:Bind ViewModel.EditorPlayCommand}"/>
                 <AppBarSeparator x:Name="TransportButtonSeparator"/>
                 <AppBarButton x:Name="NextButton" Width="40"

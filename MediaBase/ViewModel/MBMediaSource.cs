@@ -105,18 +105,19 @@ namespace MediaBase.ViewModel
         public int TotalFrames => (int)(Duration * (decimal)FramesPerSecond);
 
         [ViewModelCollection(nameof(Tags), "Tag")]
-        public ObservableCollection<int> Tags { get; }
+        public ObservableCollection<string> Tags { get; }
 
         /// <summary>
         /// Gets a collection of keyframes used to trigger
         /// various actions at specified times in the media.
         /// </summary>
         [ViewModelCollection(nameof(Keyframes), "Keyframe")]
-        public ObservableCollection<ITimelineMarker> Keyframes { get; }
+        public ObservableCollection<Marker> Keyframes { get; }
 
         /// <summary>
         /// Indicates a multi-purpose marker of category #1
         /// </summary>
+        [ViewModelObject("C1", XmlNodeType.Element, false, true)]
         public bool IsCategory1
         {
             get => _isCategory1;
@@ -126,6 +127,7 @@ namespace MediaBase.ViewModel
         /// <summary>
         /// Indicates a multi-purpose marker of category #2
         /// </summary>
+        [ViewModelObject("C2", XmlNodeType.Element, false, true)]
         public bool IsCategory2
         {
             get => _isCategory2;
@@ -135,6 +137,7 @@ namespace MediaBase.ViewModel
         /// <summary>
         /// Indicates a multi-purpose marker of category #3
         /// </summary>
+        [ViewModelObject("C3", XmlNodeType.Element, false, true)]
         public bool IsCategory3
         {
             get => _isCategory3;
@@ -144,6 +147,7 @@ namespace MediaBase.ViewModel
         /// <summary>
         /// Indicates a multi-purpose marker of category #4
         /// </summary>
+        [ViewModelObject("C4", XmlNodeType.Element, false, true)]
         public bool IsCategory4
         {
             get => _isCategory4;
@@ -165,10 +169,10 @@ namespace MediaBase.ViewModel
             _isCategory3 = false;
             _isCategory4 = false;
 
-            Tags = new ObservableCollection<int>();
+            Tags = new ObservableCollection<string>();
             Tags.CollectionChanged += Tags_CollectionChanged;
 
-            Keyframes = new ObservableCollection<ITimelineMarker>();
+            Keyframes = new ObservableCollection<Marker>();
             Keyframes.CollectionChanged += Keyframes_CollectionChanged;
         }
         #endregion
@@ -176,17 +180,17 @@ namespace MediaBase.ViewModel
         #region Event Handlers
         private void Tags_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
-            var tagMessage = new CollectionChangedMessage<int>(this, nameof(Tags));
+            var tagMessage = new CollectionChangedMessage<string>(this, nameof(Tags));
 
             if (e.OldItems != null)
             {
-                foreach (int oldTag in e.OldItems)
+                foreach (string oldTag in e.OldItems)
                     tagMessage.OldValue.Add(oldTag);
             }
 
             if (e.NewItems != null)
             {
-                foreach (int newTag in e.NewItems)
+                foreach (string newTag in e.NewItems)
                     tagMessage.NewValue.Add(newTag);
             }
 
@@ -227,6 +231,17 @@ namespace MediaBase.ViewModel
         {
             if (propertyName == nameof(Id))
                 return Guid.Parse(content);
+
+            return null;
+        }
+
+        protected override string CustomPropertyWriter(string propertyName, object value)
+        {
+            if ((propertyName == "C1" && IsCategory1) ||
+                (propertyName == "C2" && IsCategory2) ||
+                (propertyName == "C3" && IsCategory3) ||
+                (propertyName == "C4" && IsCategory4))
+                return "1";
 
             return null;
         }

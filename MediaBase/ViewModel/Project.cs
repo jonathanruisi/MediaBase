@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 
+using JLR.Utility.WinUI.Messaging;
 using JLR.Utility.WinUI.ViewModel;
 
 using Microsoft.Toolkit.Mvvm.Input;
@@ -114,6 +115,8 @@ namespace MediaBase.ViewModel
             get => _selectedMarker;
             set => SetProperty(ref _selectedMarker, value, true);
         }
+
+        public HashSet<string> TagDatabase { get; }
         #endregion
 
         #region Commands
@@ -154,6 +157,7 @@ namespace MediaBase.ViewModel
         // Editor
         public XamlUICommand EditorPlayCommand { get; private set; }
         public XamlUICommand EditorPauseCommand { get; private set; }
+        public XamlUICommand EditorToggleLoopingCommand { get; private set; }
         public XamlUICommand EditorPreviousFrameCommand { get; private set; }
         public XamlUICommand EditorNextFrameCommand { get; private set; }
         public XamlUICommand EditorPreviousMarkerCommand { get; private set; }
@@ -184,8 +188,10 @@ namespace MediaBase.ViewModel
             _activeMediaSource = null;
             _selectedMarker = null;
             MediaLibrary = new MediaFolder { Name = MediaLibraryName };
+            TagDatabase = new HashSet<string>();
 
             InitializeCommands();
+            RegisterMessages();
         }
         #endregion
 
@@ -668,6 +674,13 @@ namespace MediaBase.ViewModel
                 IsEnabled = true
             });
 
+            EditorToggleLoopingCommand = new XamlUICommand
+            {
+                Label = "Loop Playback",
+                Description = "Toggle looping of current media",
+                IconSource = new SymbolIconSource { Symbol = Symbol.RepeatAll }
+            };
+
             EditorPreviousFrameCommand = new XamlUICommand
             {
                 Label = "Previous Frame",
@@ -909,6 +922,19 @@ namespace MediaBase.ViewModel
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xE78A }
             };
             #endregion
+        }
+
+        private void RegisterMessages()
+        {
+            Messenger.Register<CollectionChangedMessage<string>>(this, (r, m) =>
+            {
+                if (m.Sender is not IMediaMetadata metadata &&
+                    m.PropertyName != nameof(IMediaMetadata.Tags))
+                    return;
+
+                foreach (var tag in m.NewValue)
+                    TagDatabase.Add(tag);
+            });
         }
 
         private void RegisterForViewModelSerializedPropertyChangeNotification()

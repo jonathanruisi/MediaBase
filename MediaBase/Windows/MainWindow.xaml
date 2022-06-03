@@ -113,6 +113,7 @@
             <!-- Properties -->
             <toolkit:Expander Grid.Row="1" Grid.Column="1"
                               ExpandDirection="Down" IsExpanded="False"
+                              HorizontalContentAlignment="Stretch"
                               Header="Properties">
                 <controls:PropertyEditor x:Name="PropertyEditor" Height="300"
                                          HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>

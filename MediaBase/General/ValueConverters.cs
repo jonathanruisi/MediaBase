@@ -50,7 +50,7 @@ namespace MediaBase
 				3 => new SolidColorBrush(Color.FromArgb(255, 255, 128, 0)),
 				2 => new SolidColorBrush(Color.FromArgb(255, 255, 64, 0)),
 				1 => new SolidColorBrush(Color.FromArgb(255, 255, 0, 0)),
-				_ => new SolidColorBrush(Colors.Transparent),
+				_ => new SolidColorBrush(Colors.Transparent)
 			};
 		}
 

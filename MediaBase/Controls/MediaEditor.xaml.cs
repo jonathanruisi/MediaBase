@@ -107,22 +107,35 @@ namespace MediaBase.Controls
                                         new PropertyMetadata(0.0,
                                             OnPlaybackRateChanged));
 
+        public bool IsLoopingEnabled
+        {
+            get => (bool)GetValue(IsLoopingEnabledProperty);
+            set => SetValue(IsLoopingEnabledProperty, value);
+        }
+
+        public static readonly DependencyProperty IsLoopingEnabledProperty =
+            DependencyProperty.Register("IsLoopingEnabled",
+                                        typeof(bool),
+                                        typeof(MediaEditor),
+                                        new PropertyMetadata(false,
+                                            OnIsLoopingEnabledChanged));
+
         public TimeSpan CurrentPosition
         {
-            get => TimeSpan.FromSeconds(decimal.ToDouble((decimal)CurrentFrame / FramesPerSecond));
+            get => TimeSpan.FromSeconds(decimal.ToDouble(CurrentFrame / FramesPerSecond));
             private set => CurrentFrame =
                 decimal.ToInt32(decimal.Round((decimal)value.TotalSeconds * FramesPerSecond));
         }
 
-        public int CurrentFrame
+        public decimal CurrentFrame
         {
-            get => (int)GetValue(CurrentFrameProperty);
+            get => (decimal)GetValue(CurrentFrameProperty);
             private set => SetValue(CurrentFrameProperty, value);
         }
 
         public static readonly DependencyProperty CurrentFrameProperty =
             DependencyProperty.Register("CurrentFrame",
-                                        typeof(int),
+                                        typeof(decimal),
                                         typeof(MediaEditor),
                                         new PropertyMetadata(0,
                                             OnCurrentFrameChanged));
@@ -411,6 +424,14 @@ namespace MediaBase.Controls
             editor.ViewModel.EditorPlaybackRateIncreaseCommand.NotifyCanExecuteChanged();
         }
 
+        private static void OnIsLoopingEnabledChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is not MediaEditor editor)
+                return;
+
+            editor._player.IsLoopingEnabled = editor.IsLoopingEnabled;
+        }
+
         private static void OnCurrentFrameChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             if (d is not MediaEditor editor)
@@ -431,7 +452,11 @@ namespace MediaBase.Controls
                 editor.PlaybackState == MediaPlaybackState.Playing &&
                 editor.CurrentFrame == editor.Source.TotalFrames)
             {
-                editor.PlaybackState = MediaPlaybackState.Paused;
+                if (editor.IsLoopingEnabled)
+                    editor.CurrentFrame = 0;
+                else
+                    editor.PlaybackState = MediaPlaybackState.Paused;
+
                 editor.ViewModel.EditorPlayCommand.NotifyCanExecuteChanged();
                 editor.ViewModel.EditorPauseCommand.NotifyCanExecuteChanged();
                 editor.ViewModel.EditorNewKeyframeCommand.NotifyCanExecuteChanged();
@@ -549,7 +574,16 @@ namespace MediaBase.Controls
             Debug.WriteLine($"MEDIA ENDED");
 #endif
             if (DispatcherQueue != null)
-                DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, RefreshCommandStates);
+                DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, () =>
+                {
+                    if (IsLoopingEnabled)
+                    {
+                        _player.PlaybackSession.Position = TimeSpan.Zero;
+                        _player.Play();
+                    }
+
+                    RefreshCommandStates();
+                });
         }
 
         private void Player_MediaFailed(MediaPlayer sender, MediaPlayerFailedEventArgs args)
@@ -658,7 +692,7 @@ namespace MediaBase.Controls
 
             // Increment the frame count if we are playing an animated image
             if (isAnimatedImagePlaying)
-                CurrentFrame++;
+                CurrentFrame += (decimal)PlaybackRate;
 
             // Adjust frame position and scale using keyframes (if enabled)
             if (IsPanAndZoomEnabled &&
@@ -749,7 +783,7 @@ namespace MediaBase.Controls
                 var timeStr = TimeDisplayMode switch
                 {
                     TimeDisplayFormat.FrameNumber
-                        => CurrentFrame.ToString(),
+                        => CurrentFrame.ToString("#"),
                     TimeDisplayFormat.TimecodeWithFrame
                         => CurrentPosition.TotalSeconds.ToTimecodeString(FramesPerSecond),
                     TimeDisplayFormat.TimecodeWithMillis
@@ -860,6 +894,7 @@ namespace MediaBase.Controls
 #if DEBUG && SHOW_DEBUG_MESSAGES
             Debug.WriteLine($"Selection drag started (Timeline)");
 #endif
+            
             _prevFollowMode = Timeline.PositionFollowMode;
             Timeline.PositionFollowMode = FollowMode.NoFollow;
         }
@@ -1018,6 +1053,13 @@ namespace MediaBase.Controls
             args.CanExecute = IsPlaybackPossible && PlaybackState == MediaPlaybackState.Playing;
         }
 
+        private void EditorToggleLoopingCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = IsPlaybackPossible &&
+                              (PlaybackState == MediaPlaybackState.Playing ||
+                               PlaybackState == MediaPlaybackState.Paused);
+        }
+
         private void EditorPreviousFrameCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
             args.CanExecute = IsPlaybackPossible && CurrentFrame > 0;
@@ -1150,10 +1192,15 @@ namespace MediaBase.Controls
                 _player.Pause();
         }
 
+        private void EditorToggleLoopingCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
         private void EditorPreviousFrameCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
             if (Source.ContentType == MediaContentType.Image)
-                CurrentFrame--;
+                CurrentFrame -= 1M;
             else
                 _player.PlaybackSession.Position -= Timeline.FrameDuration;
         }
@@ -1161,7 +1208,7 @@ namespace MediaBase.Controls
         private void EditorNextFrameCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
             if (Source.ContentType == MediaContentType.Image)
-                CurrentFrame++;
+                CurrentFrame += 1M;
             else
                 _player.PlaybackSession.Position += Timeline.FrameDuration;
         }
@@ -1296,7 +1343,7 @@ namespace MediaBase.Controls
         private void EditorPlaybackRateDecreaseCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
             if (Source.ContentType == MediaContentType.Image)
-                PlaybackRate -= 0.5;
+                PlaybackRate -= 0.25;
             else
                 _player.PlaybackSession.PlaybackRate -= 0.5;
         }
@@ -1304,7 +1351,7 @@ namespace MediaBase.Controls
         private void EditorPlaybackRateIncreaseCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
             if (Source.ContentType == MediaContentType.Image)
-                PlaybackRate += 0.5;
+                PlaybackRate += 0.25;
             else
                 _player.PlaybackSession.PlaybackRate += 0.5;
         }
@@ -1388,6 +1435,11 @@ namespace MediaBase.Controls
                 EditorPauseCommand_CanExecuteRequested;
             ViewModel.EditorPauseCommand.ExecuteRequested +=
                 EditorPauseCommand_ExecuteRequested;
+
+            ViewModel.EditorToggleLoopingCommand.CanExecuteRequested +=
+                EditorToggleLoopingCommand_CanExecuteRequested;
+            ViewModel.EditorToggleLoopingCommand.ExecuteRequested +=
+                EditorToggleLoopingCommand_ExecuteRequested;
 
             ViewModel.EditorPreviousFrameCommand.CanExecuteRequested +=
                 EditorPreviousFrameCommand_CanExecuteRequested;
@@ -1484,6 +1536,7 @@ namespace MediaBase.Controls
         {
             ViewModel.EditorPlayCommand.NotifyCanExecuteChanged();
             ViewModel.EditorPauseCommand.NotifyCanExecuteChanged();
+            ViewModel.EditorToggleLoopingCommand.NotifyCanExecuteChanged();
             ViewModel.EditorPreviousFrameCommand.NotifyCanExecuteChanged();
             ViewModel.EditorNextFrameCommand.NotifyCanExecuteChanged();
             ViewModel.EditorPreviousMarkerCommand.NotifyCanExecuteChanged();
@@ -1560,7 +1613,7 @@ namespace MediaBase.Controls
             var messenger = App.Current.Services.GetService<IMessenger>();
 
             // Markers/Keyframes collection changed
-            messenger.Register<CollectionChangedMessage<Marker>>(this, (r, m) =>
+            messenger.Register<CollectionChangedMessage<ITimelineMarker>>(this, (r, m) =>
             {
                 if (m.Sender != Source ||
                     (m.PropertyName != nameof(VideoSource.Markers) &&

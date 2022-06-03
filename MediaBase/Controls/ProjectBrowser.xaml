@@ -14,6 +14,8 @@
 
     <UserControl.Resources>
         <!-- Value Converters -->
+        <mb:RatingToBrushConverter x:Key="RatingToBrushConverter"/>
+
         <toolkit_converters:EmptyObjectToObjectConverter x:Key="NullToVisibleConverter">
             <toolkit_converters:EmptyObjectToObjectConverter.EmptyValue>
                 <xaml:Visibility>Visible</xaml:Visibility>
@@ -125,36 +127,67 @@
                           IsSelected="{Binding IsSelected, Mode=TwoWay}"
                           RightTapped="ProjectBrowserTreeView_RightTapped">
                 <TreeViewItem.Content>
-                    <StackPanel Orientation="Horizontal">
-                        <ProgressRing IsActive="True" Width="20" Height="20"
+                    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <ProgressRing Grid.Column="0"
+                                      IsActive="True" Width="15" Height="15" Margin="0,0,2,0"
                                       HorizontalAlignment="Center" VerticalAlignment="Center"
                                       Visibility="{x:Bind File,
                                                           Converter={StaticResource NullToVisibleConverter},
                                                           Mode=OneWay}"/>
-                        <FontIcon FontFamily="Segoe Fluent Icons"
+                        
+                        <Rectangle Grid.Column="1" Width="5" Height="15" Stretch="Fill"
+                                   Fill="{x:Bind Rating,
+                                                 Converter={StaticResource RatingToBrushConverter},
+                                                 Mode=OneWay}"/>
+                        
+                        <FontIcon Grid.Column="2"
+                                  FontFamily="Segoe Fluent Icons"
                                   Glyph="&#xEB9F;"
-                                  Margin="5,0,10,0"/>
-                        <SymbolIcon Symbol="Permissions"
-                                    Margin="5,0,10,0"
+                                  Margin="3,0,10,0"/>
+
+                        <TextBlock Grid.Column="3"
+                                   HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Left"
+                                   Text="{x:Bind Name, Mode=OneWay}"/>
+
+                        <SymbolIcon Grid.Column="4"
+                                    Symbol="Permissions"
+                                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="0,0,5,0"
                                     Visibility="{x:Bind Keyframes,
                                                         Converter={StaticResource EmptyCollectionToVisibilityConverter},
                                                         Mode=OneWay}"/>
-                        <TextBlock HorizontalAlignment="Left"
-                                   VerticalAlignment="Center"
-                                   Text="{x:Bind Name, Mode=OneWay}"/>
-                        <Polygon Fill="Gold" Width="15" Height="15" Stretch="Fill" StrokeThickness="0" Margin="3,0,0,0"
-                                 Points="0,20,10,0,20,20" VerticalAlignment="Bottom"
+
+                        <Polygon Grid.Column="5"
+                                 Fill="Gold" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
+                                 Points="0,20,10,0,20,20" VerticalAlignment="Center" Margin="0,0,3,0"
                                  Visibility="{x:Bind IsCategory1, Converter={StaticResource BoolToVisibleConverter}, Mode=OneWay}"/>
-                        <Rectangle Fill="CornflowerBlue" Width="15" Height="15" Stretch="Fill" StrokeThickness="0" Margin="3,0,0,0"
-                                   VerticalAlignment="Bottom"
+
+                        <Rectangle Grid.Column="6"
+                                   Fill="CornflowerBlue" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
+                                   VerticalAlignment="Center" Margin="0,0,3,0"
                                    Visibility="{x:Bind IsCategory2, Converter={StaticResource BoolToVisibleConverter}, Mode=OneWay}"/>
-                        <Ellipse Fill="IndianRed" Width="15" Height="15" Stretch="Fill" StrokeThickness="0" Margin="3,0,0,0"
-                                 VerticalAlignment="Bottom"
+
+                        <Ellipse Grid.Column="7"
+                                 Fill="IndianRed" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
+                                 VerticalAlignment="Center" Margin="0,0,3,0"
                                  Visibility="{x:Bind IsCategory3, Converter={StaticResource BoolToVisibleConverter}, Mode=OneWay}"/>
-                        <Polygon Fill="ForestGreen" Width="15" Height="15" Stretch="Fill" StrokeThickness="0" Margin="3,0,0,0"
-                                 Points="0,10,10,0,20,10,10,20" VerticalAlignment="Bottom"
+
+                        <Polygon Grid.Column="8"
+                                 Fill="ForestGreen" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
+                                 Points="0,10,10,0,20,10,10,20" VerticalAlignment="Center" Margin="0,0,3,0"
                                  Visibility="{x:Bind IsCategory4, Converter={StaticResource BoolToVisibleConverter}, Mode=OneWay}"/>
-                    </StackPanel>
+                    </Grid>
                 </TreeViewItem.Content>
             </TreeViewItem>
         </DataTemplate>
@@ -165,36 +198,67 @@
                           IsSelected="{Binding IsSelected, Mode=TwoWay}"
                           RightTapped="ProjectBrowserTreeView_RightTapped">
                 <TreeViewItem.Content>
-                    <StackPanel Orientation="Horizontal">
-                        <ProgressRing IsActive="True" Width="20" Height="20"
+                    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <ProgressRing Grid.Column="0"
+                                      IsActive="True" Width="15" Height="15" Margin="0,0,2,0"
                                       HorizontalAlignment="Center" VerticalAlignment="Center"
                                       Visibility="{x:Bind File,
                                                           Converter={StaticResource NullToVisibleConverter},
                                                           Mode=OneWay}"/>
-                        <FontIcon FontFamily="Segoe Fluent Icons"
+
+                        <Rectangle Grid.Column="1" Width="5" Height="15" Stretch="Fill"
+                                   Fill="{x:Bind Rating,
+                                                 Converter={StaticResource RatingToBrushConverter},
+                                                 Mode=OneWay}"/>
+
+                        <FontIcon Grid.Column="2"
+                                  FontFamily="Segoe Fluent Icons"
                                   Glyph="&#xE8B2;"
-                                  Margin="5,0,10,0"/>
-                        <SymbolIcon Symbol="Permissions"
-                                    Margin="5,0,10,0"
+                                  Margin="3,0,10,0"/>
+
+                        <TextBlock Grid.Column="3"
+                                   HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Left"
+                                   Text="{x:Bind Name, Mode=OneWay}"/>
+
+                        <SymbolIcon Grid.Column="4"
+                                    Symbol="Permissions"
+                                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="0,0,5,0"
                                     Visibility="{x:Bind Keyframes,
                                                         Converter={StaticResource EmptyCollectionToVisibilityConverter},
                                                         Mode=OneWay}"/>
-                        <TextBlock HorizontalAlignment="Left"
-                                   VerticalAlignment="Center"
-                                   Text="{x:Bind Name, Mode=OneWay}"/>
-                        <Polygon Fill="Gold" Width="15" Height="15" Stretch="Fill" StrokeThickness="0" Margin="3,0,0,0"
-                                 Points="0,20,10,0,20,20" VerticalAlignment="Bottom"
+
+                        <Polygon Grid.Column="5"
+                                 Fill="Gold" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
+                                 Points="0,20,10,0,20,20" VerticalAlignment="Center" Margin="0,0,3,0"
                                  Visibility="{x:Bind IsCategory1, Converter={StaticResource BoolToVisibleConverter}, Mode=OneWay}"/>
-                        <Rectangle Fill="CornflowerBlue" Width="15" Height="15" Stretch="Fill" StrokeThickness="0" Margin="3,0,0,0"
-                                   VerticalAlignment="Bottom"
+
+                        <Rectangle Grid.Column="6"
+                                   Fill="CornflowerBlue" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
+                                   VerticalAlignment="Center" Margin="0,0,3,0"
                                    Visibility="{x:Bind IsCategory2, Converter={StaticResource BoolToVisibleConverter}, Mode=OneWay}"/>
-                        <Ellipse Fill="IndianRed" Width="15" Height="15" Stretch="Fill" StrokeThickness="0" Margin="3,0,0,0"
-                                 VerticalAlignment="Bottom"
+
+                        <Ellipse Grid.Column="7"
+                                 Fill="IndianRed" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
+                                 VerticalAlignment="Center" Margin="0,0,3,0"
                                  Visibility="{x:Bind IsCategory3, Converter={StaticResource BoolToVisibleConverter}, Mode=OneWay}"/>
-                        <Polygon Fill="ForestGreen" Width="15" Height="15" Stretch="Fill" StrokeThickness="0" Margin="3,0,0,0"
-                                 Points="0,10,10,0,20,10,10,20" VerticalAlignment="Bottom"
+
+                        <Polygon Grid.Column="8"
+                                 Fill="ForestGreen" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
+                                 Points="0,10,10,0,20,10,10,20" VerticalAlignment="Center" Margin="0,0,3,0"
                                  Visibility="{x:Bind IsCategory4, Converter={StaticResource BoolToVisibleConverter}, Mode=OneWay}"/>
-                    </StackPanel>
+                    </Grid>
                 </TreeViewItem.Content>
             </TreeViewItem>
         </DataTemplate>
