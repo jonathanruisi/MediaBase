@@ -7,6 +7,8 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using MediaBase.ViewModel;
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Toolkit.Mvvm.Messaging;
+using Microsoft.Toolkit.Mvvm.Messaging.Messages;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -31,6 +33,8 @@ namespace MediaBase.Controls
         {
             InitializeComponent();
             DataContext = App.Current.Services.GetService<Project>();
+
+            RegisterMessages();
         }
         #endregion
 
@@ -43,6 +47,24 @@ namespace MediaBase.Controls
         private void UserControl_Unloaded(object sender, RoutedEventArgs e)
         {
 
+        }
+        #endregion
+
+        #region Private Methods
+        private void RegisterMessages()
+        {
+            var messenger = App.Current.Services.GetService<IMessenger>();
+
+            messenger.Register<PropertyChangedMessage<MBMediaSource>>(this, (r, m) =>
+            {
+                if (m.Sender != ViewModel || m.PropertyName != nameof(ViewModel.ActiveMediaSource))
+                    return;
+
+                if (ViewModel.ActiveMediaSource is VideoSource videoSource)
+                    MarkerListBox.ItemsSource = videoSource.Markers;
+                else
+                    MarkerListBox.ItemsSource = null;
+            });
         }
         #endregion
     }

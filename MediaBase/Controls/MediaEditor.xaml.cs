@@ -45,11 +45,12 @@ namespace MediaBase.Controls
         private SoftwareBitmap _frameSizingBitmap;
         private CanvasBitmap _frameBitmap;
         private InputCursor _primaryCursor, _hoverCursor, _dragCursor;
-        private bool _isPointerCapturedForFrame, _isScrubbing;
+        private bool _isPointerCapturedForFrame;
         private Point _prevLeftMousePosition;
         private double _scaleFactor, _prevPlaybackRate;
         private Rect _sourceRect, _destRect;
         private FollowMode _prevFollowMode;
+        private ValueDragType _scrubType;
         #endregion
 
         #region Properties
@@ -442,7 +443,7 @@ namespace MediaBase.Controls
 #endif
             // Frame change was not due to the user interacting with the timeline,
             // therefore the timeline needs to be synchronized to the frame count.
-            if (!editor._isScrubbing)
+            if (editor._scrubType == ValueDragType.None)
             {
                 editor.Timeline.Position = (decimal)editor.CurrentPosition.TotalSeconds;
             }
@@ -517,14 +518,10 @@ namespace MediaBase.Controls
 #endif
             // Initialize timeline
             Timeline.PositionChanged += Timeline_PositionChanged;
-            Timeline.PositionDragStarted += Timeline_PositionDragStarted;
-            Timeline.PositionDragCompleted += Timeline_PositionDragCompleted;
             Timeline.SelectionChanged += Timeline_SelectionChanged;
-            Timeline.SelectionDragStarted += Timeline_SelectionDragStarted;
-            Timeline.SelectionDragCompleted += Timeline_SelectionDragCompleted;
             Timeline.ZoomChanged += Timeline_ZoomChanged;
-            Timeline.ZoomDragStarted += Timeline_ZoomDragStarted;
-            Timeline.ZoomDragCompleted += Timeline_ZoomDragCompleted;
+            Timeline.TimelineValueDragStarted += Timeline_DragStarted;
+            Timeline.TimelineValueDragCompleted += Timeline_DragCompleted;
             Timeline.TrackCountChanged += Timeline_TrackCountChanged;
 
             // Initialize swap chain
@@ -637,11 +634,21 @@ namespace MediaBase.Controls
 #if DEBUG && SHOW_DEBUG_MESSAGES
             Debug.WriteLine($"Seek completed (MediaPlayer)");
 #endif
-            if (DispatcherQueue != null && _isScrubbing)
+            if (DispatcherQueue != null && _scrubType == ValueDragType.Position ||
+                                           _scrubType == ValueDragType.SelectionStart ||
+                                           _scrubType == ValueDragType.SelectionEnd ||
+                                           _scrubType == ValueDragType.Selection)
             {
                 DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, () =>
                 {
-                    sender.Position = TimeSpan.FromSeconds(decimal.ToDouble(Timeline.Position));
+                    decimal previewPosition = _scrubType switch
+                    {
+                        ValueDragType.Position => Timeline.Position,
+                        ValueDragType.SelectionEnd => Timeline.SelectionEnd,
+                        _ => Timeline.SelectionStart
+                    };
+
+                    sender.Position = TimeSpan.FromSeconds(decimal.ToDouble(previewPosition));
                 });
             }
         }
@@ -697,8 +704,15 @@ namespace MediaBase.Controls
             // Adjust frame position and scale using keyframes (if enabled)
             if (IsPanAndZoomEnabled &&
                 (PlaybackState == MediaPlaybackState.Playing ||
-                (PlaybackState == MediaPlaybackState.Paused && _isScrubbing)))
+                 (PlaybackState == MediaPlaybackState.Paused &&
+                  (_scrubType == ValueDragType.Position ||
+                   _scrubType == ValueDragType.SelectionStart ||
+                   _scrubType == ValueDragType.SelectionEnd ||
+                   _scrubType == ValueDragType.Selection))))
+            {
                 CalculateFrameScaleAndPosition();
+            }
+
             ApplyFrameScaleAndPosition();
 
             // Draw the image
@@ -834,51 +848,15 @@ namespace MediaBase.Controls
         #region Event Handlers (Timeline)
         private void Timeline_PositionChanged(object sender, decimal e)
         {
-            if (_isScrubbing)
+            // This won't affect MediaPlayer position.
+            // It is needed to scrub animated images.
+            if (_scrubType == ValueDragType.Position ||
+                _scrubType == ValueDragType.SelectionStart ||
+                _scrubType == ValueDragType.SelectionEnd ||
+                _scrubType == ValueDragType.Selection)
+            {
                 CurrentFrame = decimal.ToInt32(decimal.Round(e * FramesPerSecond));
-        }
-
-        private void Timeline_PositionDragStarted(object sender, EventArgs e)
-        {
-#if DEBUG && SHOW_DEBUG_MESSAGES
-            Debug.WriteLine($"Position drag started (Timeline)");
-#endif
-            _prevPlaybackRate = PlaybackRate;
-            _prevFollowMode = Timeline.PositionFollowMode;
-            Timeline.PositionFollowMode = FollowMode.NoFollow;
-            _isScrubbing = true;
-
-            if (Source.ContentType == MediaContentType.Video)
-            {
-                _player.PlaybackSession.PlaybackRate = 0;
-                _player.PlaybackSession.Position =
-                    TimeSpan.FromSeconds(decimal.ToDouble(Timeline.Position));
             }
-            else
-            {
-                CurrentFrame = decimal.ToInt32(decimal.Round(Timeline.Position * FramesPerSecond));
-            }
-        }
-
-        private void Timeline_PositionDragCompleted(object sender, EventArgs e)
-        {
-#if DEBUG && SHOW_DEBUG_MESSAGES
-            Debug.WriteLine($"Position drag completed (Timeline)");
-#endif
-            if (Source.ContentType == MediaContentType.Video)
-            {
-                _player.PlaybackSession.Position =
-                    TimeSpan.FromSeconds(decimal.ToDouble(Timeline.Position));
-                _player.PlaybackSession.PlaybackRate = _prevPlaybackRate;
-            }
-            else
-            {
-                CurrentFrame = decimal.ToInt32(decimal.Round(Timeline.Position * FramesPerSecond));
-            }
-
-            Timeline.PositionFollowMode = _prevFollowMode;
-
-            _isScrubbing = false;
         }
 
         private void Timeline_SelectionChanged(object sender, (decimal start, decimal end, bool isEnabled) e)
@@ -887,24 +865,7 @@ namespace MediaBase.Controls
             Debug.WriteLine($"Selection changed (Timeline): ({Timeline.SelectionStart:0.000}, {Timeline.SelectionEnd:0.000})");
 #endif
             ViewModel.EditorNewClipCommand.NotifyCanExecuteChanged();
-        }
-
-        private void Timeline_SelectionDragStarted(object sender, EventArgs e)
-        {
-#if DEBUG && SHOW_DEBUG_MESSAGES
-            Debug.WriteLine($"Selection drag started (Timeline)");
-#endif
-            
-            _prevFollowMode = Timeline.PositionFollowMode;
-            Timeline.PositionFollowMode = FollowMode.NoFollow;
-        }
-
-        private void Timeline_SelectionDragCompleted(object sender, EventArgs e)
-        {
-#if DEBUG && SHOW_DEBUG_MESSAGES
-            Debug.WriteLine($"Selection drag completed (Timeline)");
-#endif
-            Timeline.PositionFollowMode = _prevFollowMode;
+            ViewModel.EditorCutSelectedCommand.NotifyCanExecuteChanged();
         }
 
         private void Timeline_ZoomChanged(object sender, (decimal start, decimal end) e)
@@ -916,21 +877,98 @@ namespace MediaBase.Controls
             ViewModel.EditorTimelineZoomOutCommand.NotifyCanExecuteChanged();
         }
 
-        private void Timeline_ZoomDragStarted(object sender, EventArgs e)
+        private void Timeline_DragStarted(object sender, ValueDragType e)
         {
 #if DEBUG && SHOW_DEBUG_MESSAGES
-            Debug.WriteLine($"Zoom drag started (Timeline)");
+            Debug.WriteLine($"Drag started (Timeline): {Enum.GetName(typeof(ValueDragType), e)}");
 #endif
+            _scrubType = e;
             _prevFollowMode = Timeline.PositionFollowMode;
             Timeline.PositionFollowMode = FollowMode.NoFollow;
+
+            // Set playback position to the control being scrubbed
+            if (e == ValueDragType.Position ||
+                e == ValueDragType.SelectionStart ||
+                e == ValueDragType.SelectionEnd ||
+                e == ValueDragType.Selection)
+            {
+                _prevPlaybackRate = PlaybackRate;
+
+                decimal previewPosition = e switch
+                {
+                    ValueDragType.Position => Timeline.Position,
+                    ValueDragType.SelectionEnd => Timeline.SelectionEnd,
+                    _ => Timeline.SelectionStart
+                };
+
+                if (Source.ContentType == MediaContentType.Video)
+                {
+                    _player.PlaybackSession.PlaybackRate = 0;
+                    _player.PlaybackSession.Position =
+                        TimeSpan.FromSeconds(decimal.ToDouble(previewPosition));
+                }
+                else
+                {
+                    PlaybackRate = 0;
+                    CurrentFrame = decimal.ToInt32(decimal.Round(previewPosition * FramesPerSecond));
+                }
+            }
         }
 
-        private void Timeline_ZoomDragCompleted(object sender, EventArgs e)
+        private void Timeline_DragCompleted(object sender, ValueDragType e)
         {
-#if DEBUG && SHOW_DEBUG_MESSAGES && DEBUG
-            Debug.WriteLine($"Zoom drag completed (Timeline)");
+#if DEBUG && SHOW_DEBUG_MESSAGES
+            Debug.WriteLine($"Drag started (Timeline): {Enum.GetName(typeof(ValueDragType), e)}");
 #endif
+            // Set playback to playhead position
+            if (e == ValueDragType.Position ||
+                e == ValueDragType.SelectionStart ||
+                e == ValueDragType.SelectionEnd ||
+                e == ValueDragType.Selection)
+            {
+                if (Source.ContentType == MediaContentType.Video)
+                {
+                    _player.PlaybackSession.Position =
+                        TimeSpan.FromSeconds(decimal.ToDouble(Timeline.Position));
+                    _player.PlaybackSession.PlaybackRate = _prevPlaybackRate;
+                }
+                else
+                {
+                    CurrentFrame = decimal.ToInt32(decimal.Round(Timeline.Position * FramesPerSecond));
+                    PlaybackRate = _prevPlaybackRate;
+                }
+            }
+
+            // If a marker is selected and the current selection changed, update the marker
+            if ((e == ValueDragType.SelectionStart ||
+                 e == ValueDragType.SelectionEnd ||
+                 e == ValueDragType.Selection) &&
+                ViewModel.SelectedMarker != null &&
+                ViewModel.SelectedMarker.Duration > 0 &&
+                Source is VideoSource videoSource)
+            {
+                var index = videoSource.Markers.IndexOf(ViewModel.SelectedMarker);
+
+                if (index >= 0)
+                {
+                    ViewModel.SelectedMarker = null;
+
+                    var newMarker = new Marker
+                    {
+                        Name = videoSource.Markers[index].Name,
+                        Position = Timeline.SelectionStart,
+                        Duration = Timeline.SelectionEnd - Timeline.SelectionStart,
+                        Track = videoSource.Markers[index].Track
+                    };
+
+                    videoSource.Markers.RemoveAt(index);
+                    videoSource.Markers.Insert(index, newMarker);
+                    ViewModel.SelectedMarker = videoSource.Markers[index];
+                }
+            }
+
             Timeline.PositionFollowMode = _prevFollowMode;
+            _scrubType = ValueDragType.None;
         }
 
         private void Timeline_TrackCountChanged(object sender, int e)
@@ -1115,6 +1153,7 @@ namespace MediaBase.Controls
         private void EditorNewKeyframeCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
             args.CanExecute = IsPlaybackPossible &&
+                              Source.ContentType == MediaContentType.Image && // TODO: Remove this once video-compatible keyframe types are added
                               (PlaybackState == MediaPlaybackState.Playing ||
                                PlaybackState == MediaPlaybackState.Paused);
         }
@@ -1591,6 +1630,7 @@ namespace MediaBase.Controls
             NewKeyframeButton.Visibility = vis;
             CutSelectedButton.Visibility = Source.ContentType == MediaContentType.Image
                 ? Visibility.Collapsed : vis;
+            DeleteMarkerButton.Visibility = vis;
 
             PlaybackRateButtonSeparator.Visibility = vis;
             PlaybackRateDecreaseButton.Visibility = vis;
@@ -1613,7 +1653,7 @@ namespace MediaBase.Controls
             var messenger = App.Current.Services.GetService<IMessenger>();
 
             // Markers/Keyframes collection changed
-            messenger.Register<CollectionChangedMessage<ITimelineMarker>>(this, (r, m) =>
+            messenger.Register<CollectionChangedMessage<Marker>>(this, (r, m) =>
             {
                 if (m.Sender != Source ||
                     (m.PropertyName != nameof(VideoSource.Markers) &&

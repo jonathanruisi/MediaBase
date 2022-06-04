@@ -6,6 +6,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
     xmlns:mb="using:MediaBase"
+    xmlns:viewmodel="using:MediaBase.ViewModel"
     xmlns:toolkit="using:CommunityToolkit.WinUI.UI.Controls"
     Loaded="UserControl_Loaded"
     Unloaded="UserControl_Unloaded">
@@ -24,10 +25,11 @@
         
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="2*"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <Grid Grid.Column="0" BorderBrush="LightGray" BorderThickness="2" CornerRadius="5">
+        <Grid Grid.Column="0" BorderBrush="LightGray" BorderThickness="0,0,3,0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -62,15 +64,40 @@
         </Grid>
 
         <Pivot Grid.Column="1" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
-            <PivotItem Header="Chapters">
-                
+            <PivotItem Header="Chapters / Clips">
+                <ListBox x:Name="MarkerListBox"
+                         SelectionMode="Single"
+                         SelectedValue="{x:Bind ViewModel.SelectedMarker, Mode=TwoWay}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="viewmodel:Marker">
+                            <TextBlock Text="{x:Bind Name}"/>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
             </PivotItem>
             
-            <PivotItem Header="Tags">
-                <toolkit:TokenizingTextBox x:Name="TagTokenizer"
-                                           ItemsSource="{x:Bind ViewModel.ActiveMediaSource.Tags, Mode=OneWay}"
-                                           SuggestedItemsSource="{x:Bind ViewModel.TagDatabase, Mode=OneTime}"/>
+            <PivotItem Header="Keyframes">
+                
             </PivotItem>
         </Pivot>
+
+        <Grid Grid.Column="2" BorderBrush="LightGray" BorderThickness="3,0,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <TextBox Grid.Row="0"
+                     Background="#202020"
+                     Foreground="#C0C0C0"
+                     FontSize="32"
+                     FontWeight="Bold"
+                     IsReadOnly="True"
+                     Text="Tags"/>
+
+            <toolkit:TokenizingTextBox x:Name="TagTokenizer" Grid.Row="1"
+                                       ItemsSource="{x:Bind ViewModel.ActiveMediaSource.Tags, Mode=OneWay}"
+                                       SuggestedItemsSource="{x:Bind ViewModel.TagDatabase, Mode=OneTime}"/>
+        </Grid>
     </Grid>
 </UserControl>

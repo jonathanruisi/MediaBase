@@ -94,6 +94,8 @@
                 <AppBarButton x:Name="PlaybackRateDecreaseButton" Width="40"
                               Command="{x:Bind ViewModel.EditorPlaybackRateDecreaseCommand}"/>
                 <AppBarSeparator x:Name="PlaybackRateButtonSeparator"/>
+                <AppBarButton x:Name="DeleteMarkerButton" Width="40"
+                              Command="{x:Bind ViewModel.ProjectDeleteMarkerCommand}"/>
                 <AppBarButton x:Name="CutSelectedButton" Width="40"
                               Command="{x:Bind ViewModel.EditorCutSelectedCommand}"/>
                 <AppBarButton x:Name="NewKeyframeButton" Width="40"

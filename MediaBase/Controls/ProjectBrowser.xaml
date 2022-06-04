@@ -137,7 +137,6 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
                         <ProgressRing Grid.Column="0"
@@ -161,29 +160,22 @@
                                    HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Left"
                                    Text="{x:Bind Name, Mode=OneWay}"/>
 
-                        <SymbolIcon Grid.Column="4"
-                                    Symbol="Permissions"
-                                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="0,0,5,0"
-                                    Visibility="{x:Bind Keyframes,
-                                                        Converter={StaticResource EmptyCollectionToVisibilityConverter},
-                                                        Mode=OneWay}"/>
-
-                        <Polygon Grid.Column="5"
+                        <Polygon Grid.Column="4"
                                  Fill="Gold" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
                                  Points="0,20,10,0,20,20" VerticalAlignment="Center" Margin="0,0,3,0"
                                  Visibility="{x:Bind IsCategory1, Converter={StaticResource BoolToVisibleConverter}, Mode=OneWay}"/>
 
-                        <Rectangle Grid.Column="6"
+                        <Rectangle Grid.Column="5"
                                    Fill="CornflowerBlue" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
                                    VerticalAlignment="Center" Margin="0,0,3,0"
                                    Visibility="{x:Bind IsCategory2, Converter={StaticResource BoolToVisibleConverter}, Mode=OneWay}"/>
 
-                        <Ellipse Grid.Column="7"
+                        <Ellipse Grid.Column="6"
                                  Fill="IndianRed" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
                                  VerticalAlignment="Center" Margin="0,0,3,0"
                                  Visibility="{x:Bind IsCategory3, Converter={StaticResource BoolToVisibleConverter}, Mode=OneWay}"/>
 
-                        <Polygon Grid.Column="8"
+                        <Polygon Grid.Column="7"
                                  Fill="ForestGreen" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
                                  Points="0,10,10,0,20,10,10,20" VerticalAlignment="Center" Margin="0,0,3,0"
                                  Visibility="{x:Bind IsCategory4, Converter={StaticResource BoolToVisibleConverter}, Mode=OneWay}"/>
@@ -204,7 +196,6 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
@@ -232,29 +223,22 @@
                                    HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Left"
                                    Text="{x:Bind Name, Mode=OneWay}"/>
 
-                        <SymbolIcon Grid.Column="4"
-                                    Symbol="Permissions"
-                                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="0,0,5,0"
-                                    Visibility="{x:Bind Keyframes,
-                                                        Converter={StaticResource EmptyCollectionToVisibilityConverter},
-                                                        Mode=OneWay}"/>
-
-                        <Polygon Grid.Column="5"
+                        <Polygon Grid.Column="4"
                                  Fill="Gold" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
                                  Points="0,20,10,0,20,20" VerticalAlignment="Center" Margin="0,0,3,0"
                                  Visibility="{x:Bind IsCategory1, Converter={StaticResource BoolToVisibleConverter}, Mode=OneWay}"/>
 
-                        <Rectangle Grid.Column="6"
+                        <Rectangle Grid.Column="5"
                                    Fill="CornflowerBlue" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
                                    VerticalAlignment="Center" Margin="0,0,3,0"
                                    Visibility="{x:Bind IsCategory2, Converter={StaticResource BoolToVisibleConverter}, Mode=OneWay}"/>
 
-                        <Ellipse Grid.Column="7"
+                        <Ellipse Grid.Column="6"
                                  Fill="IndianRed" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
                                  VerticalAlignment="Center" Margin="0,0,3,0"
                                  Visibility="{x:Bind IsCategory3, Converter={StaticResource BoolToVisibleConverter}, Mode=OneWay}"/>
 
-                        <Polygon Grid.Column="8"
+                        <Polygon Grid.Column="7"
                                  Fill="ForestGreen" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
                                  Points="0,10,10,0,20,10,10,20" VerticalAlignment="Center" Margin="0,0,3,0"
                                  Visibility="{x:Bind IsCategory4, Converter={StaticResource BoolToVisibleConverter}, Mode=OneWay}"/>

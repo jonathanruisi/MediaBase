@@ -79,7 +79,16 @@ namespace MediaBase.ViewModel
         public ViewModelNode ActiveNode
         {
             get => _activeProjectNode;
-            set => SetProperty(ref _activeProjectNode, value, true);
+            set
+            {
+                if (_activeProjectNode != null)
+                    _activeProjectNode.IsSelected = false;
+
+                SetProperty(ref _activeProjectNode, value, true);
+
+                if (_activeProjectNode != null)
+                    _activeProjectNode.IsSelected = true;
+            }
         }
 
         /// <summary>
@@ -113,7 +122,18 @@ namespace MediaBase.ViewModel
         public Marker SelectedMarker
         {
             get => _selectedMarker;
-            set => SetProperty(ref _selectedMarker, value, true);
+            set
+            {
+                if (_selectedMarker != null)
+                    _selectedMarker.IsSelected = false;
+
+                SetProperty(ref _selectedMarker, value, true);
+
+                if (_selectedMarker != null)
+                    _selectedMarker.IsSelected = true;
+
+                ProjectDeleteMarkerCommand.NotifyCanExecuteChanged();
+            }
         }
 
         public HashSet<string> TagDatabase { get; }
@@ -137,6 +157,7 @@ namespace MediaBase.ViewModel
         public XamlUICommand ProjectRemoveAllCommand { get; private set; }
         public XamlUICommand ProjectRenameItemCommand { get; private set; }
         public XamlUICommand ProjectSelectMultipleCommand { get; private set; }
+        public XamlUICommand ProjectDeleteMarkerCommand { get; private set; }
 
         // View
         public XamlUICommand ViewNormalCommand { get; private set; }
@@ -305,6 +326,11 @@ namespace MediaBase.ViewModel
             args.CanExecute = ActiveMediaSource != null && ActiveMediaSource != ActiveMediaSource.Parent.Children.Last();
         }
 
+        private void ProjectDeleteMarkerCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = SelectedMarker != null;
+        }
+
         private void ToolsMarkCategoryCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
             args.CanExecute = ActiveMediaSource != null;
@@ -322,6 +348,16 @@ namespace MediaBase.ViewModel
         {
             var index = ActiveMediaSource.Parent.Children.IndexOf(ActiveMediaSource);
             ActiveMediaSource = (MBMediaSource)ActiveMediaSource.Parent.Children[index + 1];
+        }
+
+        private void ProjectDeleteMarkerCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            var markerToDelete = SelectedMarker;
+            SelectedMarker = null;
+            if (ActiveMediaSource.Keyframes.Contains(markerToDelete)) // TODO: Make Marker IEquatable<> here and elsewhere to fix this problem
+                ActiveMediaSource.Keyframes.Remove(markerToDelete);
+            else if (ActiveMediaSource is VideoSource videoSource && videoSource.Markers.Contains(markerToDelete))
+                videoSource.Markers.Remove(markerToDelete);
         }
 
         private void ToolsMarkCategoryCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
@@ -507,6 +543,24 @@ namespace MediaBase.ViewModel
                 Description = "Toggle multiple selection mode",
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xE762 }
             };
+
+            ProjectDeleteMarkerCommand = new XamlUICommand
+            {
+                Label = "Delete Marker",
+                Description = "Delete currently selected marker",
+                IconSource = new SymbolIconSource { Symbol = Symbol.Delete }
+            };
+
+            ProjectDeleteMarkerCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.Delete,
+                IsEnabled = true
+            });
+
+            ProjectDeleteMarkerCommand.CanExecuteRequested +=
+                ProjectDeleteMarkerCommand_CanExecuteRequested;
+            ProjectDeleteMarkerCommand.ExecuteRequested +=
+                ProjectDeleteMarkerCommand_ExecuteRequested;
             #endregion
 
             #region Tool Commands
@@ -795,12 +849,6 @@ namespace MediaBase.ViewModel
                 Description = "Add selection to cut list",
                 IconSource = new SymbolIconSource { Symbol = Symbol.Trim }
             };
-
-            EditorCutSelectedCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
-            {
-                Key = VirtualKey.Delete,
-                IsEnabled = true
-            });
 
             EditorPlaybackRateDecreaseCommand = new XamlUICommand
             {
