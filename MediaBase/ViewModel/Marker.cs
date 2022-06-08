@@ -14,7 +14,7 @@ namespace MediaBase.ViewModel
     {
         #region Fields
         private decimal _position, _duration;
-        private int _track;
+        private int _group;
         #endregion
 
         #region Properties
@@ -40,7 +40,7 @@ namespace MediaBase.ViewModel
                 SetProperty(ref _duration, value);
 
                 if (_duration == 0)
-                    Track = 0;
+                    Group = 0;
             }
         }
 
@@ -54,11 +54,11 @@ namespace MediaBase.ViewModel
         /// to track 0. Track 0 is used to display "chapter" style
         /// markers on a <see cref="MediaTimeline"/>.
         /// </remarks>
-        [ViewModelObject(nameof(Track), XmlNodeType.Attribute)]
-        public int Track
+        [ViewModelObject(nameof(Group), XmlNodeType.Attribute)]
+        public int Group
         {
-            get => _track;
-            set => SetProperty(ref _track, value);
+            get => _group;
+            set => SetProperty(ref _group, value);
         }
         #endregion
 
@@ -69,7 +69,7 @@ namespace MediaBase.ViewModel
         {
             _position = position;
             _duration = duration;
-            _track = track;
+            _group = track;
         }
         #endregion
 

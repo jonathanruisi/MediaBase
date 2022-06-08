@@ -38,7 +38,7 @@ namespace MediaBase
 			if (value is not int rating)
 				throw new ArgumentException("Object must be an integer", nameof(value));
 
-			return rating switch
+			/*return rating switch
 			{
 				10 => new SolidColorBrush(Color.FromArgb(255, 0, 255, 0)),
 				9 => new SolidColorBrush(Color.FromArgb(255, 51, 255, 0)),
@@ -50,6 +50,16 @@ namespace MediaBase
 				3 => new SolidColorBrush(Color.FromArgb(255, 255, 128, 0)),
 				2 => new SolidColorBrush(Color.FromArgb(255, 255, 64, 0)),
 				1 => new SolidColorBrush(Color.FromArgb(255, 255, 0, 0)),
+				_ => new SolidColorBrush(Colors.Transparent)
+			};*/
+
+			return rating switch
+			{
+				5 => new SolidColorBrush(Colors.Orange),
+				4 => new SolidColorBrush(Colors.HotPink),
+				3 => new SolidColorBrush(Colors.CornflowerBlue),
+				2 => new SolidColorBrush(Colors.LimeGreen),
+				1 => new SolidColorBrush(Colors.LightGray),
 				_ => new SolidColorBrush(Colors.Transparent)
 			};
 		}

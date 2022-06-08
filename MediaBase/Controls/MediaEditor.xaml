@@ -43,8 +43,13 @@
         </Border>
 
         <!-- Timeline -->
-        <controls:MediaTimeline x:Name="Timeline" MinHeight="100"
-                                Grid.Row="1" Grid.Column="0"
+        <controls:MediaTimeline x:Name="Timeline" Grid.Row="1" Grid.Column="0"
+                                MinHeight="75" Height="75"
+                                ZoomBarHeight="18"
+                                MarkerHeight="18"
+                                PositionElementRelativeHeight="1.0"
+                                SelectionInOutElementsRelativeHeight="1.0"
+                                MarkerBrush="DarkOrange"
                                 PositionFollowMode="Advance"
                                 Visibility="Collapsed"
                                 FramesPerSecond="{x:Bind FramesPerSecond, Mode=OneWay}"

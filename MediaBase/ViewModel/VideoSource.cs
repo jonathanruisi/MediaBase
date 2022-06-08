@@ -5,6 +5,7 @@ using System.Collections.Specialized;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
 
 using JLR.Utility.WinUI.Messaging;
 using JLR.Utility.WinUI.ViewModel;
@@ -21,11 +22,28 @@ namespace MediaBase.ViewModel
     public abstract class VideoSource : MBMediaSource
     {
         #region Fields
+        private bool _areCutsApplied;
         private decimal _trimmedDuration;
         #endregion
 
         #region Properties
         public override MediaContentType ContentType => MediaContentType.Video;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether or not
+        /// the time ranges specified in <see cref="Cuts"/>
+        /// will be removed from the source the next time it is loaded.
+        /// </summary>
+        /// <remarks>
+        /// This is not a permanent operation and therefore does not
+        /// affect the original source of this <see cref="VideoSource"/>.
+        /// </remarks>
+        [ViewModelObject(nameof(AreCutsApplied), XmlNodeType.Element, false, true)]
+        public bool AreCutsApplied
+        {
+            get => _areCutsApplied;
+            set => SetProperty(ref _areCutsApplied, value);
+        }
 
         /// <summary>
         /// Gets a value indicating what the duration of the
@@ -57,6 +75,7 @@ namespace MediaBase.ViewModel
         #region Constructor
         protected VideoSource()
         {
+            _areCutsApplied = false;
             _trimmedDuration = 0;
             PlayableRanges = new List<(decimal start, decimal end)>();
 
@@ -130,7 +149,7 @@ namespace MediaBase.ViewModel
             if (baseProperty != null)
                 return baseProperty;
 
-            if (propertyName == nameof(Cuts))
+            if (propertyName == "Cut")
             {
                 var cutStrings = content.Split(':');
                 return (decimal.Parse(cutStrings[0]), decimal.Parse(cutStrings[1]));
@@ -141,11 +160,22 @@ namespace MediaBase.ViewModel
 
         protected override string CustomPropertyWriter(string propertyName, object value)
         {
-            if (propertyName != nameof(Cuts))
-                return null;
+            var baseProperty = base.CustomPropertyWriter(propertyName, value);
+            if (baseProperty != null)
+                return baseProperty;
 
-            var (start, end) = ((decimal start, decimal end))value;
-            return $"{start}:{end}";
+            if (propertyName == "Cut")
+            {
+                var (start, end) = ((decimal start, decimal end))value;
+                return $"{start}:{end}";
+            }
+
+            if (propertyName == nameof(AreCutsApplied))
+            {
+                return AreCutsApplied ? 1.ToString() : 0.ToString();
+            }
+
+            return null;
         }
         #endregion
 

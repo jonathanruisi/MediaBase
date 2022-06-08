@@ -97,19 +97,19 @@ namespace MediaBase.ViewModel
         {
             var composition = new MediaComposition();
 
-            if (PlayableRanges.Count == 0)
+            if (PlayableRanges.Count > 0 && AreCutsApplied)
             {
-                composition.Clips.Add(await MediaClip.CreateFromFileAsync(File));
+                foreach (var (start, end) in PlayableRanges)
+                {
+                    var clip = await MediaClip.CreateFromFileAsync(File);
+                    clip.TrimTimeFromStart = TimeSpan.FromSeconds(decimal.ToDouble(start));
+                    clip.TrimTimeFromEnd = TimeSpan.FromSeconds(decimal.ToDouble(Duration - end));
+                    composition.Clips.Add(clip);
+                }
             }
             else
             {
-                foreach (var range in PlayableRanges)
-                {
-                    var clip = await MediaClip.CreateFromFileAsync(File);
-                    clip.TrimTimeFromStart = TimeSpan.FromSeconds(decimal.ToDouble(range.start));
-                    clip.TrimTimeFromEnd = TimeSpan.FromSeconds(decimal.ToDouble(Duration - range.end));
-                    composition.Clips.Add(clip);
-                }
+                composition.Clips.Add(await MediaClip.CreateFromFileAsync(File));
             }
 
             var encodingProfile = composition.CreateDefaultEncodingProfile();

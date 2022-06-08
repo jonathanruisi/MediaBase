@@ -56,7 +56,7 @@
                            Grid.Row="2" Margin="5"
                            HorizontalAlignment="Left"
                            Caption="Rating"
-                           MaxRating="10"
+                           MaxRating="5"
                            Value="{x:Bind ViewModel.ActiveMediaSource.Rating,
                                           Converter={StaticResource RatingConverter},
                                           Mode=TwoWay}"
@@ -75,8 +75,12 @@
                     </ListBox.ItemTemplate>
                 </ListBox>
             </PivotItem>
-            
+
             <PivotItem Header="Keyframes">
+
+            </PivotItem>
+
+            <PivotItem Header="Related Media">
                 
             </PivotItem>
         </Pivot>
@@ -96,6 +100,7 @@
                      Text="Tags"/>
 
             <toolkit:TokenizingTextBox x:Name="TagTokenizer" Grid.Row="1"
+                                       TokenDelimiter=","
                                        ItemsSource="{x:Bind ViewModel.ActiveMediaSource.Tags, Mode=OneWay}"
                                        SuggestedItemsSource="{x:Bind ViewModel.TagDatabase, Mode=OneTime}"/>
         </Grid>

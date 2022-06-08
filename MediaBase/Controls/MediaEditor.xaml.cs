@@ -51,6 +51,7 @@ namespace MediaBase.Controls
         private Rect _sourceRect, _destRect;
         private FollowMode _prevFollowMode;
         private ValueDragType _scrubType;
+        private int _trackCount;
         #endregion
 
         #region Properties
@@ -435,7 +436,7 @@ namespace MediaBase.Controls
 
         private static void OnCurrentFrameChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            if (d is not MediaEditor editor)
+            if (d is not MediaEditor editor || editor.Source == null)
                 return;
 #if DEBUG && SHOW_DEBUG_MESSAGES
             if (editor.PlaybackState != MediaPlaybackState.Playing)
@@ -958,7 +959,7 @@ namespace MediaBase.Controls
                         Name = videoSource.Markers[index].Name,
                         Position = Timeline.SelectionStart,
                         Duration = Timeline.SelectionEnd - Timeline.SelectionStart,
-                        Track = videoSource.Markers[index].Track
+                        Group = videoSource.Markers[index].Group
                     };
 
                     videoSource.Markers.RemoveAt(index);
@@ -976,6 +977,9 @@ namespace MediaBase.Controls
 #if DEBUG && SHOW_DEBUG_MESSAGES
             Debug.WriteLine($"Track count changed: {e}");
 #endif
+            var delta = e - _trackCount;
+            Timeline.Height += delta * (Timeline.TrackHeight + Timeline.TrackSpacing);
+            _trackCount = e;
         }
         #endregion
 
@@ -1315,7 +1319,7 @@ namespace MediaBase.Controls
                 Name = dlg.Text,
                 Position = (decimal)pos.TotalSeconds,
                 Duration = 0,
-                Track = 0
+                Group = 0
             };
 
             var index = 0;
@@ -1348,7 +1352,7 @@ namespace MediaBase.Controls
                 Name = dlg.Text,
                 Position = Timeline.SelectionStart,
                 Duration = Timeline.SelectionEnd - Timeline.SelectionStart,
-                Track = 1  // TODO: This needs to be assigned from somewhere else
+                Group = 0  // TODO: This needs to be assigned from somewhere else
             };
 
             var index = 0;
@@ -1652,12 +1656,25 @@ namespace MediaBase.Controls
         {
             var messenger = App.Current.Services.GetService<IMessenger>();
 
-            // Markers/Keyframes collection changed
+            // MBMediaSource.Keyframes collection changed
+            messenger.Register<CollectionChangedMessage<ITimelineMarker>>(this, (r, m) =>
+            {
+                if (m.Sender != Source ||
+                    m.PropertyName != nameof(MBMediaSource.Keyframes))
+                    return;
+
+                foreach (var keyframe in m.OldValue)
+                    Timeline.Markers.Remove(keyframe);
+
+                foreach (var keyframe in m.NewValue)
+                    Timeline.Markers.Add(keyframe);
+            });
+
+            // VideoSource.Markers collection changed
             messenger.Register<CollectionChangedMessage<Marker>>(this, (r, m) =>
             {
                 if (m.Sender != Source ||
-                    (m.PropertyName != nameof(VideoSource.Markers) &&
-                     m.PropertyName != nameof(MBMediaSource.Keyframes)))
+                    m.PropertyName != nameof(VideoSource.Markers))
                     return;
 
                 foreach (var marker in m.OldValue)
@@ -1667,7 +1684,7 @@ namespace MediaBase.Controls
                     Timeline.Markers.Add(marker);
             });
 
-            // MBMediaSource.Cuts collection changed
+            // VideoSource.Cuts collection changed
             messenger.Register<CollectionChangedMessage<(decimal start, decimal end)>>(this, (r, m) =>
             {
                 if (m.Sender != Source || m.PropertyName != nameof(VideoSource.Cuts))
@@ -1802,7 +1819,11 @@ namespace MediaBase.Controls
             else if (Source is VideoSource video)
             {
                 IsPanAndZoomEnabled = false;
-                TimeDisplayMode = TimeDisplayFormat.FrameNumber;
+                TimeDisplayMode = TimeDisplayFormat.TimecodeWithFrame;
+
+                // Initially set timeline to the expected duration
+                // This is set again when the MediaPlayer reports it has opened a source
+                Timeline.Duration = TimeSpan.FromSeconds(decimal.ToDouble(video.Duration));
                 _player.Source = await video.GetPlaybackSourceAsync();
 
                 // Add markers to timeline
@@ -1812,9 +1833,12 @@ namespace MediaBase.Controls
                 }
 
                 // Add cuts to timeline as selections
-                foreach (var (start, end) in video.Cuts)
+                if (!video.AreCutsApplied)
                 {
-                    Timeline.AddSelection(start, end);
+                    foreach (var (start, end) in video.Cuts)
+                    {
+                        Timeline.AddSelection(start, end);
+                    }
                 }
             }
 
