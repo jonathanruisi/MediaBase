@@ -540,6 +540,8 @@ namespace MediaBase.Controls
 #if DEBUG && SHOW_DEBUG_MESSAGES
             Debug.WriteLine($"UNLOADED");
 #endif
+            ResetEditor();
+
             SwapChainCanvas.RemoveFromVisualTree();
             SwapChainCanvas.SwapChain = null;
         }

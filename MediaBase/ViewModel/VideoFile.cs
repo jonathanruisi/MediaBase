@@ -22,6 +22,7 @@ namespace MediaBase.ViewModel
         #region Fields
         private string _path;
         private StorageFile _file;
+        private bool _isReady;
         #endregion
 
         #region Properties
@@ -37,6 +38,12 @@ namespace MediaBase.ViewModel
             get => _file;
             set => SetProperty(ref _file, value);
         }
+
+        public override bool IsReady
+        {
+            get => _isReady;
+            protected set => SetProperty(ref _isReady, value);
+        }
         #endregion
 
         #region Constructors
@@ -46,6 +53,7 @@ namespace MediaBase.ViewModel
         {
             _file = file;
             _path = file?.Path;
+            _isReady = false;
             Name = file?.DisplayName;
         }
         #endregion
@@ -54,7 +62,10 @@ namespace MediaBase.ViewModel
         public async Task<bool> LoadFileFromPathAsync()
         {
             if (string.IsNullOrEmpty(Path))
+            {
+                IsReady = false;
                 return false;
+            }
 
             try
             {
@@ -67,13 +78,22 @@ namespace MediaBase.ViewModel
 
             var contentTypeString = Enum.GetName(ContentType);
             if (!File.ContentType.Contains(contentTypeString.ToLower()))
+            {
+                IsReady = false;
                 throw new InvalidOperationException($"{contentTypeString} file expected");
-
+            }
+                
             return await ReadPropertiesFromFileAsync();
         }
 
         public async Task<bool> ReadPropertiesFromFileAsync()
         {
+            if (File?.IsAvailable == false)
+            {
+                IsReady = false;
+                return false;
+            }
+
             try
             {
                 var strWidth = "System.Video.FrameWidth";
@@ -88,8 +108,13 @@ namespace MediaBase.ViewModel
                 FramesPerSecond = (uint)propResultList[strFps] / 1000.0;
                 Duration = (ulong)propResultList[strDuration] / 10000000.0M;
             }
-            catch (Exception) { return false; }
+            catch (Exception)
+            {
+                IsReady = false;
+                return false;
+            }
 
+            IsReady = true;
             return true;
         }
 
@@ -115,6 +140,14 @@ namespace MediaBase.ViewModel
             var encodingProfile = composition.CreateDefaultEncodingProfile();
             var mediaStreamSource = composition.GenerateMediaStreamSource(encodingProfile);
             return MediaSource.CreateFromMediaStreamSource(mediaStreamSource);
+        }
+        #endregion
+
+        #region Method Overrides (System.Object)
+        public override string ToString()
+        {
+            var filename = IsReady ? File.Name : "FILE NOT LOADED";
+            return $"{base.ToString()} ({filename})";
         }
         #endregion
     }

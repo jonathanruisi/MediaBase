@@ -50,23 +50,27 @@
                         <MenuFlyoutSeparator/>
                         <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectSaveCommand}"/>
                         <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectSaveAsCommand}"/>
+                        <MenuFlyoutSeparator/>
+                        <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectCloseCommand}"/>
+                        <MenuFlyoutSeparator/>
+                        <MenuFlyoutItem Command="{x:Bind ExitCommand}"/>
                     </MenuBarItem>
                     <MenuBarItem Title="Tools" Margin="0" VerticalAlignment="Bottom">
                         <MenuFlyoutItem Command="{x:Bind ViewModel.ToolsAnimateMediaCommand}"/>
                     </MenuBarItem>
                     <MenuBarItem Title="View" Margin="0" VerticalAlignment="Bottom">
                         <RadioMenuFlyoutItem GroupName="Presenter"
-                                             Command="{x:Bind ViewModel.ViewNormalCommand}"
+                                             Command="{x:Bind ViewNormalCommand}"
                                              CommandParameter="{x:Bind windowing:AppWindowPresenterKind.Default}"/>
                         <RadioMenuFlyoutItem GroupName="Presenter"
-                                             Command="{x:Bind ViewModel.ViewCompactCommand}"
+                                             Command="{x:Bind ViewCompactCommand}"
                                              CommandParameter="{x:Bind windowing:AppWindowPresenterKind.CompactOverlay}"/>
                         <RadioMenuFlyoutItem GroupName="Presenter"
-                                             Command="{x:Bind ViewModel.ViewFullscreenCommand}"
+                                             Command="{x:Bind ViewFullscreenCommand}"
                                              CommandParameter="{x:Bind windowing:AppWindowPresenterKind.FullScreen}"/>
                     </MenuBarItem>
                     <MenuBarItem Title="Help" Margin="0" VerticalAlignment="Bottom">
-                        <MenuFlyoutItem Command="{x:Bind ViewModel.HelpAboutCommand}"/>
+                        <MenuFlyoutItem Command="{x:Bind HelpAboutCommand}"/>
                     </MenuBarItem>
                 </MenuBar>
             </Grid>

@@ -42,6 +42,12 @@ namespace MediaBase.ViewModel
         public abstract MediaContentType ContentType { get; }
 
         /// <summary>
+        /// Gets a value indicating whether or not
+        /// the <see cref="MBMediaSource"/> is ready to be consumed.
+        /// </summary>
+        public abstract bool IsReady { get; protected set; }
+
+        /// <summary>
         /// Gets a <see cref="Guid"/> which uniquely identifies this object.
         /// </summary>
         [ViewModelObject(nameof(Id), XmlNodeType.Attribute, true)]

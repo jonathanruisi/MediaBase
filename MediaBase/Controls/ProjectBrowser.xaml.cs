@@ -152,13 +152,13 @@ namespace MediaBase.Controls
                 if (file.ContentType.Contains("image"))
                 {
                     var imageFile = new ImageFile(file);
-                    await imageFile.ReadPropertiesFromFileAsync();
+                    //await imageFile.ReadPropertiesFromFileAsync();
                     ViewModel.ActiveNode.Children.Add(imageFile);
                 }
                 else if (file.ContentType.Contains("video"))
                 {
                     var videoFile = new VideoFile(file);
-                    await videoFile.ReadPropertiesFromFileAsync();
+                    //await videoFile.ReadPropertiesFromFileAsync();
                     ViewModel.ActiveNode.Children.Add(videoFile);
                 }
             }
@@ -210,30 +210,30 @@ namespace MediaBase.Controls
             });
 
             // Local function to add a StorageFile to a MediaFolder node
-            async Task AddFile(StorageFile sourceFile, MediaFolder destinationFolder)
+            void AddFile(StorageFile sourceFile, MediaFolder destinationFolder)
             {
                 if (!ViewModel.MediaFileExtensions.Contains($".{sourceFile.Name.Split('.').Last()}"))
                     return;
 
                 fileCount++;
-                messenger.Send(new SetInfoBarMessage
+                /*messenger.Send(new SetInfoBarMessage
                 {
                     Title = "Importing File",
                     Message = sourceFile.Name,
                     Severity = InfoBarSeverity.Informational,
                     IsCloseable = false
-                });
+                });*/
 
                 if (sourceFile.ContentType.Contains("image"))
                 {
                     var imageFile = new ImageFile(sourceFile);
-                    await imageFile.ReadPropertiesFromFileAsync();
+                    //await imageFile.ReadPropertiesFromFileAsync();
                     destinationFolder.Children.Add(imageFile);
                 }
                 else if (sourceFile.ContentType.Contains("video"))
                 {
                     var videoFile = new VideoFile(sourceFile);
-                    await videoFile.ReadPropertiesFromFileAsync();
+                    //await videoFile.ReadPropertiesFromFileAsync();
                     destinationFolder.Children.Add(videoFile);
                 }
             }
@@ -241,6 +241,14 @@ namespace MediaBase.Controls
             // Local function to recursively add a storage folder to a ViewModel folder node
             async Task AddFolder(StorageFolder sourceFolder, MediaFolder destinationFolder)
             {
+                messenger.Send(new SetInfoBarMessage
+                {
+                    Title = "Importing Folder",
+                    Message = sourceFolder.Path,
+                    Severity = InfoBarSeverity.Informational,
+                    IsCloseable = false
+                });
+
                 var items = await sourceFolder.GetItemsAsync();
 
                 if (items.Count == 0)
@@ -253,7 +261,7 @@ namespace MediaBase.Controls
                 foreach (var item in items)
                 {
                     if (item is StorageFile file)
-                        await AddFile(file, newFolder);
+                        AddFile(file, newFolder);
                     else if (item is StorageFolder subfolder)
                         await AddFolder(subfolder, newFolder);
                 }
@@ -441,10 +449,10 @@ namespace MediaBase.Controls
         }
         #endregion
 
-        #region Event Handlers (UserControl)
+        #region Event Handlers (TreeView)
         private void ProjectBrowserTreeView_ItemInvoked(TreeView sender, TreeViewItemInvokedEventArgs args)
         {
-            if (args.InvokedItem is not MBMediaSource mediaSource)
+            if (args.InvokedItem is not MBMediaSource mediaSource || mediaSource.IsReady == false)
                 return;
 
             ViewModel.ActiveMediaSource = mediaSource;
@@ -458,6 +466,14 @@ namespace MediaBase.Controls
                 ViewModel.ActiveNode = ViewModel.MediaLibrary;
 
             e.Handled = true;
+        }
+
+        private async void ProjectBrowserTreeView_Expanding(TreeView sender, TreeViewExpandingEventArgs args)
+        {
+            if (args.Item is not ViewModelNode node)
+                return;
+
+            await Project.LoadMediaFilesAsync(node);
         }
         #endregion
 

@@ -33,6 +33,7 @@ using Windows.Foundation.Collections;
 using Windows.Graphics;
 using Windows.Storage;
 using Windows.Storage.Pickers;
+using Windows.System;
 
 using WinRT;
 using WinRT.Interop;
@@ -48,6 +49,14 @@ namespace MediaBase
 
         #region Properties
         public Project ViewModel { get; private set; }
+        #endregion
+
+        #region Commands
+        public XamlUICommand ViewNormalCommand { get; private set; }
+        public XamlUICommand ViewCompactCommand { get; private set; }
+        public XamlUICommand ViewFullscreenCommand { get; private set; }
+        public XamlUICommand HelpAboutCommand { get; private set; }
+        public XamlUICommand ExitCommand { get; private set; }
         #endregion
 
         #region Constructor
@@ -84,26 +93,6 @@ namespace MediaBase
         #endregion
 
         #region Event Handlers (Commands - CanExecuteRequested)
-        private void ProjectNewCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
-        {
-            args.CanExecute = true;
-        }
-
-        private void ProjectOpenCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
-        {
-            args.CanExecute = true;
-        }
-
-        private void ProjectSaveCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
-        {
-            args.CanExecute = ViewModel != null && ViewModel.IsActive && ViewModel.HasUnsavedChanges;
-        }
-
-        private void ProjectSaveAsCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
-        {
-            args.CanExecute = ViewModel != null && ViewModel.IsActive;
-        }
-
         private void ViewChangePresenter_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
             args.CanExecute = _appWindow != null;
@@ -113,96 +102,14 @@ namespace MediaBase
         {
             args.CanExecute = true;
         }
+
+        private void ExitCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = true;
+        }
         #endregion
 
         #region Event Handlers (Commands - ExecuteRequested)
-        private async void ProjectNewCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
-        {
-            // Prompt user to save unsaved changes (if applicable)
-            if (await PromptToSaveChanges() == false)
-                return;
-
-            var dlg = new TextPromptDialog
-            {
-                Title             = "New Project",
-                PromptText        = "Enter a name for the new project",
-                PrimaryButtonText = "OK",
-                CloseButtonText   = "Cancel",
-                XamlRoot          = Content.XamlRoot
-            };
-
-            var result = await dlg.ShowAsync();
-            if (result == ContentDialogResult.Primary)
-            {
-                ViewModel.IsActive = false;
-                ViewModel.Name = dlg.Text;
-                ViewModel.IsActive = true;
-            }
-        }
-
-        private async void ProjectOpenCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
-        {
-            // Prompt user to save unsaved changes (if applicable)
-            if (await PromptToSaveChanges() == false)
-                return;
-
-            // Prompt user for project file to open
-            var picker = new FileOpenPicker
-            {
-                ViewMode = PickerViewMode.List,
-                SuggestedStartLocation = PickerLocationId.ComputerFolder,
-                CommitButtonText = "Open Project",
-                FileTypeFilter = { ".mbp" }
-            };
-
-            InitializeWithWindow.Initialize(picker, App.WindowHandle);
-
-            var file = await picker.PickSingleFileAsync();
-            if (file == null)
-                return;
-
-            // Read project file and populate project browser
-            var newProject = (Project)await ViewModelElement.FromXmlFileAsync(file);
-            if (newProject == null)
-                return;
-
-            ViewModel.IsActive = false;
-            ViewModel.Name = newProject.Name;
-            ViewModel.File = file;
-
-            foreach (var child in newProject.MediaLibrary.Children)
-            {
-                ViewModel.MediaLibrary.Children.Add(child);
-            }
-
-            await LoadMediaFiles();
-            ViewModel.IsActive = true;
-        }
-
-        private async void ProjectSaveCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
-        {
-            if (ViewModel.File == null || !ViewModel.File.IsAvailable)
-            {
-                var saveFile = await PromptSaveLocation();
-                if (saveFile == null || !saveFile.IsAvailable)
-                    return;
-
-                ViewModel.File = saveFile;
-            }
-
-            await ViewModel.SaveAsync();
-        }
-
-        private async void ProjectSaveAsCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
-        {
-            var saveFile = await PromptSaveLocation();
-            if (saveFile == null || !saveFile.IsAvailable)
-                return;
-
-            ViewModel.File = saveFile;
-            await ViewModel.SaveAsync();
-        }
-
         private void ViewChangePresenter_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
             SwitchPresenter((AppWindowPresenterKind)args.Parameter);
@@ -212,6 +119,16 @@ namespace MediaBase
         {
 
         }
+
+        private async void ExitCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            // Prompt user to save unsaved changes (user can cancel the close)
+            if (await ViewModel.PromptToSaveChanges(Content.XamlRoot) == false)
+                return;
+
+            ViewModel.IsActive = false;
+            App.Current.Exit();
+        }
         #endregion
 
         #region Event Handlers (Window & Title Bar)
@@ -220,10 +137,9 @@ namespace MediaBase
             
         }
 
-        private async void MainWindow_Closed(object sender, WindowEventArgs args)
+        private void MainWindow_Closed(object sender, WindowEventArgs args)
         {
-            // TODO: This doesn't work
-            _ = await PromptToSaveChanges();
+            
         }
 
         private void MainWindow_SizeChanged(object sender, WindowSizeChangedEventArgs args)
@@ -278,45 +194,86 @@ namespace MediaBase
         #region Private Methods
         private void InitializeCommands()
         {
-            ViewModel.ProjectNewCommand.CanExecuteRequested +=
-                ProjectNewCommand_CanExecuteRequested;
-            ViewModel.ProjectNewCommand.ExecuteRequested +=
-                ProjectNewCommand_ExecuteRequested;
+            ViewNormalCommand = new XamlUICommand
+            {
+                Label = "Normal",
+                Description = "Normal \"overlapped\" view",
+                IconSource = new SymbolIconSource { Symbol = Symbol.BackToWindow }
+            };
 
-            ViewModel.ProjectOpenCommand.CanExecuteRequested +=
-                ProjectOpenCommand_CanExecuteRequested;
-            ViewModel.ProjectOpenCommand.ExecuteRequested +=
-                ProjectOpenCommand_ExecuteRequested;
+            ViewNormalCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.F10,
+                IsEnabled = true
+            });
 
-            ViewModel.ProjectSaveCommand.CanExecuteRequested +=
-                ProjectSaveCommand_CanExecuteRequested;
-            ViewModel.ProjectSaveCommand.ExecuteRequested +=
-                ProjectSaveCommand_ExecuteRequested;
+            ViewCompactCommand = new XamlUICommand
+            {
+                Label = "Compact",
+                Description = "Compact view"
+            };
 
-            ViewModel.ProjectSaveAsCommand.CanExecuteRequested +=
-                ProjectSaveAsCommand_CanExecuteRequested;
-            ViewModel.ProjectSaveAsCommand.ExecuteRequested +=
-                ProjectSaveAsCommand_ExecuteRequested;
+            ViewCompactCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.F11,
+                IsEnabled = true
+            });
 
-            ViewModel.ViewNormalCommand.CanExecuteRequested +=
+            ViewFullscreenCommand = new XamlUICommand
+            {
+                Label = "Fullscreen",
+                Description = "Fullscreen view",
+                IconSource = new SymbolIconSource { Symbol = Symbol.FullScreen }
+            };
+
+            ViewFullscreenCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.F12,
+                IsEnabled = true
+            });
+            
+            HelpAboutCommand = new XamlUICommand
+            {
+                Label = "About...",
+                Description = "Display information about this app",
+                IconSource = new SymbolIconSource { Symbol = (Symbol)0xE946 }
+            };
+
+            HelpAboutCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.F1,
+                IsEnabled = true
+            });
+
+            ExitCommand = new XamlUICommand
+            {
+                Label = "Exit",
+                Description = "Exit the application",
+                IconSource = new SymbolIconSource { Symbol = (Symbol)0xF3B1 }
+            };
+
+            ViewNormalCommand.CanExecuteRequested +=
                 ViewChangePresenter_CanExecuteRequested;
-            ViewModel.ViewNormalCommand.ExecuteRequested +=
+            ViewNormalCommand.ExecuteRequested +=
                 ViewChangePresenter_ExecuteRequested;
 
-            ViewModel.ViewCompactCommand.CanExecuteRequested +=
+            ViewCompactCommand.CanExecuteRequested +=
                 ViewChangePresenter_CanExecuteRequested;
-            ViewModel.ViewCompactCommand.ExecuteRequested +=
+            ViewCompactCommand.ExecuteRequested +=
                 ViewChangePresenter_ExecuteRequested;
 
-            ViewModel.ViewFullscreenCommand.CanExecuteRequested +=
+            ViewFullscreenCommand.CanExecuteRequested +=
                 ViewChangePresenter_CanExecuteRequested;
-            ViewModel.ViewFullscreenCommand.ExecuteRequested +=
+            ViewFullscreenCommand.ExecuteRequested +=
                 ViewChangePresenter_ExecuteRequested;
 
-            ViewModel.HelpAboutCommand.CanExecuteRequested +=
+            HelpAboutCommand.CanExecuteRequested +=
                 HelpAboutCommand_CanExecuteRequested;
-            ViewModel.HelpAboutCommand.ExecuteRequested +=
+            HelpAboutCommand.ExecuteRequested +=
                 HelpAboutCommand_ExecuteRequested;
+
+            ExitCommand.CanExecuteRequested += ExitCommand_CanExecuteRequested;
+            ExitCommand.ExecuteRequested += ExitCommand_ExecuteRequested;
         }
 
         private void RegisterMessages()
@@ -343,112 +300,6 @@ namespace MediaBase
                 AppInfoBar.IsClosable = m.IsCloseable;
                 AppInfoBar.IsOpen = true;
             });
-        }
-
-        private async Task LoadMediaFiles()
-        {
-            var messenger = App.Current.Services.GetService<IMessenger>();
-            var mediaFileEnumerator = ViewModel.MediaLibrary.DepthFirstEnumerable().OfType<IMediaFile>();
-            var mediaFileCount = mediaFileEnumerator.Count();
-
-            int index = 1, errors = 0;
-            foreach (var mediaFile in mediaFileEnumerator)
-            {
-                messenger.Send(new SetInfoBarMessage
-                {
-                    Title = "Opening Project",
-                    Message = $"Loading file {index} of {mediaFileCount}: {((ViewModelElement)mediaFile).Name}",
-                    Severity = InfoBarSeverity.Informational,
-                    IsCloseable = false
-                });
-
-                if (await mediaFile.LoadFileFromPathAsync() == false)
-                    errors++;
-                index++;
-            }
-
-            // Generate and display summary message
-            string message;
-            InfoBarSeverity severity;
-
-            if (errors == 0)
-            {
-                message = $"{mediaFileCount} file{(mediaFileCount != 1 ? "s" : "")} loaded successfully.";
-                severity = InfoBarSeverity.Success;
-            }
-            else if (errors == mediaFileCount)
-            {
-                message = $"Unable to load {mediaFileCount} file{(mediaFileCount != 1 ? "s" : "")}.";
-                severity = InfoBarSeverity.Error;
-            }
-            else
-            {
-                var str = new StringBuilder();
-                str.Append($"{mediaFileCount - errors} file{(mediaFileCount - errors != 1 ? "s" : "")} loaded successfully. ");
-                str.Append($"Unable to load {errors} file{(errors != 1 ? "s" : "")}.");
-                message = str.ToString();
-                severity = InfoBarSeverity.Warning;
-            }
-
-            messenger.Send(new SetInfoBarMessage
-            {
-                Title = "Project Loaded",
-                Message = message,
-                Severity = severity,
-                IsCloseable = true
-            });
-        }
-
-        private async Task<bool> PromptToSaveChanges()
-        {
-            if (!ViewModel.IsActive || !ViewModel.HasUnsavedChanges)
-                return true;
-
-            var dlg = new ContentDialog
-            {
-                Title = "Unsaved Changes",
-                Content = $"Save changes to {ViewModel.Name}?",
-                PrimaryButtonText = "Yes",
-                SecondaryButtonText = "No",
-                CloseButtonText = "Cancel",
-                XamlRoot = Content.XamlRoot
-            };
-
-            var choice = await dlg.ShowAsync();
-
-            // Cancel
-            if (choice == ContentDialogResult.None)
-                return false;
-
-            // Yes
-            if (choice == ContentDialogResult.Primary)
-            {
-                if (ViewModel.File == null || !ViewModel.File.IsAvailable)
-                {
-                    var saveFile = await PromptSaveLocation();
-                    if (saveFile == null || !saveFile.IsAvailable)
-                        return false;
-                    ViewModel.File = saveFile;
-                }
-
-                await ViewModel.SaveAsync();
-            }
-
-            return true;
-        }
-
-        private async Task<StorageFile> PromptSaveLocation()
-        {
-            var picker = new FileSavePicker
-            {
-                SuggestedStartLocation = PickerLocationId.Desktop,
-                CommitButtonText = "Save",
-                SuggestedFileName = ViewModel.Name
-            };
-
-            picker.FileTypeChoices.Add("MediaBase Project Files", new List<string> { ".mbp" });
-            InitializeWithWindow.Initialize(picker, App.WindowHandle);
-            return await picker.PickSaveFileAsync();
         }
 
         private double GetScaleAdjustment()
