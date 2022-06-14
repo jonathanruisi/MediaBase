@@ -48,6 +48,11 @@ namespace MediaBase.Controls
         {
 
         }
+
+        private void RelatedMediaListView_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+        {
+
+        }
         #endregion
 
         #region Private Methods
@@ -61,9 +66,9 @@ namespace MediaBase.Controls
                     return;
 
                 if (ViewModel.ActiveMediaSource is VideoSource videoSource)
-                    MarkerListBox.ItemsSource = videoSource.Markers;
+                    MarkerListView.ItemsSource = videoSource.Markers;
                 else
-                    MarkerListBox.ItemsSource = null;
+                    MarkerListView.ItemsSource = null;
             });
         }
         #endregion

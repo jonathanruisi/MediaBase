@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using MediaBase.ViewModel;
+
 using Microsoft.UI;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Media;
@@ -38,21 +40,6 @@ namespace MediaBase
 			if (value is not int rating)
 				throw new ArgumentException("Object must be an integer", nameof(value));
 
-			/*return rating switch
-			{
-				10 => new SolidColorBrush(Color.FromArgb(255, 0, 255, 0)),
-				9 => new SolidColorBrush(Color.FromArgb(255, 51, 255, 0)),
-				8 => new SolidColorBrush(Color.FromArgb(255, 102, 255, 0)),
-				7 => new SolidColorBrush(Color.FromArgb(255, 153, 255, 0)),
-				6 => new SolidColorBrush(Color.FromArgb(255, 204, 255, 0)),
-				5 => new SolidColorBrush(Color.FromArgb(255, 255, 255, 0)),
-				4 => new SolidColorBrush(Color.FromArgb(255, 255, 192, 0)),
-				3 => new SolidColorBrush(Color.FromArgb(255, 255, 128, 0)),
-				2 => new SolidColorBrush(Color.FromArgb(255, 255, 64, 0)),
-				1 => new SolidColorBrush(Color.FromArgb(255, 255, 0, 0)),
-				_ => new SolidColorBrush(Colors.Transparent)
-			};*/
-
 			return rating switch
 			{
 				5 => new SolidColorBrush(Colors.Orange),
@@ -62,6 +49,29 @@ namespace MediaBase
 				1 => new SolidColorBrush(Colors.LightGray),
 				_ => new SolidColorBrush(Colors.Transparent)
 			};
+		}
+
+		public object ConvertBack(object value, Type targetType, object parameter, string language)
+		{
+			throw new NotImplementedException();
+		}
+	}
+
+	public class MediaTypeToStringConverter : IValueConverter
+	{
+		public object Convert(object value, Type targetType, object parameter, string language)
+		{
+			if (value is null)
+				return string.Empty;
+
+			if (value is not MBMediaSource media)
+				throw new ArgumentException("Object must be an MBMediaSource", nameof(value));
+
+			if (media.ContentType == MediaContentType.Image)
+				return media.Duration > 0 ? "Animated Image" : "Image";
+			else if (media.ContentType == MediaContentType.Video)
+				return "Video";
+			else throw new ArgumentException("Unrecognized MBMediaSource", nameof(value));
 		}
 
 		public object ConvertBack(object value, Type targetType, object parameter, string language)

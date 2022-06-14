@@ -8,12 +8,24 @@
     xmlns:mb="using:MediaBase"
     xmlns:viewmodel="using:MediaBase.ViewModel"
     xmlns:toolkit="using:CommunityToolkit.WinUI.UI.Controls"
+    xmlns:toolkit_converters="using:CommunityToolkit.WinUI.UI.Converters"
+    xmlns:xaml="using:Microsoft.UI.Xaml"
     Loaded="UserControl_Loaded"
     Unloaded="UserControl_Unloaded">
 
     <UserControl.Resources>
         <!-- Value Converters -->
         <mb:RatingAdjustmentConverter x:Key="RatingConverter"/>
+        <mb:MediaTypeToStringConverter x:Key="MediaTypeToStringConverter"/>
+
+        <toolkit_converters:EmptyObjectToObjectConverter x:Key="ObjectToVisibilityConverter">
+            <toolkit_converters:EmptyObjectToObjectConverter.EmptyValue>
+                <xaml:Visibility>Collapsed</xaml:Visibility>
+            </toolkit_converters:EmptyObjectToObjectConverter.EmptyValue>
+            <toolkit_converters:EmptyObjectToObjectConverter.NotEmptyValue>
+                <xaml:Visibility>Visible</xaml:Visibility>
+            </toolkit_converters:EmptyObjectToObjectConverter.NotEmptyValue>
+        </toolkit_converters:EmptyObjectToObjectConverter>
     </UserControl.Resources>
     
     <Grid Background="{x:Bind Background}"
@@ -37,14 +49,18 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <TextBox x:Name="MediaInfoTypeTextBlock"
-                     Grid.Row="0"
-                     Background="#202020"
-                     Foreground="#C0C0C0"
-                     FontSize="32"
-                     FontWeight="Bold"
-                     IsReadOnly="True"
-                     Text="Placeholder"/>
+            <Border Grid.Row="0"
+                    Background="#202020"
+                    BorderBrush="#C0C0C0"
+                    BorderThickness="0,0,0,2">
+                <TextBlock Margin="5,0,0,5"
+                           Foreground="#C0C0C0"
+                           FontSize="32"
+                           FontWeight="Bold"
+                           Text="{x:Bind ViewModel.ActiveMediaSource,
+                                         Converter={StaticResource MediaTypeToStringConverter},
+                                         Mode=OneWay}"/>
+            </Border>
             
             <TextBlock x:Name="MediaInfoNameTextBlock"
                        Grid.Row="1" Margin="5"
@@ -57,23 +73,26 @@
                            HorizontalAlignment="Left"
                            Caption="Rating"
                            MaxRating="5"
+                           IsClearEnabled="True"
                            Value="{x:Bind ViewModel.ActiveMediaSource.Rating,
                                           Converter={StaticResource RatingConverter},
                                           Mode=TwoWay}"
-                           IsClearEnabled="True"/>
+                           Visibility="{x:Bind ViewModel.ActiveMediaSource,
+                                               Converter={StaticResource ObjectToVisibilityConverter},
+                                               Mode=OneWay}"/>
         </Grid>
 
         <Pivot Grid.Column="1" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
             <PivotItem Header="Chapters / Clips">
-                <ListBox x:Name="MarkerListBox"
-                         SelectionMode="Single"
-                         SelectedValue="{x:Bind ViewModel.SelectedMarker, Mode=TwoWay}">
-                    <ListBox.ItemTemplate>
+                <ListView x:Name="MarkerListView"
+                          SelectionMode="Single"
+                          SelectedValue="{x:Bind ViewModel.SelectedMarker, Mode=TwoWay}">
+                    <ListView.ItemTemplate>
                         <DataTemplate x:DataType="viewmodel:Marker">
                             <TextBlock Text="{x:Bind Name}"/>
                         </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
+                    </ListView.ItemTemplate>
+                </ListView>
             </PivotItem>
 
             <PivotItem Header="Keyframes">
@@ -81,7 +100,12 @@
             </PivotItem>
 
             <PivotItem Header="Related Media">
-                
+                <ListView x:Name="RelatedMediaListView"
+                          IsDoubleTapEnabled="True"
+                          SelectionMode="Single"
+                          DoubleTapped="RelatedMediaListView_DoubleTapped">
+                    
+                </ListView>
             </PivotItem>
         </Pivot>
 
@@ -91,18 +115,24 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <TextBox Grid.Row="0"
-                     Background="#202020"
-                     Foreground="#C0C0C0"
-                     FontSize="32"
-                     FontWeight="Bold"
-                     IsReadOnly="True"
-                     Text="Tags"/>
+            <Border Grid.Row="0"
+                    Background="#202020"
+                    BorderBrush="#C0C0C0"
+                    BorderThickness="0,0,0,2">
+                <TextBlock Margin="5,0,0,5"
+                           Foreground="#C0C0C0"
+                           FontSize="32"
+                           FontWeight="Bold"
+                           Text="Tags"/>
+            </Border>
 
             <toolkit:TokenizingTextBox x:Name="TagTokenizer" Grid.Row="1"
                                        TokenDelimiter=","
                                        ItemsSource="{x:Bind ViewModel.ActiveMediaSource.Tags, Mode=OneWay}"
-                                       SuggestedItemsSource="{x:Bind ViewModel.TagDatabase, Mode=OneTime}"/>
+                                       SuggestedItemsSource="{x:Bind ViewModel.TagDatabase, Mode=OneTime}"
+                                       Visibility="{x:Bind ViewModel.ActiveMediaSource,
+                                                           Converter={StaticResource ObjectToVisibilityConverter},
+                                                           Mode=OneWay}"/>
         </Grid>
     </Grid>
 </UserControl>
