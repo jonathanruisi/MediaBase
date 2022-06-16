@@ -1,6 +1,4 @@
-﻿//#define SHOW_DEBUG_MESSAGES
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -362,9 +360,6 @@ namespace MediaBase.Controls
                 TimeSpan.FromTicks((int)(1.0 / editor.FramesPerSecond * 10000000));
 
             // Timeline's FPS value is set through data binding
-#if DEBUG && SHOW_DEBUG_MESSAGES
-            Debug.WriteLine($"FPS changed: {editor.FramesPerSecond}");
-#endif
         }
 
         private static async void OnSourceChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -381,18 +376,13 @@ namespace MediaBase.Controls
             // Refresh commands and UI state
             editor.RefreshCommandStates();
             editor.RefreshUI();
-#if DEBUG && SHOW_DEBUG_MESSAGES
-            Debug.WriteLine($"Source changed: {editor.Source}");
-#endif
         }
 
         private static void OnPlaybackStateChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             if (d is not MediaEditor editor)
                 return;
-#if DEBUG && SHOW_DEBUG_MESSAGES
-            Debug.WriteLine($"Playback state changed: {Enum.GetName(editor.PlaybackState)}");
-#endif
+
             if (editor.PlaybackState == MediaPlaybackState.None)
                 editor._redrawTimer.Stop();
             else
@@ -408,9 +398,7 @@ namespace MediaBase.Controls
                 editor.PlayButton.Visibility = Visibility.Visible;
                 editor.PauseButton.Visibility = Visibility.Collapsed;
             }
-#if DEBUG && SHOW_DEBUG_MESSAGES
-            Debug.WriteLine($"    Redraw timer running: {editor._redrawTimer.IsRunning}");
-#endif
+
             editor.RefreshCommandStates();
         }
 
@@ -418,9 +406,7 @@ namespace MediaBase.Controls
         {
             if (d is not MediaEditor editor)
                 return;
-#if DEBUG && SHOW_DEBUG_MESSAGES
-            Debug.WriteLine($"Playback rate changed: {editor.PlaybackRate}");
-#endif
+
             editor.ViewModel.EditorPlaybackRateDecreaseCommand.NotifyCanExecuteChanged();
             editor.ViewModel.EditorPlaybackRateNormalCommand.NotifyCanExecuteChanged();
             editor.ViewModel.EditorPlaybackRateIncreaseCommand.NotifyCanExecuteChanged();
@@ -438,10 +424,7 @@ namespace MediaBase.Controls
         {
             if (d is not MediaEditor editor || editor.Source == null)
                 return;
-#if DEBUG && SHOW_DEBUG_MESSAGES
-            if (editor.PlaybackState != MediaPlaybackState.Playing)
-                Debug.WriteLine($"CURRENT FRAME: {editor.CurrentFrame}");
-#endif
+
             // Frame change was not due to the user interacting with the timeline,
             // therefore the timeline needs to be synchronized to the frame count.
             if (editor._scrubType == ValueDragType.None)
@@ -477,9 +460,7 @@ namespace MediaBase.Controls
         {
             if (d is not MediaEditor editor)
                 return;
-#if DEBUG && SHOW_DEBUG_MESSAGES
-            Debug.WriteLine($"Frame offset changed: ({editor.FrameOffsetX}, {editor.FrameOffsetY})");
-#endif
+
             editor.ViewModel.EditorCenterFrameCommand.NotifyCanExecuteChanged();
         }
 
@@ -487,9 +468,7 @@ namespace MediaBase.Controls
         {
             if (d is not MediaEditor editor)
                 return;
-#if DEBUG && SHOW_DEBUG_MESSAGES
-            Debug.WriteLine($"Cursor changed: {e.Property}");
-#endif
+
             if (e.Property == PrimaryCursorShapeProperty)
             {
                 editor._primaryCursor = InputSystemCursor.Create((InputSystemCursorShape)e.NewValue);
@@ -514,9 +493,6 @@ namespace MediaBase.Controls
         #region Event Handlers (UserControl)
         private void UserControl_Loaded(object sender, RoutedEventArgs e)
         {
-#if DEBUG && SHOW_DEBUG_MESSAGES
-            Debug.WriteLine("LOADED");
-#endif
             // Initialize timeline
             Timeline.PositionChanged += Timeline_PositionChanged;
             Timeline.SelectionChanged += Timeline_SelectionChanged;
@@ -537,9 +513,6 @@ namespace MediaBase.Controls
 
         private void UserControl_Unloaded(object sender, RoutedEventArgs e)
         {
-#if DEBUG && SHOW_DEBUG_MESSAGES
-            Debug.WriteLine($"UNLOADED");
-#endif
             ResetEditor();
 
             SwapChainCanvas.RemoveFromVisualTree();
@@ -550,15 +523,11 @@ namespace MediaBase.Controls
         #region Event Handlers (Media Player)
         private void Player_MediaOpened(MediaPlayer sender, object args)
         {
-#if DEBUG && SHOW_DEBUG_MESSAGES
-            Debug.WriteLine($"MEDIA OPENED");
-#endif
             if (DispatcherQueue == null)
                 return;
 
             DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, () =>
             {
-                Timeline.Duration = sender.PlaybackSession.NaturalDuration;
                 Timeline.IsSelectionEnabled = false;
                 Timeline.IsPositionAdjustmentEnabled = true;
                 Timeline.IsSelectionAdjustmentEnabled = true;
@@ -570,9 +539,6 @@ namespace MediaBase.Controls
 
         private void Player_MediaEnded(MediaPlayer sender, object args)
         {
-#if DEBUG && SHOW_DEBUG_MESSAGES
-            Debug.WriteLine($"MEDIA ENDED");
-#endif
             if (DispatcherQueue != null)
                 DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, () =>
                 {
@@ -588,18 +554,12 @@ namespace MediaBase.Controls
 
         private void Player_MediaFailed(MediaPlayer sender, MediaPlayerFailedEventArgs args)
         {
-#if DEBUG && SHOW_DEBUG_MESSAGES
-            Debug.WriteLine($"MEDIA FAILED");
-#endif
             if (DispatcherQueue != null)
                 DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, RefreshCommandStates);
         }
 
         private void PlaybackSession_PlaybackStateChanged(MediaPlaybackSession sender, object args)
         {
-#if DEBUG && SHOW_DEBUG_MESSAGES
-            Debug.WriteLine($"Playback state changed (MediaPlayer): {Enum.GetName(sender.PlaybackState)}");
-#endif
             if (DispatcherQueue != null)
                 DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, () =>
                 {
@@ -609,9 +569,6 @@ namespace MediaBase.Controls
 
         private void PlaybackSession_PlaybackRateChanged(MediaPlaybackSession sender, object args)
         {
-#if DEBUG && SHOW_DEBUG_MESSAGES
-            Debug.WriteLine($"Playback rate changed (MediaPlayer): {sender.PlaybackRate}");
-#endif
             if (DispatcherQueue != null)
                 DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, () =>
                 {
@@ -624,19 +581,12 @@ namespace MediaBase.Controls
             if (DispatcherQueue != null)
                 DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, () =>
                 {
-#if DEBUG && SHOW_DEBUG_MESSAGES
-                    if (PlaybackState != MediaPlaybackState.Playing)
-                        Debug.WriteLine($"Position changed (MediaPlayer): {sender.Position}");
-#endif
                     CurrentPosition = sender.Position;
                 });
         }
 
         private void PlaybackSession_SeekCompleted(MediaPlaybackSession sender, object args)
         {
-#if DEBUG && SHOW_DEBUG_MESSAGES
-            Debug.WriteLine($"Seek completed (MediaPlayer)");
-#endif
             if (DispatcherQueue != null && _scrubType == ValueDragType.Position ||
                                            _scrubType == ValueDragType.SelectionStart ||
                                            _scrubType == ValueDragType.SelectionEnd ||
@@ -864,27 +814,18 @@ namespace MediaBase.Controls
 
         private void Timeline_SelectionChanged(object sender, (decimal start, decimal end, bool isEnabled) e)
         {
-#if DEBUG && SHOW_DEBUG_MESSAGES
-            Debug.WriteLine($"Selection changed (Timeline): ({Timeline.SelectionStart:0.000}, {Timeline.SelectionEnd:0.000})");
-#endif
             ViewModel.EditorNewClipCommand.NotifyCanExecuteChanged();
             ViewModel.EditorCutSelectedCommand.NotifyCanExecuteChanged();
         }
 
         private void Timeline_ZoomChanged(object sender, (decimal start, decimal end) e)
         {
-#if DEBUG && SHOW_DEBUG_MESSAGES
-            Debug.WriteLine($"Zoom changed (Timeline): ({Timeline.ZoomStart:0.000}, {Timeline.ZoomEnd:0.000})");
-#endif
             ViewModel.EditorTimelineZoomInCommand.NotifyCanExecuteChanged();
             ViewModel.EditorTimelineZoomOutCommand.NotifyCanExecuteChanged();
         }
 
         private void Timeline_DragStarted(object sender, ValueDragType e)
         {
-#if DEBUG && SHOW_DEBUG_MESSAGES
-            Debug.WriteLine($"Drag started (Timeline): {Enum.GetName(typeof(ValueDragType), e)}");
-#endif
             _scrubType = e;
             _prevFollowMode = Timeline.PositionFollowMode;
             Timeline.PositionFollowMode = FollowMode.NoFollow;
@@ -920,9 +861,6 @@ namespace MediaBase.Controls
 
         private void Timeline_DragCompleted(object sender, ValueDragType e)
         {
-#if DEBUG && SHOW_DEBUG_MESSAGES
-            Debug.WriteLine($"Drag started (Timeline): {Enum.GetName(typeof(ValueDragType), e)}");
-#endif
             // Set playback to playhead position
             if (e == ValueDragType.Position ||
                 e == ValueDragType.SelectionStart ||
@@ -976,9 +914,6 @@ namespace MediaBase.Controls
 
         private void Timeline_TrackCountChanged(object sender, int e)
         {
-#if DEBUG && SHOW_DEBUG_MESSAGES
-            Debug.WriteLine($"Track count changed: {e}");
-#endif
             var delta = e - _trackCount;
             Timeline.Height += delta * (Timeline.TrackHeight + Timeline.TrackSpacing);
             _trackCount = e;
@@ -1739,7 +1674,6 @@ namespace MediaBase.Controls
                 MediaPlaybackState.Playing)
             {
                 _player.Pause();
-                while (PlaybackState != MediaPlaybackState.Paused) ; // TODO: Better way perhaps?
             }
 
             _redrawTimer.Stop();
@@ -1823,9 +1757,9 @@ namespace MediaBase.Controls
                 IsPanAndZoomEnabled = false;
                 TimeDisplayMode = TimeDisplayFormat.TimecodeWithFrame;
 
-                // Initially set timeline to the expected duration
-                // This is set again when the MediaPlayer reports it has opened a source
-                Timeline.Duration = TimeSpan.FromSeconds(decimal.ToDouble(video.Duration));
+                Timeline.Duration = TimeSpan.FromSeconds(decimal.ToDouble(
+                    video.AreCutsApplied ? video.TrimmedDuration : video.Duration));
+                Timeline.Position = 0;
                 _player.Source = await video.GetPlaybackSourceAsync();
 
                 // Add markers to timeline

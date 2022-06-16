@@ -70,6 +70,8 @@
                                              CommandParameter="{x:Bind windowing:AppWindowPresenterKind.FullScreen}"/>
                     </MenuBarItem>
                     <MenuBarItem Title="Help" Margin="0" VerticalAlignment="Bottom">
+                        <MenuFlyoutItem Command="{x:Bind HelpDebugLogWindowCommand}"/>
+                        <MenuFlyoutSeparator/>
                         <MenuFlyoutItem Command="{x:Bind HelpAboutCommand}"/>
                     </MenuBarItem>
                 </MenuBar>

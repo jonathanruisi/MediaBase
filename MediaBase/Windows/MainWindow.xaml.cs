@@ -55,6 +55,7 @@ namespace MediaBase
         public XamlUICommand ViewNormalCommand { get; private set; }
         public XamlUICommand ViewCompactCommand { get; private set; }
         public XamlUICommand ViewFullscreenCommand { get; private set; }
+        public XamlUICommand HelpDebugLogWindowCommand { get; private set; }
         public XamlUICommand HelpAboutCommand { get; private set; }
         public XamlUICommand ExitCommand { get; private set; }
         #endregion
@@ -98,6 +99,11 @@ namespace MediaBase
             args.CanExecute = _appWindow != null;
         }
 
+        private void HelpDebugLogWindowCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = true;
+        }
+
         private void HelpAboutCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
             args.CanExecute = true;
@@ -113,6 +119,12 @@ namespace MediaBase
         private void ViewChangePresenter_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
             SwitchPresenter((AppWindowPresenterKind)args.Parameter);
+        }
+
+        private void HelpDebugLogWindowCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            var logWindow = new LogWindow();
+            logWindow.Activate();
         }
 
         private void HelpAboutCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
@@ -203,7 +215,7 @@ namespace MediaBase
 
             ViewNormalCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
-                Key = VirtualKey.F10,
+                Key = VirtualKey.F9,
                 IsEnabled = true
             });
 
@@ -215,7 +227,7 @@ namespace MediaBase
 
             ViewCompactCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
-                Key = VirtualKey.F11,
+                Key = VirtualKey.F10,
                 IsEnabled = true
             });
 
@@ -228,10 +240,23 @@ namespace MediaBase
 
             ViewFullscreenCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
+                Key = VirtualKey.F11,
+                IsEnabled = true
+            });
+
+            HelpDebugLogWindowCommand = new XamlUICommand
+            {
+                Label = "Debug Log...",
+                Description = "Open the live debug log window",
+                IconSource = new SymbolIconSource { Symbol = (Symbol)0xEBE8 }
+            };
+
+            HelpDebugLogWindowCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
                 Key = VirtualKey.F12,
                 IsEnabled = true
             });
-            
+
             HelpAboutCommand = new XamlUICommand
             {
                 Label = "About...",
@@ -252,25 +277,20 @@ namespace MediaBase
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xF3B1 }
             };
 
-            ViewNormalCommand.CanExecuteRequested +=
-                ViewChangePresenter_CanExecuteRequested;
-            ViewNormalCommand.ExecuteRequested +=
-                ViewChangePresenter_ExecuteRequested;
+            ViewNormalCommand.CanExecuteRequested += ViewChangePresenter_CanExecuteRequested;
+            ViewNormalCommand.ExecuteRequested += ViewChangePresenter_ExecuteRequested;
 
-            ViewCompactCommand.CanExecuteRequested +=
-                ViewChangePresenter_CanExecuteRequested;
-            ViewCompactCommand.ExecuteRequested +=
-                ViewChangePresenter_ExecuteRequested;
+            ViewCompactCommand.CanExecuteRequested += ViewChangePresenter_CanExecuteRequested;
+            ViewCompactCommand.ExecuteRequested += ViewChangePresenter_ExecuteRequested;
 
-            ViewFullscreenCommand.CanExecuteRequested +=
-                ViewChangePresenter_CanExecuteRequested;
-            ViewFullscreenCommand.ExecuteRequested +=
-                ViewChangePresenter_ExecuteRequested;
+            ViewFullscreenCommand.CanExecuteRequested += ViewChangePresenter_CanExecuteRequested;
+            ViewFullscreenCommand.ExecuteRequested += ViewChangePresenter_ExecuteRequested;
 
-            HelpAboutCommand.CanExecuteRequested +=
-                HelpAboutCommand_CanExecuteRequested;
-            HelpAboutCommand.ExecuteRequested +=
-                HelpAboutCommand_ExecuteRequested;
+            HelpDebugLogWindowCommand.CanExecuteRequested += HelpDebugLogWindowCommand_CanExecuteRequested;
+            HelpDebugLogWindowCommand.ExecuteRequested += HelpDebugLogWindowCommand_ExecuteRequested;
+
+            HelpAboutCommand.CanExecuteRequested += HelpAboutCommand_CanExecuteRequested;
+            HelpAboutCommand.ExecuteRequested += HelpAboutCommand_ExecuteRequested;
 
             ExitCommand.CanExecuteRequested += ExitCommand_CanExecuteRequested;
             ExitCommand.ExecuteRequested += ExitCommand_ExecuteRequested;

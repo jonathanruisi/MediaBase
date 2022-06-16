@@ -47,7 +47,7 @@ namespace MediaBase
         #endregion
 
         #region Public Methods
-        public async void ShowMessageBoxAsync(string content, string title)
+        public static async void ShowMessageBoxAsync(string content, string title)
         {
             var messageDialog = new MessageDialog(content, title);
             InitializeWithWindow.Initialize(messageDialog, WindowHandle);
