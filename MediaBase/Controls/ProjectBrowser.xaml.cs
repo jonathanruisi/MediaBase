@@ -77,7 +77,7 @@ namespace MediaBase.Controls
 
         private void ProjectRemoveAllCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = ViewModel != null && ViewModel.IsActive && ViewModel.MediaLibrary.Children.Count > 0;
+            args.CanExecute = ViewModel != null && ViewModel.IsActive && ViewModel.Children.Count > 0;
         }
 
         private void ProjectRenameItemCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
@@ -129,6 +129,7 @@ namespace MediaBase.Controls
             {
                 picker.FileTypeFilter.Add(filter);
             }
+            picker.FileTypeFilter.Add(".mbp");
 
             InitializeWithWindow.Initialize(picker, App.WindowHandle);
 
@@ -149,7 +150,13 @@ namespace MediaBase.Controls
 
             foreach (var file in files)
             {
-                if (file.ContentType.Contains("image"))
+                if (file.FileType == ".mbp")
+                {
+                    var newProject = (Project)await ViewModelElement.FromXmlFileAsync(file);
+                    newProject.File = file;
+                    ViewModel.ActiveNode.Children.Add(newProject);
+                }
+                else if (file.ContentType.Contains("image"))
                 {
                     var imageFile = new ImageFile(file);
                     //await imageFile.ReadPropertiesFromFileAsync();
@@ -210,12 +217,11 @@ namespace MediaBase.Controls
             });
 
             // Local function to add a StorageFile to a MediaFolder node
-            void AddFile(StorageFile sourceFile, MediaFolder destinationFolder)
+            async Task AddFile(StorageFile sourceFile, MediaFolder destinationFolder)
             {
                 if (!ViewModel.MediaFileExtensions.Contains($".{sourceFile.Name.Split('.').Last()}"))
                     return;
 
-                fileCount++;
                 /*messenger.Send(new SetInfoBarMessage
                 {
                     Title = "Importing File",
@@ -224,17 +230,25 @@ namespace MediaBase.Controls
                     IsCloseable = false
                 });*/
 
-                if (sourceFile.ContentType.Contains("image"))
+                if (sourceFile.FileType == ".mbp")
+                {
+                    var newProject = (Project)await ViewModelElement.FromXmlFileAsync(sourceFile);
+                    newProject.File = sourceFile;
+                    destinationFolder.Children.Add(newProject);
+                }
+                else if (sourceFile.ContentType.Contains("image"))
                 {
                     var imageFile = new ImageFile(sourceFile);
                     //await imageFile.ReadPropertiesFromFileAsync();
                     destinationFolder.Children.Add(imageFile);
+                    fileCount++;
                 }
                 else if (sourceFile.ContentType.Contains("video"))
                 {
                     var videoFile = new VideoFile(sourceFile);
                     //await videoFile.ReadPropertiesFromFileAsync();
                     destinationFolder.Children.Add(videoFile);
+                    fileCount++;
                 }
             }
 
@@ -261,7 +275,7 @@ namespace MediaBase.Controls
                 foreach (var item in items)
                 {
                     if (item is StorageFile file)
-                        AddFile(file, newFolder);
+                        await AddFile(file, newFolder);
                     else if (item is StorageFolder subfolder)
                         await AddFolder(subfolder, newFolder);
                 }
@@ -270,7 +284,7 @@ namespace MediaBase.Controls
 
         private void ProjectRemoveItemCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            ViewModel.MediaLibrary.Remove(ViewModel.ActiveNode);
+            ViewModel.Remove(ViewModel.ActiveNode);
             ViewModel.ActiveNode = null;
         }
 
@@ -279,13 +293,13 @@ namespace MediaBase.Controls
             var nodesToRemove = ProjectBrowserTreeView.SelectedNodes.ToArray();
             foreach (var node in nodesToRemove)
             {
-                ViewModel.MediaLibrary.Remove(node.Content as ViewModelNode);
+                ViewModel.Remove(node.Content as ViewModelNode);
             }
         }
 
         private void ProjectRemoveAllCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            ViewModel.MediaLibrary.Children.Clear();
+            ViewModel.Children.Clear();
         }
 
         private async void ProjectRenameItemCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
@@ -336,22 +350,22 @@ namespace MediaBase.Controls
             var itemsToProcess = new List<MBMediaSource>();
             if (dlg.ActOnCategory1 && dlg.Category1Count > 0)
             {
-                itemsToProcess.AddRange(ViewModel.MediaLibrary.DepthFirstEnumerable().OfType<MBMediaSource>().Where(x => x.IsCategory1));
+                itemsToProcess.AddRange(ViewModel.DepthFirstEnumerable().OfType<MBMediaSource>().Where(x => x.IsCategory1));
             }
 
             if (dlg.ActOnCategory2 && dlg.Category2Count > 0)
             {
-                itemsToProcess.AddRange(ViewModel.MediaLibrary.DepthFirstEnumerable().OfType<MBMediaSource>().Where(x => x.IsCategory2));
+                itemsToProcess.AddRange(ViewModel.DepthFirstEnumerable().OfType<MBMediaSource>().Where(x => x.IsCategory2));
             }
 
             if (dlg.ActOnCategory3 && dlg.Category3Count > 0)
             {
-                itemsToProcess.AddRange(ViewModel.MediaLibrary.DepthFirstEnumerable().OfType<MBMediaSource>().Where(x => x.IsCategory3));
+                itemsToProcess.AddRange(ViewModel.DepthFirstEnumerable().OfType<MBMediaSource>().Where(x => x.IsCategory3));
             }
 
             if (dlg.ActOnCategory4 && dlg.Category4Count > 0)
             {
-                itemsToProcess.AddRange(ViewModel.MediaLibrary.DepthFirstEnumerable().OfType<MBMediaSource>().Where(x => x.IsCategory4));
+                itemsToProcess.AddRange(ViewModel.DepthFirstEnumerable().OfType<MBMediaSource>().Where(x => x.IsCategory4));
             }
 
             // Process items based on selected action
@@ -369,7 +383,7 @@ namespace MediaBase.Controls
                             Severity = InfoBarSeverity.Informational,
                             IsCloseable = false
                         });
-                        ViewModel.MediaLibrary.Remove(item);
+                        ViewModel.Remove(item);
                         await (item as IMediaFile).File.DeleteAsync();
                         currentItem++;
                     }
@@ -463,7 +477,7 @@ namespace MediaBase.Controls
             if (sender is TreeViewItem item)
                 ViewModel.ActiveNode = item.DataContext as ViewModelNode;
             else
-                ViewModel.ActiveNode = ViewModel.MediaLibrary;
+                ViewModel.ActiveNode = ViewModel;
 
             e.Handled = true;
         }

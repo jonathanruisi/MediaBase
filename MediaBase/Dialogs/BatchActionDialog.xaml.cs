@@ -161,10 +161,10 @@ namespace MediaBase.Dialogs
         #region Event Handlers (ContentDialog)
         private void ContentDialog_Loaded(object sender, RoutedEventArgs e)
         {
-            Category1Count = ViewModel.MediaLibrary.DepthFirstEnumerable().OfType<MBMediaSource>().Count(x => x.IsCategory1);
-            Category2Count = ViewModel.MediaLibrary.DepthFirstEnumerable().OfType<MBMediaSource>().Count(x => x.IsCategory2);
-            Category3Count = ViewModel.MediaLibrary.DepthFirstEnumerable().OfType<MBMediaSource>().Count(x => x.IsCategory3);
-            Category4Count = ViewModel.MediaLibrary.DepthFirstEnumerable().OfType<MBMediaSource>().Count(x => x.IsCategory4);
+            Category1Count = ViewModel.DepthFirstEnumerable().OfType<MBMediaSource>().Count(x => x.IsCategory1);
+            Category2Count = ViewModel.DepthFirstEnumerable().OfType<MBMediaSource>().Count(x => x.IsCategory2);
+            Category3Count = ViewModel.DepthFirstEnumerable().OfType<MBMediaSource>().Count(x => x.IsCategory3);
+            Category4Count = ViewModel.DepthFirstEnumerable().OfType<MBMediaSource>().Count(x => x.IsCategory4);
 
             if (Category1Count == 0)
                 Category1ToggleButton.IsEnabled = false;

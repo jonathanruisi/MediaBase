@@ -36,7 +36,7 @@ namespace MediaBase.ViewModel
     /// MediaBASE project ViewModel
     /// </summary>
     [ViewModelObject("Project", XmlNodeType.Element)]
-    public sealed partial class Project : ViewModelElement
+    public sealed partial class Project : MediaFolder
     {
         #region Fields
         public readonly string[] MediaFileExtensions = new[]
@@ -53,12 +53,6 @@ namespace MediaBase.ViewModel
         #endregion
 
         #region Properties
-        /// <summary>
-        /// Gets the root of this <see cref="Project"/>'s media library.
-        /// </summary>
-        [ViewModelObject(MediaLibraryName, XmlNodeType.Element)]
-        public MediaFolder MediaLibrary { get; set; }
-
         /// <summary>
         /// Gets a value indicating whether or not there are changes to
         /// this <see cref="Project"/> that have yet to be saved.
@@ -143,6 +137,10 @@ namespace MediaBase.ViewModel
         }
 
         public HashSet<string> TagDatabase { get; }
+
+        public int FileCount => DepthFirstEnumerable().OfType<IMediaFile>().Count();
+
+        public int FolderCount => DepthFirstEnumerable().OfType<MediaFolder>().Count();
         #endregion
 
         #region Commands
@@ -207,7 +205,6 @@ namespace MediaBase.ViewModel
             _activeProjectNode = null;
             _activeMediaSource = null;
             _selectedMarker = null;
-            MediaLibrary = new MediaFolder { Name = MediaLibraryName };
             TagDatabase = new HashSet<string>();
 
             InitializeCommands();
@@ -235,6 +232,18 @@ namespace MediaBase.ViewModel
             {
                 throw new InvalidOperationException(
                     "The StorageFile associated with this project is not available");
+            }
+
+            HijackMemberViewModelElementSerialization = (p) =>
+            {
+                return new SerializedViewModelElementReference { Path = ((Project)p).File.Path };
+            };
+
+            // Find and save all nested projects
+            foreach (var project in DepthFirstEnumerable().OfType<Project>())
+            {
+                if (project != this)
+                    await project.SaveAsync();
             }
 
             // Create a temporary backup of the current save file,
@@ -349,6 +358,28 @@ namespace MediaBase.ViewModel
             var messenger = App.Current.Services.GetService<IMessenger>();
 
             int count = 0, errors = 0;
+
+            // Project files
+            var modificationList = new List<(SerializedViewModelElementReference fileRef, int index, Project project)>();
+            foreach (var fileRef in node.Children.OfType<SerializedViewModelElementReference>())
+            {
+                modificationList.Add((fileRef, node.Children.IndexOf(fileRef), (Project)await fileRef.DeserializeFromPathAsync()));
+            }
+
+            foreach (var (fileRef, index, project) in modificationList)
+            {
+                if (index == -1 || project == null)
+                    errors++;
+                else
+                {
+                    project.File = fileRef.File;
+                    fileRef.Parent.Children[index] = project;
+                }
+
+                count++;
+            }
+
+            // Media files
             foreach (var file in node.Children.OfType<IMediaFile>())
             {
                 if ((file as MBMediaSource).IsReady)
@@ -399,8 +430,8 @@ namespace MediaBase.ViewModel
 
             Messenger.Unregister<SerializedPropertyChangedMessage>(this);
 
-            MediaLibrary.Children.Clear();
-            ActiveNode = MediaLibrary;
+            Children.Clear();
+            ActiveNode = this;
             ActiveMediaSource = null;
             SelectedMarker = null;
             HasUnsavedChanges = false;
@@ -524,13 +555,13 @@ namespace MediaBase.ViewModel
             Name = newProject.Name;
             File = file;
 
-            foreach (var child in newProject.MediaLibrary.Children)
+            foreach (var child in newProject.Children)
             {
-                MediaLibrary.Children.Add(child);
+                Children.Add(child);
             }
 
             // Load any files in the root project folder (because they are visible in the project browser)
-            await LoadMediaFilesAsync(MediaLibrary);
+            await LoadMediaFilesAsync(this);
             IsActive = true;
         }
 

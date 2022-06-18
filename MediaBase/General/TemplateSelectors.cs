@@ -13,23 +13,21 @@ namespace MediaBase
 {
 	public class ProjectItemTemplateSelector : DataTemplateSelector
 	{
+		public DataTemplate ProjectFileTemplate { get; set; }
 		public DataTemplate FolderTemplate { get; set; }
 		public DataTemplate ImageFileTemplate { get; set; }
 		public DataTemplate VideoFileTemplate { get; set; }
 
 		protected override DataTemplate SelectTemplateCore(object item)
 		{
-			switch (item)
-			{
-				case MediaFolder:
-					return FolderTemplate;
-				case ImageFile:
-					return ImageFileTemplate;
-				case VideoFile:
-					return VideoFileTemplate;
-				default:
-					return null;
-			}
-		}
+            return item switch
+            {
+                Project     => ProjectFileTemplate,
+                MediaFolder => FolderTemplate,
+                ImageFile   => ImageFileTemplate,
+                VideoFile   => VideoFileTemplate,
+                _           => null
+            };
+        }
 	}
 }

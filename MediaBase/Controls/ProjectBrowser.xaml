@@ -68,6 +68,34 @@
         </MenuFlyout>
 
         <!-- Data Templates -->
+        <DataTemplate x:Key="ProjectFileDataTemplate"
+                      x:DataType="viewmodel:Project">
+            <TreeViewItem ItemsSource="{x:Bind Children}"
+                          ContextFlyout="{StaticResource MenuFlyout_ProjectBrowserFolderActions}"
+                          IsSelected="{Binding IsSelected, Mode=TwoWay}"
+                          RightTapped="ProjectBrowserTreeView_RightTapped">
+                <TreeViewItem.Content>
+                    <StackPanel Orientation="Horizontal">
+                        <FontIcon x:Name="Symbol"
+                                  Glyph="&#xE8F1;"
+                                  FontFamily="Segoe Fluent Icons"
+                                  Margin="0,0,10,0">
+                            <interactivity:Interaction.Behaviors>
+                                <core:DataTriggerBehavior Binding="{x:Bind HasUnsavedChanges}" Value="True">
+                                    <core:ChangePropertyAction TargetObject="{Binding ElementName=Symbol}"
+                                                               PropertyName="Foreground"
+                                                               Value="Red"/>
+                                </core:DataTriggerBehavior>
+                            </interactivity:Interaction.Behaviors>
+                        </FontIcon>
+                        <TextBlock HorizontalAlignment="Left"
+                                   VerticalAlignment="Center"
+                                   Text="{x:Bind Name, Mode=OneWay}"/>
+                    </StackPanel>
+                </TreeViewItem.Content>
+            </TreeViewItem>
+        </DataTemplate>
+        
         <DataTemplate x:Key="ProjectFolderDataTemplate"
                       x:DataType="viewmodel:MediaFolder">
             <TreeViewItem x:Name="Item"
@@ -230,6 +258,7 @@
         </DataTemplate>
 
         <mb:ProjectItemTemplateSelector x:Key="ProjectItemTemplateSelector"
+                                        ProjectFileTemplate="{StaticResource ProjectFileDataTemplate}"
                                         FolderTemplate="{StaticResource ProjectFolderDataTemplate}"
                                         ImageFileTemplate="{StaticResource ProjectImageDataTemplate}"
                                         VideoFileTemplate="{StaticResource ProjectVideoDataTemplate}"/>
@@ -239,7 +268,7 @@
         <TreeView x:Name="ProjectBrowserTreeView"
                   HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                   SelectionMode="Single"
-                  ItemsSource="{x:Bind ViewModel.MediaLibrary.Children, Mode=OneWay}"
+                  ItemsSource="{x:Bind ViewModel.Children, Mode=OneWay}"
                   ItemTemplateSelector="{StaticResource ProjectItemTemplateSelector}"
                   ContextFlyout="{StaticResource MenuFlyout_ProjectBrowserActions}"
                   ItemInvoked="ProjectBrowserTreeView_ItemInvoked"
