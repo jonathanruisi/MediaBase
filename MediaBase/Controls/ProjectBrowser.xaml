@@ -114,6 +114,9 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
@@ -138,26 +141,41 @@
                                   Glyph="&#xEB9F;"
                                   Margin="3,0,10,0"/>
 
-                        <TextBlock Grid.Column="3"
+                        <TextBlock Grid.Row="3"
+                                   Foreground="Green"
+                                   Text="SS"
+                                   Visibility="{x:Bind IsSequenceStart}"/>
+
+                        <TextBlock Grid.Row="4"
+                                   Foreground="Green"
+                                   Text="S"
+                                   Visibility="{x:Bind IsWithinSequence}"/>
+
+                        <TextBlock Grid.Row="5"
+                                   Foreground="Green"
+                                   Text="SE"
+                                   Visibility="{x:Bind IsSequenceEnd}"/>
+
+                        <TextBlock Grid.Column="6"
                                    HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Left"
                                    Text="{x:Bind Name, Mode=OneWay}"/>
 
-                        <Polygon Grid.Column="4"
+                        <Polygon Grid.Column="7"
                                  Fill="Gold" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
                                  Points="0,20,10,0,20,20" VerticalAlignment="Center" Margin="0,0,3,0"
                                  Visibility="{x:Bind IsCategory1, Mode=OneWay}"/>
 
-                        <Rectangle Grid.Column="5"
+                        <Rectangle Grid.Column="8"
                                    Fill="CornflowerBlue" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
                                    VerticalAlignment="Center" Margin="0,0,3,0"
                                    Visibility="{x:Bind IsCategory2, Mode=OneWay}"/>
 
-                        <Ellipse Grid.Column="6"
+                        <Ellipse Grid.Column="9"
                                  Fill="IndianRed" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
                                  VerticalAlignment="Center" Margin="0,0,3,0"
                                  Visibility="{x:Bind IsCategory3, Mode=OneWay}"/>
 
-                        <Polygon Grid.Column="7"
+                        <Polygon Grid.Column="10"
                                  Fill="ForestGreen" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
                                  Points="0,10,10,0,20,10,10,20" VerticalAlignment="Center" Margin="0,0,3,0"
                                  Visibility="{x:Bind IsCategory4, Mode=OneWay}"/>

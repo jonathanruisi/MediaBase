@@ -53,6 +53,39 @@ namespace MediaBase.ViewModel
             get => _isReady;
             protected set => SetProperty(ref _isReady, value);
         }
+
+        public bool IsSequenceStart
+        {
+            get
+            {
+                if (Parent is not MediaFolder folder)
+                    return false;
+
+                return folder.IsSequenceStart(this);
+            }
+        }
+
+        public bool IsSequenceEnd
+        {
+            get
+            {
+                if (Parent is not MediaFolder folder)
+                    return false;
+
+                return folder.IsSequenceEnd(this);
+            }
+        }
+
+        public bool IsWithinSequence
+        {
+            get
+            {
+                if (Parent is not MediaFolder folder)
+                    return false;
+
+                return folder.IsWithinSequence(this);
+            }
+        }
         #endregion
 
         #region Constructors
