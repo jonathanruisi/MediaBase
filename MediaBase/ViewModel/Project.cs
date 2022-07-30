@@ -190,6 +190,7 @@ namespace MediaBase.ViewModel
         public XamlUICommand EditorPlaybackRateDecreaseCommand { get; private set; }
         public XamlUICommand EditorPlaybackRateIncreaseCommand { get; private set; }
         public XamlUICommand EditorPlaybackRateNormalCommand { get; private set; }
+        public XamlUICommand EditorTogglePanAndZoomLockCommand { get; private set; }
         public XamlUICommand EditorCenterFrameCommand { get; private set; }
         public XamlUICommand EditorFrameZoomFitCommand { get; private set; }
         public XamlUICommand EditorFrameZoomFullCommand { get; private set; }
@@ -1035,6 +1036,20 @@ namespace MediaBase.ViewModel
             EditorPlaybackRateNormalCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.Home,
+                IsEnabled = true
+            });
+
+            EditorTogglePanAndZoomLockCommand = new XamlUICommand
+            {
+                Label = "Lock Pan and Zoom",
+                Description = "Toggle pan and zoom lock",
+                IconSource = new SymbolIconSource { Symbol = (Symbol)0xE72E }
+            };
+
+            EditorTogglePanAndZoomLockCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.L,
+                Modifiers = VirtualKeyModifiers.Control,
                 IsEnabled = true
             });
 

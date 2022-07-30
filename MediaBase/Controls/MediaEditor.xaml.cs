@@ -190,6 +190,18 @@ namespace MediaBase.Controls
                                         typeof(MediaEditor),
                                         new PropertyMetadata(false));
 
+        public bool IsLockPanAndZoom
+        {
+            get => (bool)GetValue(IsLockPanAndZoomProperty);
+            set => SetValue(IsLockPanAndZoomProperty, value);
+        }
+
+        public static readonly DependencyProperty IsLockPanAndZoomProperty =
+            DependencyProperty.Register("IsLockPanAndZoom",
+                                        typeof(bool),
+                                        typeof(MediaEditor),
+                                        new PropertyMetadata(false));
+
         public InputSystemCursorShape PrimaryCursorShape
         {
             get => (InputSystemCursorShape)GetValue(PrimaryCursorShapeProperty);
@@ -1124,6 +1136,11 @@ namespace MediaBase.Controls
                               PlaybackRate != 1.0;
         }
 
+        private void EditorTogglePanAndZoomLockCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = IsLoaded && Source != null;
+        }
+
         private void EditorCenterFrameCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
             args.CanExecute = IsLoaded && Source != null && (FrameOffsetX != 0 || FrameOffsetY != 0);
@@ -1344,6 +1361,11 @@ namespace MediaBase.Controls
                 _player.PlaybackSession.PlaybackRate = 1.0;
         }
 
+        private void EditorTogglePanAndZoomLockCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+
+        }
+
         private void EditorCenterFrameCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
             FrameOffsetX = 0;
@@ -1481,6 +1503,11 @@ namespace MediaBase.Controls
             ViewModel.EditorPlaybackRateNormalCommand.ExecuteRequested +=
                 EditorPlaybackRateNormalCommand_ExecuteRequested;
 
+            ViewModel.EditorTogglePanAndZoomLockCommand.CanExecuteRequested +=
+                EditorTogglePanAndZoomLockCommand_CanExecuteRequested;
+            ViewModel.EditorTogglePanAndZoomLockCommand.ExecuteRequested +=
+                EditorTogglePanAndZoomLockCommand_ExecuteRequested;
+
             ViewModel.EditorCenterFrameCommand.CanExecuteRequested +=
                 EditorCenterFrameCommand_CanExecuteRequested;
             ViewModel.EditorCenterFrameCommand.ExecuteRequested +=
@@ -1529,6 +1556,7 @@ namespace MediaBase.Controls
             ViewModel.EditorPlaybackRateDecreaseCommand.NotifyCanExecuteChanged();
             ViewModel.EditorPlaybackRateNormalCommand.NotifyCanExecuteChanged();
             ViewModel.EditorPlaybackRateIncreaseCommand.NotifyCanExecuteChanged();
+            ViewModel.EditorTogglePanAndZoomLockCommand.NotifyCanExecuteChanged();
             ViewModel.EditorCenterFrameCommand.NotifyCanExecuteChanged();
             ViewModel.EditorFrameZoomFitCommand.NotifyCanExecuteChanged();
             ViewModel.EditorFrameZoomFullCommand.NotifyCanExecuteChanged();
@@ -1586,6 +1614,8 @@ namespace MediaBase.Controls
             FrameZoomFullButton.Visibility = IsPanAndZoomEnabled
                 ? Visibility.Visible : Visibility.Collapsed;
             CenterFrameButton.Visibility = IsPanAndZoomEnabled
+                ? Visibility.Visible : Visibility.Collapsed;
+            TogglePanAndZoomLockButton.Visibility = IsPanAndZoomEnabled
                 ? Visibility.Visible : Visibility.Collapsed;
         }
 
@@ -1706,9 +1736,12 @@ namespace MediaBase.Controls
             }
 
             // Reset frame position and scale
-            FrameScale = 0;
-            FrameOffsetX = 0;
-            FrameOffsetY = 0;
+            if(!IsLockPanAndZoom)
+            {
+                FrameScale = 0;
+                FrameOffsetX = 0;
+                FrameOffsetY = 0;
+            }
 
             // Reset timeline
             Timeline.Reset();
@@ -1732,7 +1765,8 @@ namespace MediaBase.Controls
                 _frameBitmap = await CanvasBitmap.LoadAsync(SwapChainCanvas.SwapChain.Device,
                                                             await image.File.OpenReadAsync());
 
-                ScaleFrameToFit(image.WidthInPixels, image.HeightInPixels);
+                if (!IsLockPanAndZoom)
+                    ScaleFrameToFit(image.WidthInPixels, image.HeightInPixels);
                 ApplyFrameScaleAndPosition();
 
                 // Configure timeline (if image is animated) and pause image on first frame
