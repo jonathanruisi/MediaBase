@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
+using JLR.Utility.WinUI;
 using JLR.Utility.WinUI.Controls;
 using JLR.Utility.WinUI.Dialogs;
 using JLR.Utility.WinUI.Messaging;
@@ -177,6 +178,18 @@ namespace MediaBase.Controls
                                         typeof(MediaEditor),
                                         new PropertyMetadata(0.0,
                                             OnFrameOffsetChanged));
+
+        public int PanSpeedMultiplier
+        {
+            get => (int)GetValue(PanSpeedMultiplierProperty);
+            set => SetValue(PanSpeedMultiplierProperty, value);
+        }
+
+        public static readonly DependencyProperty PanSpeedMultiplierProperty =
+            DependencyProperty.Register("PanSpeedMultiplier",
+                                        typeof(int),
+                                        typeof(MediaEditor),
+                                        new PropertyMetadata(10));
 
         public bool IsPanAndZoomEnabled
         {
@@ -767,7 +780,7 @@ namespace MediaBase.Controls
                         => CurrentPosition.TotalSeconds.ToTimecodeString(FramesPerSecond),
                     TimeDisplayFormat.TimecodeWithMillis
                         => CurrentPosition.TotalSeconds.ToTimecodeString(FramesPerSecond, true),
-                      _ => string.Empty
+                    _ => string.Empty
                 };
 
                 using var positionTextFormat = new CanvasTextFormat
@@ -782,6 +795,61 @@ namespace MediaBase.Controls
 
                 ds.DrawText(timeStr, 5, 5, TextOverlayColor, positionTextFormat);
             }
+
+#if DEBUG
+            // Draw image rendering info
+            using var debugTextFormat = new CanvasTextFormat
+            {
+                FontFamily = "Consolas",
+                FontSize = 32,
+                FontStretch = FontStretch.Normal,
+                FontStyle = FontStyle.Normal,
+                FontWeight = FontWeights.Bold,
+                HorizontalAlignment = CanvasHorizontalAlignment.Left
+            };
+
+            // Mouse position
+            using var line1Geometry = CanvasGeometry.CreateText(new CanvasTextLayout(ds,
+                $"   Mouse: @ {_prevLeftMousePosition.X:0},{_prevLeftMousePosition.Y:0}",
+                debugTextFormat, (float)SwapChainCanvas.ActualWidth, 40));
+            ds.FillGeometry(line1Geometry, 20, 20, Colors.Black);
+            ds.DrawGeometry(line1Geometry, 20, 20, Colors.White, 0.5f);
+
+            // Source rectangle
+            using var line2Geometry = CanvasGeometry.CreateText(new CanvasTextLayout(ds,
+                $"  Source: {_sourceRect.Width:0}x{_sourceRect.Height:0} @ {_sourceRect.X:0},{_sourceRect.Y:0}",
+                debugTextFormat, (float)SwapChainCanvas.ActualWidth, 40));
+            ds.FillGeometry(line2Geometry, 20, 80, Colors.Black);
+            ds.DrawGeometry(line2Geometry, 20, 80, Colors.White, 0.5f);
+
+            // Destination rectangle
+            using var line3Geometry = CanvasGeometry.CreateText(new CanvasTextLayout(ds,
+                $"    Dest: {_destRect.Width:0}x{_destRect.Height:0} @ {_destRect.X:0},{_destRect.Y:0}",
+                debugTextFormat, (float)SwapChainCanvas.ActualWidth, 40));
+            ds.FillGeometry(line3Geometry, 20, 112, Colors.Black);
+            ds.DrawGeometry(line3Geometry, 20, 112, Colors.White, 0.5f);
+
+            // Scale factor (linear and logaritmic)
+            using var line4Geometry = CanvasGeometry.CreateText(new CanvasTextLayout(ds,
+                $"   Scale: {_scaleFactor:0.####}  [{FrameScale:0.##}]",
+                debugTextFormat, (float)SwapChainCanvas.ActualWidth, 40));
+            ds.FillGeometry(line4Geometry, 20, 172, Colors.Black);
+            ds.DrawGeometry(line4Geometry, 20, 172, Colors.White, 0.5f);
+
+            // Horizontal frame offset (pixels)
+            using var line5Geometry = CanvasGeometry.CreateText(new CanvasTextLayout(ds,
+                $"X Offset: {FrameOffsetX:0}",
+                debugTextFormat, (float)SwapChainCanvas.ActualWidth, 40));
+            ds.FillGeometry(line5Geometry, 20, 204, Colors.Black);
+            ds.DrawGeometry(line5Geometry, 20, 204, Colors.White, 0.5f);
+
+            // Vertical frame offset (pixels)
+            using var line6Geometry = CanvasGeometry.CreateText(new CanvasTextLayout(ds,
+                $"Y Offset: {FrameOffsetY:0}",
+                debugTextFormat, (float)SwapChainCanvas.ActualWidth, 40));
+            ds.FillGeometry(line6Geometry, 20, 236, Colors.Black);
+            ds.DrawGeometry(line6Geometry, 20, 236, Colors.White, 0.5f);
+#endif
 
             SwapChainCanvas.SwapChain.Present();
 
@@ -1029,7 +1097,51 @@ namespace MediaBase.Controls
             if (!IsPanAndZoomEnabled || _isPointerCapturedForFrame)
                 return;
 
-            FrameScale += e.GetCurrentPoint(RenderAreaBorder).Properties.MouseWheelDelta / 120;
+            var point = e.GetCurrentPoint(RenderAreaBorder);
+            var delta = point.Properties.MouseWheelDelta / 120;
+
+            if (TestKeyStates(Windows.System.VirtualKey.Control, CoreVirtualKeyStates.Down))
+            {// Scale
+                FrameScale += delta;
+
+                // Find visible portion of the destination rectangle and calculate its center point
+                var visibleRect = _destRect;
+                if (visibleRect.X < 0)
+                    visibleRect.X = 0;
+                if (visibleRect.Right > SwapChainCanvas.SwapChain.SizeInPixels.Width)
+                    visibleRect.Width = SwapChainCanvas.SwapChain.SizeInPixels.Width - visibleRect.X;
+                if (visibleRect.Y < 0)
+                    visibleRect.Y = 0;
+                if (visibleRect.Bottom > SwapChainCanvas.SwapChain.SizeInPixels.Height)
+                    visibleRect.Height = SwapChainCanvas.SwapChain.SizeInPixels.Height - visibleRect.Y;
+
+                if (visibleRect.Contains(point.Position))
+                {
+                    var sourceWidth = _frameBitmap.SizeInPixels.Width;
+                    var sourceHeight = _frameBitmap.SizeInPixels.Height;
+                    var newScaleFactor = Math.Pow(2, 0.1 * FrameScale);
+
+                    var scaledWidth = Math.Round(sourceWidth * _scaleFactor, 6);
+                    var newScaledWidth = Math.Round(sourceWidth * newScaleFactor, 6);
+                    var widthDelta = newScaledWidth - scaledWidth;
+                    var mouseOffsetFromCenterX = point.Position.X - visibleRect.GetCenterPoint().X;
+                    FrameOffsetX -= (widthDelta * (mouseOffsetFromCenterX / (visibleRect.Width / 2))) / 2; // formerly _destRect.Width / 2
+
+                    var scaledHeight = Math.Round(sourceHeight * _scaleFactor, 6);
+                    var newScaledHeight = Math.Round(sourceHeight * newScaleFactor, 6);
+                    var heightDelta = newScaledHeight - scaledHeight;
+                    var mouseOffsetFromCenterY = point.Position.Y - visibleRect.GetCenterPoint().Y;
+                    FrameOffsetY += (heightDelta * (mouseOffsetFromCenterY / (visibleRect.Height / 2))) / 2;
+                }
+            }
+            else if (TestKeyStates(Windows.System.VirtualKey.Shift, CoreVirtualKeyStates.Down))
+            {// Horizontal scroll
+                FrameOffsetX += delta * PanSpeedMultiplier;
+            }
+            else
+            {// Vertical scroll
+                FrameOffsetY -= delta * PanSpeedMultiplier;
+            }
         }
         #endregion
 
