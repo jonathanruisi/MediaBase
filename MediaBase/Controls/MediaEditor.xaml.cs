@@ -47,10 +47,12 @@ namespace MediaBase.Controls
         private bool _isPointerCapturedForFrame;
         private Point _prevLeftMousePosition;
         private double _scaleFactor, _prevPlaybackRate;
-        private Rect _sourceRect, _destRect;
+        private Rect _sourceRect, _destRect, _fullDestRect;
         private FollowMode _prevFollowMode;
         private ValueDragType _scrubType;
         private int _trackCount;
+
+        double _mouseOffsetX, _mouseOffsetY;
         #endregion
 
         #region Properties
@@ -810,45 +812,66 @@ namespace MediaBase.Controls
 
             // Mouse position
             using var line1Geometry = CanvasGeometry.CreateText(new CanvasTextLayout(ds,
-                $"   Mouse: @ {_prevLeftMousePosition.X:0},{_prevLeftMousePosition.Y:0}",
+                $"    Mouse: @ {_prevLeftMousePosition.X:0},{_prevLeftMousePosition.Y:0}",
                 debugTextFormat, (float)SwapChainCanvas.ActualWidth, 40));
             ds.FillGeometry(line1Geometry, 20, 20, Colors.Black);
             ds.DrawGeometry(line1Geometry, 20, 20, Colors.White, 0.5f);
 
             // Source rectangle
             using var line2Geometry = CanvasGeometry.CreateText(new CanvasTextLayout(ds,
-                $"  Source: {_sourceRect.Width:0}x{_sourceRect.Height:0} @ {_sourceRect.X:0},{_sourceRect.Y:0}",
+                $"   Source: {_sourceRect.Width:0}x{_sourceRect.Height:0} @ {_sourceRect.X:0},{_sourceRect.Y:0}",
                 debugTextFormat, (float)SwapChainCanvas.ActualWidth, 40));
             ds.FillGeometry(line2Geometry, 20, 80, Colors.Black);
             ds.DrawGeometry(line2Geometry, 20, 80, Colors.White, 0.5f);
 
             // Destination rectangle
             using var line3Geometry = CanvasGeometry.CreateText(new CanvasTextLayout(ds,
-                $"    Dest: {_destRect.Width:0}x{_destRect.Height:0} @ {_destRect.X:0},{_destRect.Y:0}",
+                $"     Dest: {_destRect.Width:0}x{_destRect.Height:0} @ {_destRect.X:0},{_destRect.Y:0}",
                 debugTextFormat, (float)SwapChainCanvas.ActualWidth, 40));
             ds.FillGeometry(line3Geometry, 20, 112, Colors.Black);
             ds.DrawGeometry(line3Geometry, 20, 112, Colors.White, 0.5f);
 
-            // Scale factor (linear and logaritmic)
+            // Full destination rectangle
             using var line4Geometry = CanvasGeometry.CreateText(new CanvasTextLayout(ds,
-                $"   Scale: {_scaleFactor:0.####}  [{FrameScale:0.##}]",
+                $"Full Dest: {_fullDestRect.Width:0}x{_fullDestRect.Height:0} @ {_fullDestRect.X:0},{_fullDestRect.Y:0}",
                 debugTextFormat, (float)SwapChainCanvas.ActualWidth, 40));
-            ds.FillGeometry(line4Geometry, 20, 172, Colors.Black);
-            ds.DrawGeometry(line4Geometry, 20, 172, Colors.White, 0.5f);
+            ds.FillGeometry(line4Geometry, 20, 144, Colors.Black);
+            ds.DrawGeometry(line4Geometry, 20, 144, Colors.White, 0.5f);
 
-            // Horizontal frame offset (pixels)
+            // Scale factor (linear and logaritmic)
             using var line5Geometry = CanvasGeometry.CreateText(new CanvasTextLayout(ds,
-                $"X Offset: {FrameOffsetX:0}",
+                $"   Scale: {_scaleFactor:0.####}  [{FrameScale:0.##}]",
                 debugTextFormat, (float)SwapChainCanvas.ActualWidth, 40));
             ds.FillGeometry(line5Geometry, 20, 204, Colors.Black);
             ds.DrawGeometry(line5Geometry, 20, 204, Colors.White, 0.5f);
 
-            // Vertical frame offset (pixels)
+            // Horizontal frame offset (pixels)
             using var line6Geometry = CanvasGeometry.CreateText(new CanvasTextLayout(ds,
-                $"Y Offset: {FrameOffsetY:0}",
+                $"X Offset: {FrameOffsetX:0}",
                 debugTextFormat, (float)SwapChainCanvas.ActualWidth, 40));
             ds.FillGeometry(line6Geometry, 20, 236, Colors.Black);
             ds.DrawGeometry(line6Geometry, 20, 236, Colors.White, 0.5f);
+
+            // Vertical frame offset (pixels)
+            using var line7Geometry = CanvasGeometry.CreateText(new CanvasTextLayout(ds,
+                $"Y Offset: {FrameOffsetY:0}",
+                debugTextFormat, (float)SwapChainCanvas.ActualWidth, 40));
+            ds.FillGeometry(line7Geometry, 20, 268, Colors.Black);
+            ds.DrawGeometry(line7Geometry, 20, 268, Colors.White, 0.5f);
+
+            // Horizontal mouse offset from center
+            using var line8Geometry = CanvasGeometry.CreateText(new CanvasTextLayout(ds,
+                $"X Mouse Offset: {_mouseOffsetX:0.##}",
+                debugTextFormat, (float)SwapChainCanvas.ActualWidth, 40));
+            ds.FillGeometry(line8Geometry, 20, 328, Colors.Black);
+            ds.DrawGeometry(line8Geometry, 20, 328, Colors.White, 0.5f);
+
+            // Vertical mouse offset from center
+            using var line9Geometry = CanvasGeometry.CreateText(new CanvasTextLayout(ds,
+                $"Y Mouse Offset: {_mouseOffsetY:0.##}",
+                debugTextFormat, (float)SwapChainCanvas.ActualWidth, 40));
+            ds.FillGeometry(line9Geometry, 20, 360, Colors.Black);
+            ds.DrawGeometry(line9Geometry, 20, 360, Colors.White, 0.5f);
 #endif
 
             SwapChainCanvas.SwapChain.Present();
@@ -1104,34 +1127,21 @@ namespace MediaBase.Controls
             {// Scale
                 FrameScale += delta;
 
-                // Find visible portion of the destination rectangle and calculate its center point
-                var visibleRect = _destRect;
-                if (visibleRect.X < 0)
-                    visibleRect.X = 0;
-                if (visibleRect.Right > SwapChainCanvas.SwapChain.SizeInPixels.Width)
-                    visibleRect.Width = SwapChainCanvas.SwapChain.SizeInPixels.Width - visibleRect.X;
-                if (visibleRect.Y < 0)
-                    visibleRect.Y = 0;
-                if (visibleRect.Bottom > SwapChainCanvas.SwapChain.SizeInPixels.Height)
-                    visibleRect.Height = SwapChainCanvas.SwapChain.SizeInPixels.Height - visibleRect.Y;
-
-                if (visibleRect.Contains(point.Position))
+                if (_fullDestRect.Contains(point.Position))
                 {
-                    var sourceWidth = _frameBitmap.SizeInPixels.Width;
-                    var sourceHeight = _frameBitmap.SizeInPixels.Height;
                     var newScaleFactor = Math.Pow(2, 0.1 * FrameScale);
 
-                    var scaledWidth = Math.Round(sourceWidth * _scaleFactor, 6);
-                    var newScaledWidth = Math.Round(sourceWidth * newScaleFactor, 6);
-                    var widthDelta = newScaledWidth - scaledWidth;
-                    var mouseOffsetFromCenterX = point.Position.X - visibleRect.GetCenterPoint().X;
-                    FrameOffsetX -= (widthDelta * (mouseOffsetFromCenterX / (visibleRect.Width / 2))) / 2; // formerly _destRect.Width / 2
+                    var newScaledWidth = Math.Round(_frameBitmap.SizeInPixels.Width * newScaleFactor, 6);
+                    var newScaledHeight = Math.Round(_frameBitmap.SizeInPixels.Height * newScaleFactor, 6);
 
-                    var scaledHeight = Math.Round(sourceHeight * _scaleFactor, 6);
-                    var newScaledHeight = Math.Round(sourceHeight * newScaleFactor, 6);
-                    var heightDelta = newScaledHeight - scaledHeight;
-                    var mouseOffsetFromCenterY = point.Position.Y - visibleRect.GetCenterPoint().Y;
-                    FrameOffsetY += (heightDelta * (mouseOffsetFromCenterY / (visibleRect.Height / 2))) / 2;
+                    var widthDelta = newScaledWidth - _fullDestRect.Width;
+                    var heightDelta = newScaledHeight - _fullDestRect.Height;
+
+                    _mouseOffsetX = point.Position.X - _fullDestRect.GetCenterPoint().X;
+                    FrameOffsetX -= (widthDelta * (_mouseOffsetX / (_fullDestRect.Width / 2))) / 2;
+
+                    _mouseOffsetY = point.Position.Y - _fullDestRect.GetCenterPoint().Y;
+                    FrameOffsetY += (heightDelta * (_mouseOffsetY / (_fullDestRect.Height / 2))) / 2;
                 }
             }
             else if (TestKeyStates(Windows.System.VirtualKey.Shift, CoreVirtualKeyStates.Down))
@@ -2012,6 +2022,24 @@ namespace MediaBase.Controls
             }
         }
 
+        /*private Point MapSourceCoordinatesToDisplay(double x, double y)
+        {
+            double displayX, displayY;
+            var sourceWidth = _frameBitmap.SizeInPixels.Width;
+            var sourceHeight = _frameBitmap.SizeInPixels.Height;
+            var destWidth = SwapChainCanvas.SwapChain.SizeInPixels.Width;
+            var destHeight = SwapChainCanvas.SwapChain.SizeInPixels.Height;
+
+
+
+            return new Point(displayX, displayY);
+        }
+
+        private Point MapDisplayCoordinatesToSource(double x, double y)
+        {
+
+        }*/
+
         private void ApplyFrameScaleAndPosition()
         {
             var sourceWidth = _frameBitmap.SizeInPixels.Width;
@@ -2019,14 +2047,35 @@ namespace MediaBase.Controls
             var destWidth = SwapChainCanvas.SwapChain.SizeInPixels.Width;
             var destHeight = SwapChainCanvas.SwapChain.SizeInPixels.Height;
 
+            // Scale frame and define its rectangle related to the visible screen area
             _scaleFactor = Math.Pow(2, 0.1 * FrameScale);
-            var scaledSourceWidth = Math.Round(sourceWidth * _scaleFactor, 6);
-            if (scaledSourceWidth <= destWidth)
+            _fullDestRect.Width = sourceWidth * _scaleFactor;
+            _fullDestRect.X = ((destWidth - _fullDestRect.Width) / 2) + FrameOffsetX;
+            _fullDestRect.Height = sourceHeight * _scaleFactor;
+            _fullDestRect.Y = ((destHeight - _fullDestRect.Height) / 2) - FrameOffsetY;
+
+            // Adjust source and destination rectangles' X coordinate and width
+            if (_fullDestRect.Width <= destWidth)
             {
                 _sourceRect.Width = sourceWidth;
                 _sourceRect.X = 0;
-                _destRect.Width = scaledSourceWidth;
-                _destRect.X = ((destWidth - scaledSourceWidth) / 2) + FrameOffsetX;
+                _destRect.Width = _fullDestRect.Width;
+                _destRect.X = _fullDestRect.X;
+
+                if (_destRect.X < 0)
+                {
+                    var cropScaledX = -_destRect.X / _scaleFactor;
+                    _sourceRect.X = cropScaledX;
+                    _sourceRect.Width -= cropScaledX;
+                    _destRect.Width += _destRect.X;
+                    _destRect.X = 0;
+                }
+                else if (_destRect.Right > destWidth)
+                {
+                    _sourceRect.Width -= (_destRect.Right - destWidth) / _scaleFactor;
+                    _destRect.Width -= _destRect.Right - destWidth;
+                    _destRect.X = destWidth - _destRect.Width;
+                }
             }
             else
             {
@@ -2037,23 +2086,42 @@ namespace MediaBase.Controls
 
                 if (_sourceRect.X < 0)
                 {
-                    _destRect.X = -(_sourceRect.X * _scaleFactor);
+                    var cropScaledX = -_sourceRect.X * _scaleFactor;
+                    _destRect.X = cropScaledX;
+                    _destRect.Width -= cropScaledX;
+                    _sourceRect.Width += _sourceRect.X;
                     _sourceRect.X = 0;
                 }
                 else if (_sourceRect.Right > sourceWidth)
                 {
-                    _destRect.X = -((_sourceRect.Right - sourceWidth) * _scaleFactor);
+                    _destRect.Width -= (_sourceRect.Right - sourceWidth) * _scaleFactor;
+                    _sourceRect.Width -= _sourceRect.Right - sourceWidth;
                     _sourceRect.X = sourceWidth - _sourceRect.Width;
                 }
             }
 
-            var scaledSourceHeight = Math.Round(sourceHeight * _scaleFactor, 6);
-            if (scaledSourceHeight <= destHeight)
+            // Adjust source and destination rectangles' Y coordinate and height
+            if (_fullDestRect.Height <= destHeight)
             {
                 _sourceRect.Height = sourceHeight;
                 _sourceRect.Y = 0;
-                _destRect.Height = scaledSourceHeight;
-                _destRect.Y = ((destHeight - scaledSourceHeight) / 2) - FrameOffsetY;
+                _destRect.Height = _fullDestRect.Height;
+                _destRect.Y = _fullDestRect.Y;
+
+                if (_destRect.Y < 0)
+                {
+                    var cropScaledY = -_destRect.Y / _scaleFactor;
+                    _sourceRect.Y = cropScaledY;
+                    _sourceRect.Height -= cropScaledY;
+                    _destRect.Height += _destRect.Y;
+                    _destRect.Y = 0;
+                }
+                else if (_destRect.Bottom > destHeight)
+                {
+                    _sourceRect.Height -= (_destRect.Bottom - destHeight) / _scaleFactor;
+                    _destRect.Height -= _destRect.Bottom - destHeight;
+                    _destRect.Y = destHeight - _destRect.Height;
+                }
             }
             else
             {
@@ -2064,16 +2132,21 @@ namespace MediaBase.Controls
 
                 if (_sourceRect.Y < 0)
                 {
-                    _destRect.Y = -(_sourceRect.Y * _scaleFactor);
+                    var cropScaledY = -_sourceRect.Y * _scaleFactor;
+                    _destRect.Y = cropScaledY;
+                    _destRect.Height -= cropScaledY;
+                    _sourceRect.Height += _sourceRect.Y;
                     _sourceRect.Y = 0;
                 }
                 else if (_sourceRect.Bottom > sourceHeight)
                 {
-                    _destRect.Y = -((_sourceRect.Bottom - sourceHeight) * _scaleFactor);
+                    _destRect.Height -= (_sourceRect.Bottom - sourceHeight) * _scaleFactor;
+                    _sourceRect.Height -= _sourceRect.Bottom - sourceHeight;
                     _sourceRect.Y = sourceHeight - _sourceRect.Height;
                 }
             }
         }
+
         private bool TestPointOverFrame(Point point)
         {
             return _destRect.Contains(point);
