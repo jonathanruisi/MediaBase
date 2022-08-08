@@ -278,6 +278,18 @@ namespace MediaBase.Controls
             DependencyProperty.Register("TextOverlayColor",
                                         typeof(Color),
                                         typeof(MediaEditor),
+                                        new PropertyMetadata(Colors.Black));
+
+        public Color TextOverlayOutlineColor
+        {
+            get => (Color)GetValue(TextOverlayOutlineColorProperty);
+            set => SetValue(TextOverlayOutlineColorProperty, value);
+        }
+
+        public static readonly DependencyProperty TextOverlayOutlineColorProperty =
+            DependencyProperty.Register("TextOverlayOutlineColor",
+                                        typeof(Color),
+                                        typeof(MediaEditor),
                                         new PropertyMetadata(Colors.White));
 
         public string TextOverlayFontFamily
@@ -795,7 +807,11 @@ namespace MediaBase.Controls
                     HorizontalAlignment = CanvasHorizontalAlignment.Left
                 };
 
-                ds.DrawText(timeStr, 5, 5, TextOverlayColor, positionTextFormat);
+                using var positionTextLayout = new CanvasTextLayout(ds, timeStr, positionTextFormat,
+                    (float)SwapChainCanvas.ActualWidth, (float)SwapChainCanvas.ActualHeight);
+                using var positionTextGeometry = CanvasGeometry.CreateText(positionTextLayout);
+                ds.FillGeometry(positionTextGeometry, 5, 5, TextOverlayColor);
+                ds.DrawGeometry(positionTextGeometry, 5, 5, TextOverlayOutlineColor, 0.5f);
             }
 
 #if DEBUG

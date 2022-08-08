@@ -16,6 +16,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Toolkit.Mvvm.Input;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.UI;
+using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -27,6 +28,7 @@ using Windows.Media.Playback;
 using Windows.Storage;
 using Windows.Storage.Pickers;
 using Windows.System;
+using Windows.UI.Core;
 
 using WinRT.Interop;
 
@@ -587,15 +589,63 @@ namespace MediaBase.ViewModel
             {
                 case 1:
                     ActiveMediaSource.IsCategory1 = !ActiveMediaSource.IsCategory1;
+                    if (InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Shift).HasFlag(CoreVirtualKeyStates.Down))
+                    {
+                        for (var i = ActiveMediaSource.Parent.Children.IndexOf(ActiveMediaSource) - 1; i >= 0; i--)
+                        {
+                            if (((MBMediaSource)ActiveMediaSource.Parent.Children[i]).IsCategory1 !=
+                                ActiveMediaSource.IsCategory1)
+                                ((MBMediaSource)ActiveMediaSource.Parent.Children[i]).IsCategory1 =
+                                    ActiveMediaSource.IsCategory1;
+                            else
+                                break;
+                        }
+                    }
                     break;
                 case 2:
                     ActiveMediaSource.IsCategory2 = !ActiveMediaSource.IsCategory2;
+                    if (InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Shift).HasFlag(CoreVirtualKeyStates.Down))
+                    {
+                        for (var i = ActiveMediaSource.Parent.Children.IndexOf(ActiveMediaSource) - 1; i >= 0; i--)
+                        {
+                            if (((MBMediaSource)ActiveMediaSource.Parent.Children[i]).IsCategory2 !=
+                                ActiveMediaSource.IsCategory2)
+                                ((MBMediaSource)ActiveMediaSource.Parent.Children[i]).IsCategory2 =
+                                    ActiveMediaSource.IsCategory2;
+                            else
+                                break;
+                        }
+                    }
                     break;
                 case 3:
                     ActiveMediaSource.IsCategory3 = !ActiveMediaSource.IsCategory3;
+                    if (InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Shift).HasFlag(CoreVirtualKeyStates.Down))
+                    {
+                        for (var i = ActiveMediaSource.Parent.Children.IndexOf(ActiveMediaSource) - 1; i >= 0; i--)
+                        {
+                            if (((MBMediaSource)ActiveMediaSource.Parent.Children[i]).IsCategory3 !=
+                                ActiveMediaSource.IsCategory3)
+                                ((MBMediaSource)ActiveMediaSource.Parent.Children[i]).IsCategory3 =
+                                    ActiveMediaSource.IsCategory3;
+                            else
+                                break;
+                        }
+                    }
                     break;
                 case 4:
                     ActiveMediaSource.IsCategory4 = !ActiveMediaSource.IsCategory4;
+                    if (InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Shift).HasFlag(CoreVirtualKeyStates.Down))
+                    {
+                        for (var i = ActiveMediaSource.Parent.Children.IndexOf(ActiveMediaSource) - 1; i >= 0; i--)
+                        {
+                            if (((MBMediaSource)ActiveMediaSource.Parent.Children[i]).IsCategory4 !=
+                                ActiveMediaSource.IsCategory4)
+                                ((MBMediaSource)ActiveMediaSource.Parent.Children[i]).IsCategory4 =
+                                    ActiveMediaSource.IsCategory4;
+                            else
+                                break;
+                        }
+                    }
                     break;
             }
         }
@@ -811,6 +861,13 @@ namespace MediaBase.ViewModel
                 IsEnabled = true
             });
 
+            ToolsMark1Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.Number1,
+                Modifiers = VirtualKeyModifiers.Shift,
+                IsEnabled = true
+            });
+
             ToolsMark2Command = new XamlUICommand
             {
                 Label = "Category 2",
@@ -821,6 +878,13 @@ namespace MediaBase.ViewModel
             ToolsMark2Command.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.Number2,
+                IsEnabled = true
+            });
+
+            ToolsMark2Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.Number2,
+                Modifiers = VirtualKeyModifiers.Shift,
                 IsEnabled = true
             });
 
@@ -837,6 +901,13 @@ namespace MediaBase.ViewModel
                 IsEnabled = true
             });
 
+            ToolsMark3Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.Number3,
+                Modifiers = VirtualKeyModifiers.Shift,
+                IsEnabled = true
+            });
+
             ToolsMark4Command = new XamlUICommand
             {
                 Label = "Category 4",
@@ -847,6 +918,13 @@ namespace MediaBase.ViewModel
             ToolsMark4Command.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.Number4,
+                IsEnabled = true
+            });
+
+            ToolsMark4Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.Number4,
+                Modifiers = VirtualKeyModifiers.Shift,
                 IsEnabled = true
             });
             #endregion
