@@ -46,7 +46,7 @@ namespace MediaBase
         #endregion
 
         #region Properties
-
+        public ProjectManager ViewModel { get; private set; }
         #endregion
 
         #region Commands
@@ -62,6 +62,8 @@ namespace MediaBase
         public MainWindow()
         {
             InitializeComponent();
+
+            ViewModel = App.Current.Services.GetService<ProjectManager>();
 
             Activated += MainWindow_Activated;
             Closed += MainWindow_Closed;
@@ -90,22 +92,59 @@ namespace MediaBase
         #endregion
 
         #region Event Handlers (Commands - CanExecuteRequested)
-        
+        private void ViewChangePresenter_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = _appWindow != null;
+        }
+
+        private void HelpDebugLogWindowCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = true;
+        }
+
+        private void HelpAboutCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = true;
+        }
+
+        private void ExitCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = true;
+        }
         #endregion
 
         #region Event Handlers (Commands - ExecuteRequested)
-        
+        private void ViewChangePresenter_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            SwitchPresenter((AppWindowPresenterKind)args.Parameter);
+        }
+
+        private void HelpDebugLogWindowCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void HelpAboutCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+
+        }
+
+        private void ExitCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            ViewModel.IsActive = false;
+            App.Current.Exit();
+        }
         #endregion
 
         #region Event Handlers (Window & Title Bar)
         private void MainWindow_Activated(object sender, WindowActivatedEventArgs args)
         {
-            
+
         }
 
         private void MainWindow_Closed(object sender, WindowEventArgs args)
         {
-            
+
         }
 
         private void MainWindow_SizeChanged(object sender, WindowSizeChangedEventArgs args)
@@ -160,14 +199,120 @@ namespace MediaBase
         #region Private Methods
         private void InitializeCommands()
         {
-            
+            ViewNormalCommand = new XamlUICommand
+            {
+                Label = "Normal",
+                Description = "Normal \"overlapped\" view",
+                IconSource = new SymbolIconSource { Symbol = Symbol.BackToWindow }
+            };
+
+            ViewNormalCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.F9,
+                IsEnabled = true
+            });
+
+            ViewCompactCommand = new XamlUICommand
+            {
+                Label = "Compact",
+                Description = "Compact view"
+            };
+
+            ViewCompactCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.F10,
+                IsEnabled = true
+            });
+
+            ViewFullscreenCommand = new XamlUICommand
+            {
+                Label = "Fullscreen",
+                Description = "Fullscreen view",
+                IconSource = new SymbolIconSource { Symbol = Symbol.FullScreen }
+            };
+
+            ViewFullscreenCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.F11,
+                IsEnabled = true
+            });
+
+            HelpDebugLogWindowCommand = new XamlUICommand
+            {
+                Label = "Debug Log...",
+                Description = "Open the live debug log window",
+                IconSource = new SymbolIconSource { Symbol = (Symbol)0xEBE8 }
+            };
+
+            HelpDebugLogWindowCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.F12,
+                IsEnabled = true
+            });
+
+            HelpAboutCommand = new XamlUICommand
+            {
+                Label = "About...",
+                Description = "Display information about this app",
+                IconSource = new SymbolIconSource { Symbol = (Symbol)0xE946 }
+            };
+
+            HelpAboutCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.F1,
+                IsEnabled = true
+            });
+
+            ExitCommand = new XamlUICommand
+            {
+                Label = "Exit",
+                Description = "Exit the application",
+                IconSource = new SymbolIconSource { Symbol = (Symbol)0xF3B1 }
+            };
+
+            ViewNormalCommand.CanExecuteRequested += ViewChangePresenter_CanExecuteRequested;
+            ViewNormalCommand.ExecuteRequested += ViewChangePresenter_ExecuteRequested;
+
+            ViewCompactCommand.CanExecuteRequested += ViewChangePresenter_CanExecuteRequested;
+            ViewCompactCommand.ExecuteRequested += ViewChangePresenter_ExecuteRequested;
+
+            ViewFullscreenCommand.CanExecuteRequested += ViewChangePresenter_CanExecuteRequested;
+            ViewFullscreenCommand.ExecuteRequested += ViewChangePresenter_ExecuteRequested;
+
+            HelpDebugLogWindowCommand.CanExecuteRequested += HelpDebugLogWindowCommand_CanExecuteRequested;
+            HelpDebugLogWindowCommand.ExecuteRequested += HelpDebugLogWindowCommand_ExecuteRequested;
+
+            HelpAboutCommand.CanExecuteRequested += HelpAboutCommand_CanExecuteRequested;
+            HelpAboutCommand.ExecuteRequested += HelpAboutCommand_ExecuteRequested;
+
+            ExitCommand.CanExecuteRequested += ExitCommand_CanExecuteRequested;
+            ExitCommand.ExecuteRequested += ExitCommand_ExecuteRequested;
         }
 
         private void RegisterMessages()
         {
             var messenger = App.Current.Services.GetService<IMessenger>();
 
-            
+            // ProjectManager.HasUnsavedChanges
+            messenger.Register<PropertyChangedMessage<bool>>(this, (r, m) =>
+            {
+                if (m.Sender != ViewModel || m.PropertyName != nameof(ProjectManager.HasUnsavedChanges))
+                    return;
+
+                AppTitleUnsavedIndicatorTextBlock.Visibility = m.NewValue
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
+            });
+
+            // Set info bar message
+            messenger.Register<SetInfoBarMessage>(this, (r, m) =>
+            {
+                AppInfoBar.Title = m.Title;
+                AppInfoBar.Message = m.Message;
+                AppInfoBar.Severity = m.Severity;
+                AppInfoBar.IsClosable = m.IsCloseable;
+                AppInfoBar.IsOpen = true;
+            });
         }
 
         private double GetScaleAdjustment()
@@ -207,6 +352,8 @@ namespace MediaBase
                                 MenuColumn.ActualWidth) * scaleAdjustment);
             dragRect.Y = 0;
             dragRect.Width = (int)((LeftDragColumn.ActualWidth +
+                                    AppTitleProjectNameTextBlock.ActualWidth +
+                                    AppTitleUnsavedIndicatorTextBlock.ActualWidth +
                                     RightDragColumn.ActualWidth) * scaleAdjustment);
             dragRect.Height = (int)(AppTitleBar.ActualHeight * scaleAdjustment);
             dragRects.Add(dragRect);

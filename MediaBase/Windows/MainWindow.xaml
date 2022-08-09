@@ -5,6 +5,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
+    xmlns:windowing="using:Microsoft.UI.Windowing"
     xmlns:toolkit="using:CommunityToolkit.WinUI.UI.Controls">
 
     <Grid>
@@ -42,23 +43,48 @@
                 <!-- Menu -->
                 <MenuBar Grid.Column="2" Margin="0">
                     <MenuBarItem Title="Project" Margin="0" VerticalAlignment="Bottom">
-                        
+                        <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectNewCommand}"/>
+                        <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectOpenCommand}"/>
+                        <MenuFlyoutSeparator/>
+                        <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectSaveCommand}"/>
+                        <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectSaveAsCommand}"/>
+                        <MenuFlyoutSeparator/>
+                        <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectCloseCommand}"/>
+                        <MenuFlyoutSeparator/>
+                        <MenuFlyoutItem Command="{x:Bind ExitCommand}"/>
                     </MenuBarItem>
                     <MenuBarItem Title="Tools" Margin="0" VerticalAlignment="Bottom">
                         
                     </MenuBarItem>
                     <MenuBarItem Title="View" Margin="0" VerticalAlignment="Bottom">
-                        
+                        <RadioMenuFlyoutItem GroupName="Presenter"
+                                             Command="{x:Bind ViewNormalCommand}"
+                                             CommandParameter="{x:Bind windowing:AppWindowPresenterKind.Default}"/>
+                        <RadioMenuFlyoutItem GroupName="Presenter"
+                                             Command="{x:Bind ViewCompactCommand}"
+                                             CommandParameter="{x:Bind windowing:AppWindowPresenterKind.CompactOverlay}"/>
+                        <RadioMenuFlyoutItem GroupName="Presenter"
+                                             Command="{x:Bind ViewFullscreenCommand}"
+                                             CommandParameter="{x:Bind windowing:AppWindowPresenterKind.FullScreen}"/>
                     </MenuBarItem>
                     <MenuBarItem Title="Help" Margin="0" VerticalAlignment="Bottom">
-                        
+                        <MenuFlyoutItem Command="{x:Bind HelpDebugLogWindowCommand}"/>
+                        <MenuFlyoutSeparator/>
+                        <MenuFlyoutItem Command="{x:Bind HelpAboutCommand}"/>
                     </MenuBarItem>
                 </MenuBar>
             </Grid>
 
             <!-- App Title -->
             <StackPanel Grid.Column="1" Orientation="Horizontal">
-                
+                <TextBlock x:Name="AppTitleProjectNameTextBlock"
+                           HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="0,0,0,3"
+                           Foreground="White" FontFamily="Segoe UI" FontWeight="Bold" FontSize="14"
+                           Text="{x:Bind ViewModel.DisplayName, Mode=OneWay}"/>
+                <TextBlock x:Name="AppTitleUnsavedIndicatorTextBlock" Text="*"
+                           HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="0,0,0,3"
+                           Foreground="Red" FontFamily="Segoe UI" FontWeight="Bold" FontSize="18"
+                           Visibility="Collapsed"/>
             </StackPanel>
 
             <Grid Grid.Column="2">

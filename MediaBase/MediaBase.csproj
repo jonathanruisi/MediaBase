@@ -46,7 +46,5 @@
   <ItemGroup>
     <Folder Include="Controls\" />
     <Folder Include="Dialogs\" />
-    <Folder Include="General\" />
-    <Folder Include="ViewModel\" />
   </ItemGroup>
 </Project>
