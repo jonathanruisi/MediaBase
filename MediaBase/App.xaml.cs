@@ -4,8 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 
-using MediaBase.ViewModel;
-
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.UI.Xaml;
@@ -74,7 +72,7 @@ namespace MediaBase
         {
             var services = new ServiceCollection();
             services.AddSingleton<IMessenger>(StrongReferenceMessenger.Default);
-            services.AddSingleton<Project>();
+            services.AddSingleton<ProjectManager>();
             return services.BuildServiceProvider();
         }
         #endregion
