@@ -45,11 +45,13 @@
                     <MenuBarItem Title="Project" Margin="0" VerticalAlignment="Bottom">
                         <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectNewCommand}"/>
                         <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectOpenCommand}"/>
-                        <MenuFlyoutSeparator/>
                         <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectSaveCommand}"/>
                         <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectSaveAsCommand}"/>
                         <MenuFlyoutSeparator/>
-                        <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectCloseCommand}"/>
+                        <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectOpenWorkspaceCommand}"/>
+                        <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectSaveWorkspaceCommand}"/>
+                        <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectSaveWorkspaceAsCommand}"/>
+                        <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectCloseWorkspaceCommand}"/>
                         <MenuFlyoutSeparator/>
                         <MenuFlyoutItem Command="{x:Bind ExitCommand}"/>
                     </MenuBarItem>
@@ -77,14 +79,14 @@
 
             <!-- App Title -->
             <StackPanel Grid.Column="1" Orientation="Horizontal">
-                <TextBlock x:Name="AppTitleProjectNameTextBlock"
-                           HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="0,0,0,3"
-                           Foreground="White" FontFamily="Segoe UI" FontWeight="Bold" FontSize="14"
-                           Text="{x:Bind ViewModel.DisplayName, Mode=OneWay}"/>
                 <TextBlock x:Name="AppTitleUnsavedIndicatorTextBlock" Text="*"
                            HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="0,0,0,3"
                            Foreground="Red" FontFamily="Segoe UI" FontWeight="Bold" FontSize="18"
                            Visibility="Collapsed"/>
+                <TextBlock x:Name="AppTitleProjectNameTextBlock"
+                           HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="0,0,0,3"
+                           Foreground="White" FontFamily="Segoe UI" FontWeight="Bold" FontSize="14"
+                           Text="{x:Bind ViewModel.Name, Mode=OneWay}"/>
             </StackPanel>
 
             <Grid Grid.Column="2">

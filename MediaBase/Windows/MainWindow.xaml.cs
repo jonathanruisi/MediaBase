@@ -41,7 +41,6 @@ namespace MediaBase
     public sealed partial class MainWindow : Window
     {
         #region Fields
-        private static readonly string DefaultAppTitle = "MediaBASE";
         private readonly AppWindow _appWindow;
         #endregion
 
@@ -71,7 +70,7 @@ namespace MediaBase
 
             _appWindow = this.GetAppWindowForCurrentWindow();
             _appWindow.Changed += AppWindow_Changed;
-            _appWindow.Title = DefaultAppTitle;
+            _appWindow.Title = ProjectManager.DefaultTitle;
 
             // Use custom title bar, if supported
             if (AppWindowTitleBar.IsCustomizationSupported())
@@ -352,8 +351,8 @@ namespace MediaBase
                                 MenuColumn.ActualWidth) * scaleAdjustment);
             dragRect.Y = 0;
             dragRect.Width = (int)((LeftDragColumn.ActualWidth +
-                                    AppTitleProjectNameTextBlock.ActualWidth +
                                     AppTitleUnsavedIndicatorTextBlock.ActualWidth +
+                                    AppTitleProjectNameTextBlock.ActualWidth +
                                     RightDragColumn.ActualWidth) * scaleAdjustment);
             dragRect.Height = (int)(AppTitleBar.ActualHeight * scaleAdjustment);
             dragRects.Add(dragRect);

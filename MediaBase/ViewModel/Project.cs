@@ -8,16 +8,18 @@ using Microsoft.Toolkit.Mvvm.Messaging;
 
 using JLR.Utility.WinUI.ViewModel;
 using System.Xml;
+using Windows.Storage;
 
 namespace MediaBase.ViewModel
 {
     /// <summary>
-    /// MediaBASE project ViewModel
+    /// MediaBASE project ViewModel.
     /// </summary>
     [ViewModelObject("Project", XmlNodeType.Element)]
-    public sealed class Project : ViewModelElement
+    public sealed class Project : MediaFolder
     {
         #region Fields
+        private StorageFile _file;
         private bool _hasUnsavedChanges;
         #endregion
 
@@ -31,6 +33,16 @@ namespace MediaBase.ViewModel
             get => _hasUnsavedChanges;
             set => SetProperty(ref _hasUnsavedChanges, value, true);
         }
+
+        /// <summary>
+        /// Gets or sets a reference to the file in which
+        /// this <see cref="Project"/> is stored.
+        /// </summary>
+        public StorageFile File
+        {
+            get => _file;
+            set => SetProperty(ref _file, value, true);
+        }
         #endregion
 
         #region Constructor
@@ -38,7 +50,7 @@ namespace MediaBase.ViewModel
         #endregion
 
         #region Private Methods
-        
+
         #endregion
     }
 }
