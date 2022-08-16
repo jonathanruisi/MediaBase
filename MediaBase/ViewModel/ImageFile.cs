@@ -23,7 +23,7 @@ namespace MediaBase.ViewModel
     /// <summary>
     /// Contains properties and methods needed for accessing image files
     /// </summary>
-    [ViewModelObject("Image", XmlNodeType.Element)]
+    [ViewModelType("Image")]
     public class ImageFile : MBMediaSource, IMediaFile
     {
         #region Fields
@@ -35,7 +35,7 @@ namespace MediaBase.ViewModel
         #region Properties
         public override MediaContentType ContentType => MediaContentType.Image;
 
-        [ViewModelObject(nameof(Path), XmlNodeType.Element)]
+        [ViewModelProperty(nameof(Path), XmlNodeType.Element)]
         public string Path
         {
             get => _path;

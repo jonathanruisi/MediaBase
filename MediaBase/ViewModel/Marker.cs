@@ -9,7 +9,7 @@ namespace MediaBase.ViewModel
     /// <summary>
     /// Represents a point in time (or span of time) in a video.
     /// </summary>
-    [ViewModelObject(nameof(Marker), XmlNodeType.Element)]
+    [ViewModelType(nameof(Marker))]
     public class Marker : ViewModelElement, ITimelineMarker
     {
         #region Fields
@@ -21,7 +21,7 @@ namespace MediaBase.ViewModel
         /// <summary>
         /// Gets or sets the offset within the timeline where the marker occurs, in seconds.
         /// </summary>
-        [ViewModelObject(nameof(Position), XmlNodeType.Element)]
+        [ViewModelProperty(nameof(Position), XmlNodeType.Element)]
         public decimal Position
         {
             get => _position;
@@ -31,7 +31,7 @@ namespace MediaBase.ViewModel
         /// <summary>
         /// Gets or sets the duration of the marker within the timeline, in seconds.
         /// </summary>
-        [ViewModelObject(nameof(Duration), XmlNodeType.Element)]
+        [ViewModelProperty(nameof(Duration), XmlNodeType.Element)]
         public decimal Duration
         {
             get => _duration;
@@ -54,7 +54,7 @@ namespace MediaBase.ViewModel
         /// to track 0. Track 0 is used to display "chapter" style
         /// markers on a <see cref="MediaTimeline"/>.
         /// </remarks>
-        [ViewModelObject(nameof(Group), XmlNodeType.Attribute)]
+        [ViewModelProperty(nameof(Group), XmlNodeType.Attribute)]
         public int Group
         {
             get => _group;

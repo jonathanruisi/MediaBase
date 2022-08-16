@@ -50,14 +50,14 @@ namespace MediaBase.ViewModel
         /// <summary>
         /// Gets a <see cref="Guid"/> which uniquely identifies this object.
         /// </summary>
-        [ViewModelObject(nameof(Id), XmlNodeType.Attribute, true)]
+        [ViewModelProperty(nameof(Id), XmlNodeType.Attribute, true)]
         public Guid Id
         {
             get => _id;
             set => SetProperty(ref _id, value);
         }
 
-        [ViewModelObject(nameof(Rating), XmlNodeType.Element)]
+        [ViewModelProperty(nameof(Rating), XmlNodeType.Element)]
         public int Rating
         {
             get => _rating;
@@ -123,7 +123,7 @@ namespace MediaBase.ViewModel
         /// <summary>
         /// Indicates a multi-purpose marker of category #1
         /// </summary>
-        [ViewModelObject("C1", XmlNodeType.Element, false, true)]
+        [ViewModelProperty("C1", XmlNodeType.Element, false, true)]
         public bool IsCategory1
         {
             get => _isCategory1;
@@ -133,7 +133,7 @@ namespace MediaBase.ViewModel
         /// <summary>
         /// Indicates a multi-purpose marker of category #2
         /// </summary>
-        [ViewModelObject("C2", XmlNodeType.Element, false, true)]
+        [ViewModelProperty("C2", XmlNodeType.Element, false, true)]
         public bool IsCategory2
         {
             get => _isCategory2;
@@ -143,7 +143,7 @@ namespace MediaBase.ViewModel
         /// <summary>
         /// Indicates a multi-purpose marker of category #3
         /// </summary>
-        [ViewModelObject("C3", XmlNodeType.Element, false, true)]
+        [ViewModelProperty("C3", XmlNodeType.Element, false, true)]
         public bool IsCategory3
         {
             get => _isCategory3;
@@ -153,7 +153,7 @@ namespace MediaBase.ViewModel
         /// <summary>
         /// Indicates a multi-purpose marker of category #4
         /// </summary>
-        [ViewModelObject("C4", XmlNodeType.Element, false, true)]
+        [ViewModelProperty("C4", XmlNodeType.Element, false, true)]
         public bool IsCategory4
         {
             get => _isCategory4;

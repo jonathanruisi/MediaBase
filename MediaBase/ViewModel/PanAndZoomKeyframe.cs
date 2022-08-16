@@ -13,7 +13,7 @@ namespace MediaBase.ViewModel
     /// Defines the scale and translation of a media
     /// object at a specific point in time.
     /// </summary>
-    [ViewModelObject(nameof(PanAndZoomKeyframe), XmlNodeType.Element)]
+    [ViewModelType(nameof(PanAndZoomKeyframe))]
     public sealed class PanAndZoomKeyframe : Marker
     {
         #region Fields
@@ -30,7 +30,7 @@ namespace MediaBase.ViewModel
         /// values <b>greater than zero</b> are larger than the original size,
         /// and values <b>less than zero</b> are smaller than the original size.
         /// </remarks>
-        [ViewModelObject(nameof(Scale), XmlNodeType.Element)]
+        [ViewModelProperty(nameof(Scale), XmlNodeType.Element)]
         public double Scale
         {
             get => _scale;
@@ -40,7 +40,7 @@ namespace MediaBase.ViewModel
         /// <summary>
         /// Gets or sets the horizontal translation offset, in pixels.
         /// </summary>
-        [ViewModelObject(nameof(OffsetX), XmlNodeType.Element)]
+        [ViewModelProperty(nameof(OffsetX), XmlNodeType.Element)]
         public double OffsetX
         {
             get => _offsetX;
@@ -50,7 +50,7 @@ namespace MediaBase.ViewModel
         /// <summary>
         /// Gets or sets the vertical translation offset, in pixels.
         /// </summary>
-        [ViewModelObject(nameof(OffsetY), XmlNodeType.Element)]
+        [ViewModelProperty(nameof(OffsetY), XmlNodeType.Element)]
         public double OffsetY
         {
             get => _offsetY;

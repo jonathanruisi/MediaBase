@@ -38,7 +38,7 @@ namespace MediaBase.ViewModel
         /// This is not a permanent operation and therefore does not
         /// affect the original source of this <see cref="VideoSource"/>.
         /// </remarks>
-        [ViewModelObject(nameof(AreCutsApplied), XmlNodeType.Element, false, true)]
+        [ViewModelProperty(nameof(AreCutsApplied), XmlNodeType.Element, false, true)]
         public bool AreCutsApplied
         {
             get => _areCutsApplied;

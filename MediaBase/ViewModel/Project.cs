@@ -37,7 +37,7 @@ namespace MediaBase.ViewModel
     /// <summary>
     /// MediaBASE project ViewModel
     /// </summary>
-    [ViewModelObject("Project", XmlNodeType.Element)]
+    [ViewModelType("Project")]
     public sealed partial class Project : ViewModelElement
     {
         #region Fields
@@ -58,7 +58,7 @@ namespace MediaBase.ViewModel
         /// <summary>
         /// Gets the root of this <see cref="Project"/>'s media library.
         /// </summary>
-        [ViewModelObject(MediaLibraryName, XmlNodeType.Element)]
+        [ViewModelProperty(MediaLibraryName, XmlNodeType.Element)]
         public MediaFolder MediaLibrary { get; set; }
 
         /// <summary>

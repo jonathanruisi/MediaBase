@@ -16,7 +16,7 @@ namespace MediaBase.ViewModel
     /// <summary>
     /// Contains properties and methods needed for accessing video files
     /// </summary>
-    [ViewModelObject("Video", XmlNodeType.Element)]
+    [ViewModelType("Video")]
     public class VideoFile : VideoSource, IMediaFile
     {
         #region Fields
@@ -26,7 +26,7 @@ namespace MediaBase.ViewModel
         #endregion
 
         #region Properties
-        [ViewModelObject(nameof(Path), XmlNodeType.Element)]
+        [ViewModelProperty(nameof(Path), XmlNodeType.Element)]
         public string Path
         {
             get => _path;
