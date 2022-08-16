@@ -41,6 +41,7 @@ namespace MediaBase
         #region Fields
         private StorageFile _file;
         private ViewModelNode _activeWorkspaceNode;
+        private MultimediaSource _activeMediaSource;
         private bool _hasUnsavedChanges;
         #endregion
 
@@ -70,6 +71,24 @@ namespace MediaBase
 
                 if (_activeWorkspaceNode != null)
                     _activeWorkspaceNode.IsSelected = true;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a reference to the currently active multimedia source.
+        /// </summary>
+        public MultimediaSource ActiveMediaSource
+        {
+            get => _activeMediaSource;
+            set
+            {
+                if (_activeMediaSource != null)
+                    _activeMediaSource.IsSelected = false;
+
+                SetProperty(ref _activeMediaSource, value);
+
+                if (_activeMediaSource != null)
+                    _activeMediaSource.IsSelected = true;
             }
         }
 
@@ -112,6 +131,7 @@ namespace MediaBase
         public ProjectManager()
         {
             _activeWorkspaceNode = null;
+            _activeMediaSource = null;
             _hasUnsavedChanges = false;
 
             Projects = new ObservableCollection<Project>();
