@@ -111,6 +111,10 @@ namespace MediaBase.ViewModel
         }
         #endregion
 
+        #region Public Methods
+        
+        #endregion
+
         #region Event Handlers
         private void Tags_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {

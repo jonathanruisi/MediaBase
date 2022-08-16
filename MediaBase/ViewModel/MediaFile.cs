@@ -137,7 +137,8 @@ namespace MediaBase.ViewModel
         #region Method Overrides (System.Object)
         public override string ToString()
         {
-            return IsReady ? File.Name : "FILE NOT READY";
+            var filename = IsReady ? File.Name : "FILE NOT READY";
+            return $"{base.ToString()} ({filename})";
         }
         #endregion
     }
