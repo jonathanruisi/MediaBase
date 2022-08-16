@@ -9,7 +9,7 @@ using JLR.Utility.WinUI.ViewModel;
 
 namespace MediaBase.ViewModel
 {
-    [ViewModelObject("Folder", XmlNodeType.Element)]
+    [ViewModelType("Folder")]
     public class MediaFolder : ViewModelNode
     {
         public MediaFolder() : this(string.Empty) { }

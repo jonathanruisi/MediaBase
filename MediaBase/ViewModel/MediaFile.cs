@@ -25,7 +25,7 @@ namespace MediaBase.ViewModel
 
         #region Properties
         /// <inheritdoc cref="StorageFile.Path"/>
-        [ViewModelObject(nameof(Path), XmlNodeType.Element)]
+        [ViewModelProperty(nameof(Path), XmlNodeType.Element)]
         public string Path
         {
             get => _path;

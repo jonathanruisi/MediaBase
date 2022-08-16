@@ -37,14 +37,14 @@ namespace MediaBase.ViewModel
         /// <summary>
         /// Gets a <see cref="Guid"/> which uniquely identifies this object.
         /// </summary>
-        [ViewModelObject(nameof(Id), XmlNodeType.Attribute, true)]
+        [ViewModelProperty(nameof(Id), XmlNodeType.Attribute, true)]
         public Guid Id
         {
             get => _id;
             set => SetProperty(ref _id, value);
         }
 
-        [ViewModelObject(nameof(Rating), XmlNodeType.Element)]
+        [ViewModelProperty(nameof(Rating), XmlNodeType.Element)]
         public int Rating
         {
             get => _rating;

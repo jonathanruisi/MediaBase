@@ -22,7 +22,7 @@ using Windows.System;
 
 namespace MediaBase
 {
-    [ViewModelObject("Workspace", XmlNodeType.Element)]
+    [ViewModelType("Workspace")]
     public sealed class ProjectManager : ViewModelElement
     {
         #region Constants

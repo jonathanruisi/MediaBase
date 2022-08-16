@@ -15,7 +15,7 @@ namespace MediaBase.ViewModel
     /// <summary>
     /// MediaBASE project ViewModel.
     /// </summary>
-    [ViewModelObject("Project", XmlNodeType.Element)]
+    [ViewModelType("Project")]
     public sealed class Project : MediaFolder
     {
         #region Fields
