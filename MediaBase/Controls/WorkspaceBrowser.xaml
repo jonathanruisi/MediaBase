@@ -2,16 +2,221 @@
     x:Class="MediaBase.Controls.WorkspaceBrowser"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:MediaBase.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d">
+    mc:Ignorable="d"
+    xmlns:local="using:MediaBase.Controls"
+    xmlns:mediabase="using:MediaBase"
+    xmlns:viewmodel="using:MediaBase.ViewModel"
+    xmlns:interactivity="using:Microsoft.Xaml.Interactivity"
+    xmlns:interactions_core="using:Microsoft.Xaml.Interactions.Core">
 
+    <UserControl.Resources>
+        <!-- Data Templates -->
+        <DataTemplate x:Key="ProjectNodeDataTemplate"
+                      x:DataType="viewmodel:Project">
+            <TreeViewItem ItemsSource="{x:Bind Children}"
+                          IsSelected="{x:Bind IsSelected, Mode=TwoWay}"
+                          RightTapped="WorkspaceBrowserTreeView_RightTapped">
+                <TreeViewItem.Content>
+                    <StackPanel Orientation="Horizontal">
+                        <FontIcon Margin="0,0,10,0"
+                                  FontFamily="Segoe Fluent Icons"
+                                  Glyph="&#xF156;"
+                                  Foreground="{x:Bind HasUnsavedChanges,
+                                                      Converter={StaticResource TrueToRedBrushConverter},
+                                                      Mode=OneWay}"/>
+                        <TextBlock HorizontalAlignment="Left"
+                                   VerticalAlignment="Center"
+                                   Text="{x:Bind Name, Mode=OneWay}"/>
+                    </StackPanel>
+                </TreeViewItem.Content>
+            </TreeViewItem>
+        </DataTemplate>
+
+        <DataTemplate x:Key="FolderNodeDataTemplate"
+                      x:DataType="viewmodel:MediaFolder">
+            <TreeViewItem x:Name="Item"
+                          ItemsSource="{x:Bind Children}"
+                          IsSelected="{x:Bind IsSelected, Mode=TwoWay}"
+                          RightTapped="WorkspaceBrowserTreeView_RightTapped">
+                <TreeViewItem.Content>
+                    <StackPanel Orientation="Horizontal">
+                        <FontIcon x:Name="Symbol"
+                                  Margin="0,0,10,0"
+                                  FontFamily="Segoe Fluent Icons">
+                            <interactivity:Interaction.Behaviors>
+                                <interactions_core:DataTriggerBehavior Binding="{Binding ElementName=Item, Path=IsExpanded}"
+                                                                       Value="True">
+                                    <interactions_core:ChangePropertyAction TargetObject="{Binding ElementName=Symbol}"
+                                                                            PropertyName="Glyph"
+                                                                            Value="&#xED43;"/>
+                                </interactions_core:DataTriggerBehavior>
+                                <interactions_core:DataTriggerBehavior Binding="{Binding ElementName=Item, Path=IsExpanded}"
+                                                                       Value="False">
+                                    <interactions_core:ChangePropertyAction TargetObject="{Binding ElementName=Symbol}"
+                                                                            PropertyName="Glyph"
+                                                                            Value="&#xED41;"/>
+                                </interactions_core:DataTriggerBehavior>
+                            </interactivity:Interaction.Behaviors>
+                        </FontIcon>
+                        <TextBlock HorizontalAlignment="Left"
+                                   VerticalAlignment="Center"
+                                   Text="{x:Bind Name, Mode=OneWay}"/>
+                    </StackPanel>
+                </TreeViewItem.Content>
+            </TreeViewItem>
+        </DataTemplate>
+
+        <DataTemplate x:Key="ImageNodeDataTemplate"
+                      x:DataType="viewmodel:MediaFileSource">
+            <TreeViewItem IsSelected="{x:Bind IsSelected, Mode=TwoWay}"
+                          IsEnabled="{x:Bind IsReady, Mode=OneWay}"
+                          RightTapped="WorkspaceBrowserTreeView_RightTapped">
+                <TreeViewItem.Content>
+                    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Not Ready Indicator -->
+                        <FontIcon Grid.Column="0"
+                                  Width="15" Height="15" Margin="0,0,2,0"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center"
+                                  Foreground="{StaticResource RedBrush}"
+                                  Visibility="{x:Bind IsReady,
+                                                      Converter={StaticResource FalseToVisibleConverter},
+                                                      Mode=OneWay}"/>
+
+                        <!-- Rating Indicator -->
+                        <Rectangle Grid.Column="1" Width="5" Height="15" Stretch="Fill"
+                                   Fill="{x:Bind Rating,
+                                                 Converter={StaticResource RatingToBrushConverter},
+                                                 Mode=OneWay}"/>
+
+                        <!-- Image Icon -->
+                        <FontIcon Grid.Column="2"
+                                  FontFamily="Segoe Fluent Icons"
+                                  Glyph="&#xEB9F;"
+                                  Margin="3,0,10,0"/>
+
+                        <!-- Media Name -->
+                        <TextBlock Grid.Column="3"
+                                   HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Left"
+                                   Text="{x:Bind Name, Mode=OneWay}"/>
+
+                        <!-- Category 1 Indicator -->
+                        <ContentPresenter Grid.Column="4" Width="15" Height="15"
+                                          VerticalAlignment="Center" Margin="0,0,3,0"
+                                          Content="{StaticResource CategoryShape1}"/>
+
+                        <!-- Category 2 Indicator -->
+                        <ContentPresenter Grid.Column="5" Width="15" Height="15"
+                                          VerticalAlignment="Center" Margin="0,0,3,0"
+                                          Content="{StaticResource CategoryShape2}"/>
+
+                        <!-- Category 3 Indicator -->
+                        <ContentPresenter Grid.Column="6" Width="15" Height="15"
+                                          VerticalAlignment="Center" Margin="0,0,3,0"
+                                          Content="{StaticResource CategoryShape3}"/>
+
+                        <!-- Category 4 Indicator -->
+                        <ContentPresenter Grid.Column="7" Width="15" Height="15"
+                                          VerticalAlignment="Center" Margin="0,0,3,0"
+                                          Content="{StaticResource CategoryShape4}"/>
+                    </Grid>
+                </TreeViewItem.Content>
+            </TreeViewItem>
+        </DataTemplate>
+
+        <DataTemplate x:Key="VideoNodeDataTemplate"
+                      x:DataType="viewmodel:MediaFileSource">
+            <TreeViewItem IsSelected="{x:Bind IsSelected, Mode=TwoWay}"
+                          IsEnabled="{x:Bind IsReady, Mode=OneWay}"
+                          RightTapped="WorkspaceBrowserTreeView_RightTapped">
+                <TreeViewItem.Content>
+                    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Not Ready Indicator -->
+                        <FontIcon Grid.Column="0"
+                                  Width="15" Height="15" Margin="0,0,2,0"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center"
+                                  Foreground="{StaticResource RedBrush}"
+                                  Visibility="{x:Bind IsReady,
+                                                      Converter={StaticResource FalseToVisibleConverter},
+                                                      Mode=OneWay}"/>
+
+                        <!-- Rating Indicator -->
+                        <Rectangle Grid.Column="1" Width="5" Height="15" Stretch="Fill"
+                                   Fill="{x:Bind Rating,
+                                                 Converter={StaticResource RatingToBrushConverter},
+                                                 Mode=OneWay}"/>
+
+                        <!-- Video Icon -->
+                        <FontIcon Grid.Column="2"
+                                  FontFamily="Segoe Fluent Icons"
+                                  Glyph="&#xE8B2;"
+                                  Margin="3,0,10,0"/>
+
+                        <!-- Media Name -->
+                        <TextBlock Grid.Column="3"
+                                   HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Left"
+                                   Text="{x:Bind Name, Mode=OneWay}"/>
+
+                        <!-- Category 1 Indicator -->
+                        <ContentPresenter Grid.Column="4" Width="15" Height="15"
+                                          VerticalAlignment="Center" Margin="0,0,3,0"
+                                          Content="{StaticResource CategoryShape1}"/>
+
+                        <!-- Category 2 Indicator -->
+                        <ContentPresenter Grid.Column="5" Width="15" Height="15"
+                                          VerticalAlignment="Center" Margin="0,0,3,0"
+                                          Content="{StaticResource CategoryShape2}"/>
+
+                        <!-- Category 3 Indicator -->
+                        <ContentPresenter Grid.Column="6" Width="15" Height="15"
+                                          VerticalAlignment="Center" Margin="0,0,3,0"
+                                          Content="{StaticResource CategoryShape3}"/>
+
+                        <!-- Category 4 Indicator -->
+                        <ContentPresenter Grid.Column="7" Width="15" Height="15"
+                                          VerticalAlignment="Center" Margin="0,0,3,0"
+                                          Content="{StaticResource CategoryShape4}"/>
+                    </Grid>
+                </TreeViewItem.Content>
+            </TreeViewItem>
+        </DataTemplate>
+
+        <mediabase:WorkspaceItemTemplateSelector x:Key="WorkspaceItemTemplateSelector"
+                                                 ProjectTemplate="{StaticResource ProjectNodeDataTemplate}"
+                                                 FolderTemplate="{StaticResource FolderNodeDataTemplate}"
+                                                 ImageTemplate="{StaticResource ImageNodeDataTemplate}"
+                                                 VideoTemplate="{StaticResource VideoNodeDataTemplate}"/>
+    </UserControl.Resources>
+    
     <Grid>
         <TreeView x:Name="WorkspaceBrowserTreeView"
                   HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                   SelectionMode="Single"
                   ItemsSource="{x:Bind ViewModel.Projects, Mode=OneWay}"
+                  ItemTemplateSelector="{StaticResource WorkspaceItemTemplateSelector}"
                   ItemInvoked="WorkspaceBrowserTreeView_ItemInvoked"
                   RightTapped="WorkspaceBrowserTreeView_RightTapped"
                   Expanding="WorkspaceBrowserTreeView_Expanding"/>

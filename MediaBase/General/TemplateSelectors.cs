@@ -9,7 +9,7 @@ using MediaBase.ViewModel;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
-namespace MediaBase.General
+namespace MediaBase
 {
     public class WorkspaceItemTemplateSelector : DataTemplateSelector
     {

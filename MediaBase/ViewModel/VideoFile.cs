@@ -14,7 +14,7 @@ namespace MediaBase.ViewModel
     /// <summary>
     /// Contains properties and methods needed for accessing video files.
     /// </summary>
-    [ViewModelType("Video")]
+    [ViewModelType(nameof(VideoFile))]
     public sealed class VideoFile : MediaFile
     {
         #region Fields

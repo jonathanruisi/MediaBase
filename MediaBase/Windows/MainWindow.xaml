@@ -5,6 +5,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
+    xmlns:controls="using:MediaBase.Controls"
     xmlns:windowing="using:Microsoft.UI.Windowing"
     xmlns:toolkit="using:CommunityToolkit.WinUI.UI.Controls">
 
@@ -55,9 +56,12 @@
                         <MenuFlyoutSeparator/>
                         <MenuFlyoutItem Command="{x:Bind ExitCommand}"/>
                     </MenuBarItem>
+                    
                     <MenuBarItem Title="Tools" Margin="0" VerticalAlignment="Bottom">
-                        
+                        <MenuFlyoutItem Text="Debug Action"
+                                        Click="MenuFlyoutItemDebugAction_Click"/>
                     </MenuBarItem>
+                    
                     <MenuBarItem Title="View" Margin="0" VerticalAlignment="Bottom">
                         <RadioMenuFlyoutItem GroupName="Presenter"
                                              Command="{x:Bind ViewNormalCommand}"
@@ -69,6 +73,7 @@
                                              Command="{x:Bind ViewFullscreenCommand}"
                                              CommandParameter="{x:Bind windowing:AppWindowPresenterKind.FullScreen}"/>
                     </MenuBarItem>
+                    
                     <MenuBarItem Title="Help" Margin="0" VerticalAlignment="Bottom">
                         <MenuFlyoutItem Command="{x:Bind HelpDebugLogWindowCommand}"/>
                         <MenuFlyoutSeparator/>
@@ -111,8 +116,9 @@
             <toolkit:Expander Grid.Row="0" Grid.Column="0" Grid.RowSpan="2"
                               ExpandDirection="Right" IsExpanded="True"
                               HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
-                              Header="Project Browser">
-                
+                              Header="Workspace">
+                <controls:WorkspaceBrowser x:Name="WorkspaceBrowser" Grid.Column="0" Width="500"
+                                           HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
             </toolkit:Expander>
 
             <!-- Properties -->

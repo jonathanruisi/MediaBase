@@ -13,6 +13,8 @@ using JLR.Utility.WinUI;
 using JLR.Utility.WinUI.Dialogs;
 using JLR.Utility.WinUI.ViewModel;
 
+using MediaBase.ViewModel;
+
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.Toolkit.Mvvm.Messaging.Messages;
@@ -192,6 +194,13 @@ namespace MediaBase
                     sender.TitleBar.ResetToDefault();
                     break;
             }
+        }
+        #endregion
+
+        #region Event Handlers (Temporary Debug Actions)
+        private void MenuFlyoutItemDebugAction_Click(object sender, RoutedEventArgs e)
+        {
+            ViewModel.Projects.Add(new Project { Name = "Jon" });
         }
         #endregion
 

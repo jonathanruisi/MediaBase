@@ -15,6 +15,7 @@ namespace MediaBase.ViewModel
     /// <summary>
     /// Represents a multimedia file.
     /// </summary>
+    [ViewModelType(nameof(MediaFile))]
     public abstract class MediaFile : ViewModelElement
     {
         #region Fields
