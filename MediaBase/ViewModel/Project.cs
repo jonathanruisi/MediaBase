@@ -12,9 +12,9 @@ using JLR.Utility.WinUI.Dialogs;
 using JLR.Utility.WinUI.Messaging;
 using JLR.Utility.WinUI.ViewModel;
 
+using CommunityToolkit.Mvvm.Messaging;
+
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Toolkit.Mvvm.Input;
-using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.UI;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;

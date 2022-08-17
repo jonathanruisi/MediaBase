@@ -6,8 +6,9 @@ using System.Runtime.InteropServices.WindowsRuntime;
 
 using MediaBase.ViewModel;
 
+using CommunityToolkit.Mvvm.Messaging;
+
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;

@@ -10,8 +10,6 @@ using System.Xml;
 
 using JLR.Utility.WinUI.ViewModel;
 
-using Microsoft.Toolkit.Mvvm.Messaging;
-
 using Windows.Media.Core;
 using Windows.Media.Editing;
 using Windows.Media.MediaProperties;
