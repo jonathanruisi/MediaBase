@@ -12,8 +12,8 @@ using JLR.Utility.WinUI.ViewModel;
 
 using MediaBase.ViewModel;
 
-using Microsoft.Toolkit.Mvvm.ComponentModel;
-using Microsoft.Toolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging;
+
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 
