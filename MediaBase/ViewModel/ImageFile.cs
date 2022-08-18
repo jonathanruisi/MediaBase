@@ -15,36 +15,36 @@ namespace MediaBase.ViewModel
     /// Contains properties and methods needed for accessing image files.
     /// </summary>
     [ViewModelType(nameof(ImageFile))]
-    public sealed class ImageFile : MediaFile
+    public sealed class ImageFile : MediaFile, IMediaDimensions
     {
         #region Fields
         private uint _widthInPixels, _heightInPixels;
         #endregion
 
         #region Properties
-        /// <summary>
-        /// Gets the width of the image, in pixels.
-        /// </summary>
         public uint WidthInPixels
         {
             get => _widthInPixels;
             private set => SetProperty(ref _widthInPixels, value);
         }
 
-        /// <summary>
-        /// Gets the height of the image, in pixels.
-        /// </summary>
         public uint HeightInPixels
         {
             get => _heightInPixels;
             private set => SetProperty(ref _heightInPixels, value);
         }
 
-        protected override MediaContentType ContentType => MediaContentType.Image;
+        public override MediaContentType ContentType => MediaContentType.Image;
         #endregion
 
         #region Constructors
-        public ImageFile() : this(null) { }
+        public ImageFile() : this(file: null) { }
+
+        public ImageFile(string path) : base(path)
+        {
+            _widthInPixels = 0;
+            _heightInPixels = 0;
+        }
 
         public ImageFile(StorageFile file) : base(file)
         {
@@ -54,14 +54,22 @@ namespace MediaBase.ViewModel
         #endregion
 
         #region Method Overrides (MediaFile)
-        public override async Task<bool> ReadPropertiesFromFileAsync()
+        /// <summary>
+        /// Asynchronously loads <see cref="File"/> and reads
+        /// all properties needed by this <see cref="ImageFile"/>.
+        /// </summary>
+        /// <returns>
+        /// <b><c>true</c></b> if all needed information
+        /// was successfully read from the file,
+        /// <b><c>false</c></b> otherwise.
+        /// </returns>
+        public override async Task<bool> MakeReady()
         {
-            if (File?.IsAvailable == false || File?.Path != Path)
-            {
-                IsReady = false;
+            // Load file from path
+            if (await base.MakeReady() == false)
                 return false;
-            }
 
+            // Read image file properties
             try
             {
                 var strWidth = "System.Image.HorizontalSize";

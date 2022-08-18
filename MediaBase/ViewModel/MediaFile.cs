@@ -16,15 +16,23 @@ namespace MediaBase.ViewModel
     /// Represents a multimedia file.
     /// </summary>
     [ViewModelType(nameof(MediaFile))]
-    public abstract class MediaFile : ViewModelElement
+    public abstract class MediaFile : ViewModelElement, IMultimediaItem
     {
         #region Fields
+        private Guid _id;
         private string _path;
         private StorageFile _file;
         private bool _isReady;
         #endregion
 
         #region Properties
+        [ViewModelProperty(nameof(Id), XmlNodeType.Element, true)]
+        public Guid Id
+        {
+            get => _id;
+            set => SetProperty(ref _id, value);
+        }
+
         /// <inheritdoc cref="StorageFile.Path"/>
         [ViewModelProperty(nameof(Path), XmlNodeType.Element)]
         public string Path
@@ -43,26 +51,25 @@ namespace MediaBase.ViewModel
             set => SetProperty(ref _file, value);
         }
 
-        /// <summary>
-        /// Gets a value indicating whether or not
-        /// this file has been loaded and its
-        /// relevant media properties have been read.
-        /// </summary>
         public bool IsReady
         {
             get => _isReady;
             protected set => SetProperty(ref _isReady, value);
         }
 
-        /// <summary>
-        /// Gets a value indicating the type of media
-        /// contained in this file.
-        /// </summary>
-        protected abstract MediaContentType ContentType { get; }
+        public abstract MediaContentType ContentType { get; }
         #endregion
 
         #region Constructors
-        protected MediaFile() : this(null) { }
+        protected MediaFile() : this(file: null) { }
+
+        protected MediaFile(string path)
+        {
+            _isReady = false;
+            _file = null;
+            _path = path;
+            Name = null;
+        }
 
         protected MediaFile(StorageFile file)
         {
@@ -73,7 +80,7 @@ namespace MediaBase.ViewModel
         }
         #endregion
 
-        #region Public Methods
+        #region Interface Implementation (IMultimediaItem)
         /// <summary>
         /// Asynchronously instantiates <see cref="File"/>.
         /// </summary>
@@ -81,13 +88,16 @@ namespace MediaBase.ViewModel
         /// <b><c>true</c></b> if the file was loaded successfully,
         /// <b><c>false</c></b> otherwise.
         /// </returns>
-        public async Task<bool> LoadFileFromPathAsync()
+        public virtual async Task<bool> MakeReady()
         {
-            if (string.IsNullOrEmpty(Path))
+            if (string.IsNullOrEmpty(Path) && File == null)
             {
                 IsReady = false;
                 return false;
             }
+
+            if (string.IsNullOrEmpty(Path) && File?.IsAvailable == true)
+                Path = File.Path;
 
             if (File?.Path == Path)
                 return true;
@@ -122,17 +132,16 @@ namespace MediaBase.ViewModel
 
             return true;
         }
+        #endregion
 
-        /// <summary>
-        /// Asynchronously reads any data from <see cref="File"/>
-        /// that is needed by this <see cref="MediaFile"/>.
-        /// </summary>
-        /// <returns>
-        /// <b><c>true</c></b> if all needed information
-        /// was successfully read from the file,
-        /// <b><c>false</c></b> otherwise.
-        /// </returns>
-        public abstract Task<bool> ReadPropertiesFromFileAsync();
+        #region Method Overrides (ViewModelElement)
+        protected override object CustomPropertyParser(string propertyName, string content)
+        {
+            if (propertyName == nameof(Id))
+                return Guid.Parse(content);
+
+            return null;
+        }
         #endregion
 
         #region Method Overrides (System.Object)

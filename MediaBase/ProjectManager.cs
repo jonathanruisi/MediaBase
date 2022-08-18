@@ -104,6 +104,8 @@ namespace MediaBase
 
         public ObservableCollection<Project> Projects { get; }
 
+        public Dictionary<Guid, IMultimediaItem> MediaDictionary { get; }
+
         public ObservableCollection<string> TagDatabase { get; }
         #endregion
 
@@ -135,6 +137,7 @@ namespace MediaBase
             _hasUnsavedChanges = false;
 
             Projects = new ObservableCollection<Project>();
+            MediaDictionary = new Dictionary<Guid, IMultimediaItem>();
             TagDatabase = new ObservableCollection<string>();
 
             Projects.CollectionChanged += Projects_CollectionChanged;
@@ -159,6 +162,12 @@ namespace MediaBase
         #region Private Methods
         private void RegisterMessages()
         {
+            Messenger.Register<MediaLookupRequestMessage>(this, (r, m) =>
+            {
+                if (MediaDictionary.ContainsKey(m.Id))
+                    m.Reply(MediaDictionary[m.Id]);
+            });
+
             Messenger.Register<CollectionChangedMessage<string>>(this, (r, m) =>
             {
                 if (m.Sender is not IMediaMetadata &&

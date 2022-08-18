@@ -20,24 +20,14 @@ namespace MediaBase
 
         protected override DataTemplate SelectTemplateCore(object item, DependencyObject container)
         {
-            switch (item)
+            return item switch
             {
-                case Project:
-                    return ProjectTemplate;
-
-                case MediaFolder:
-                    return FolderTemplate;
-
-                case MediaFileSource mediaFile:
-                    if (mediaFile.File is ImageFile)
-                        return ImageTemplate;
-                    if (mediaFile.File is VideoFile)
-                        return VideoTemplate;
-                    return null;
-
-                default:
-                    return null;
-            }
+                Project => ProjectTemplate,
+                MediaFolder => FolderTemplate,
+                ImageSource => ImageTemplate,
+                VideoSource => VideoTemplate,
+                _ => null,
+            };
         }
     }
 }

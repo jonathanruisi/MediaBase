@@ -15,7 +15,7 @@ namespace MediaBase.ViewModel
     /// Contains properties and methods needed for accessing video files.
     /// </summary>
     [ViewModelType(nameof(VideoFile))]
-    public sealed class VideoFile : MediaFile
+    public sealed class VideoFile : MediaFile, IVideoProperties
     {
         #region Fields
         private uint _widthInPixels, _heightInPixels;
@@ -24,47 +24,43 @@ namespace MediaBase.ViewModel
         #endregion
 
         #region Properties
-        /// <summary>
-        /// Gets the width of the video, in pixels.
-        /// </summary>
         public uint WidthInPixels
         {
             get => _widthInPixels;
             private set => SetProperty(ref _widthInPixels, value);
         }
 
-        /// <summary>
-        /// Gets the height of the video, in pixels.
-        /// </summary>
         public uint HeightInPixels
         {
             get => _heightInPixels;
             private set => SetProperty(ref _heightInPixels, value);
         }
 
-        /// <summary>
-        /// Gets the frame rate of the video, in frames/second.
-        /// </summary>
         public double FramesPerSecond
         {
             get => _framesPerSecond;
             private set => SetProperty(ref _framesPerSecond, value);
         }
 
-        /// <summary>
-        /// Gets the duration of the video, in seconds.
-        /// </summary>
         public decimal Duration
         {
             get => _duration;
             private set => SetProperty(ref _duration, value);
         }
 
-        protected override MediaContentType ContentType => MediaContentType.Video;
+        public override MediaContentType ContentType => MediaContentType.Video;
         #endregion
 
         #region Constructors
-        public VideoFile() : this(null) { }
+        public VideoFile() : this(file: null) { }
+
+        public VideoFile(string path) : base(path)
+        {
+            _widthInPixels = 0;
+            _heightInPixels = 0;
+            _framesPerSecond = 0;
+            _duration = 0;
+        }
 
         public VideoFile(StorageFile file) : base(file)
         {
@@ -76,14 +72,22 @@ namespace MediaBase.ViewModel
         #endregion
 
         #region Method Overrides (MediaFile)
-        public override async Task<bool> ReadPropertiesFromFileAsync()
+        /// <summary>
+        /// Asynchronously loads <see cref="File"/> and reads
+        /// all properties needed by this <see cref="VideoFile"/>.
+        /// </summary>
+        /// <returns>
+        /// <b><c>true</c></b> if all needed information
+        /// was successfully read from the file,
+        /// <b><c>false</c></b> otherwise.
+        /// </returns>
+        public override async Task<bool> MakeReady()
         {
-            if (File?.IsAvailable == false || File?.Path != Path)
-            {
-                IsReady = false;
+            // Load file from path
+            if (await base.MakeReady() == false)
                 return false;
-            }
 
+            // Read video file properties
             try
             {
                 var strWidth = "System.Video.FrameWidth";

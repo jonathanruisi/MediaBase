@@ -4,6 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using CommunityToolkit.Mvvm.Messaging.Messages;
+
+using MediaBase.ViewModel;
+
 using Microsoft.UI.Xaml.Controls;
 
 namespace MediaBase
@@ -20,6 +24,16 @@ namespace MediaBase
             Message = string.Empty;
             IsCloseable = true;
             Severity = InfoBarSeverity.Informational;
+        }
+    }
+
+    public class MediaLookupRequestMessage : RequestMessage<IMultimediaItem>
+    {
+        public Guid Id { get; set; }
+
+        public MediaLookupRequestMessage(Guid id)
+        {
+            Id = id;
         }
     }
 }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,31 +18,58 @@ namespace MediaBase.ViewModel
     /// <summary>
     /// Represents a multimedia object.
     /// </summary>
-    public abstract class MultimediaSource : ViewModelNode, IMediaMetadata
+    public abstract class MultimediaSource : ViewModelNode, IMultimediaItem, IMediaMetadata, IVideoProperties
     {
+        #region Constants
+        /// <summary>
+        /// Indicates the default refresh rate of the current display.
+        /// </summary>
+        /// <remarks>
+        /// TODO: That value should be retrievable using an API call.
+        /// </remarks>
+        public static readonly int DefaultFrameRate = 120;
+        #endregion
+
         #region Fields
-        private Guid _id;
+        private Guid _id, _sourceId;
+        private IMultimediaItem _source;
         private int _rating;
-        private decimal _duration;
         private uint _widthInPixels, _heightInPixels;
         private double _framesPerSecond;
+        private decimal _duration;
         #endregion
 
         #region Properties
-        /// <summary>
-        /// Gets a value indicating whether or not
-        /// the <see cref="MultimediaSource"/> is ready to be consumed.
-        /// </summary>
-        public abstract bool IsReady { get; protected set; }
-
-        /// <summary>
-        /// Gets a <see cref="Guid"/> which uniquely identifies this object.
-        /// </summary>
-        [ViewModelProperty(nameof(Id), XmlNodeType.Attribute, true)]
+        [ViewModelProperty(nameof(Id), XmlNodeType.Element, true)]
         public Guid Id
         {
             get => _id;
             set => SetProperty(ref _id, value);
+        }
+
+        /// <summary>
+        /// Gets or sets a <see cref="Guid"/> which identifies
+        /// this <see cref="MultimediaSource"/>'s data source.
+        /// </summary>
+        [ViewModelProperty(nameof(SourceId), XmlNodeType.Element, true)]
+        public Guid SourceId
+        {
+            get => _sourceId;
+            set => SetProperty(ref _sourceId, value);
+        }
+
+        public IMultimediaItem Source
+        {
+            get => _source;
+            set
+            {
+                IsReady = false;
+
+                if (value.ContentType != ContentType)
+                    throw new ArgumentException("Invalid media content type", nameof(value));
+
+                SetProperty(ref _source, value);
+            }
         }
 
         [ViewModelProperty(nameof(Rating), XmlNodeType.Element)]
@@ -51,41 +79,33 @@ namespace MediaBase.ViewModel
             set => SetProperty(ref _rating, value);
         }
 
-        /// <summary>
-        /// Gets the duration of the media, in seconds.
-        /// </summary>
-        public virtual decimal Duration
-        {
-            get => _duration;
-            set => SetProperty(ref _duration, value);
-        }
-
-        /// <summary>
-        /// Gets the width of the media, in pixels.
-        /// </summary>
         public virtual uint WidthInPixels
         {
             get => _widthInPixels;
             protected set => SetProperty(ref _widthInPixels, value);
         }
 
-        /// <summary>
-        /// Gets the height of the media, in pixels.
-        /// </summary>
         public virtual uint HeightInPixels
         {
             get => _heightInPixels;
             protected set => SetProperty(ref _heightInPixels, value);
         }
 
-        /// <summary>
-        /// Gets the refresh rate of the media, in frames/second.
-        /// </summary>
         public virtual double FramesPerSecond
         {
             get => _framesPerSecond;
             protected set => SetProperty(ref _framesPerSecond, value);
         }
+
+        public virtual decimal Duration
+        {
+            get => _duration;
+            set => SetProperty(ref _duration, value);
+        }
+
+        public abstract MediaContentType ContentType { get; }
+
+        public abstract bool IsReady { get; protected set; }
 
         /// <summary>
         /// Gets the total number of frames in the media.
@@ -96,23 +116,30 @@ namespace MediaBase.ViewModel
         public ObservableCollection<string> Tags { get; }
         #endregion
 
-        #region Constructor
-        protected MultimediaSource()
+        #region Constructors
+        protected MultimediaSource() : this(null) { }
+
+        protected MultimediaSource(Guid id) : this(id, null) { }
+
+        protected MultimediaSource(IMultimediaItem source) : this(Guid.NewGuid(), source) { }
+
+        protected MultimediaSource(Guid id, IMultimediaItem source)
         {
-            _id = Guid.NewGuid();
+            if (source.ContentType != ContentType)
+                throw new ArgumentException("Invalid media content type", nameof(source));
+
+            _id = id;
+            _source = source;
+            _sourceId = _source?.Id ?? Guid.Empty;
             _rating = 0;
-            _duration = 0;
             _widthInPixels = 0;
             _heightInPixels = 0;
             _framesPerSecond = 0;
+            _duration = 0;
 
             Tags = new ObservableCollection<string>();
             Tags.CollectionChanged += Tags_CollectionChanged;
         }
-        #endregion
-
-        #region Public Methods
-        
         #endregion
 
         #region Event Handlers
@@ -137,10 +164,62 @@ namespace MediaBase.ViewModel
         }
         #endregion
 
+        #region Interface Implementation (IMultimediaItem)
+        public virtual async Task<bool> MakeReady()
+        {
+            // Retrieve source object
+            if (Source == null && SourceId != Guid.Empty)
+            {
+                var response = Messenger.Send(new MediaLookupRequestMessage(SourceId));
+                if (response == null)
+                {
+                    IsReady = false;
+                    return false;
+                }
+
+                Source = response.Response;
+            }
+
+            // Make sure SourceId is set
+            if (Source != null && SourceId == Guid.Empty)
+            {
+                SourceId = Source.Id;
+            }
+            else if (Source == null)
+            {
+                IsReady = false;
+                return false;
+            }
+
+            // Make source ready if necessary
+            if (Source.IsReady || await Source.MakeReady())
+            {
+                // Set dimensions
+                if (Source is IMediaDimensions dimensions)
+                {
+                    WidthInPixels = dimensions.WidthInPixels;
+                    HeightInPixels = dimensions.HeightInPixels;
+                }
+
+                // Set video properties
+                if (Source is IVideoProperties properties)
+                {
+                    FramesPerSecond = properties.FramesPerSecond;
+                    Duration = properties.Duration;
+                }
+
+                return true;
+            }
+
+            IsReady = false;
+            return false;
+        }
+        #endregion
+
         #region Method Overrides (ViewModelElement)
         protected override object CustomPropertyParser(string propertyName, string content)
         {
-            if (propertyName == nameof(Id))
+            if (propertyName == nameof(Id) || propertyName == nameof(SourceId))
                 return Guid.Parse(content);
 
             return null;

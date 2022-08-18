@@ -69,7 +69,7 @@
         </DataTemplate>
 
         <DataTemplate x:Key="ImageNodeDataTemplate"
-                      x:DataType="viewmodel:MediaFileSource">
+                      x:DataType="viewmodel:ImageSource">
             <TreeViewItem IsSelected="{x:Bind IsSelected, Mode=TwoWay}"
                           IsEnabled="{x:Bind IsReady, Mode=OneWay}"
                           RightTapped="WorkspaceBrowserTreeView_RightTapped">
@@ -137,7 +137,7 @@
         </DataTemplate>
 
         <DataTemplate x:Key="VideoNodeDataTemplate"
-                      x:DataType="viewmodel:MediaFileSource">
+                      x:DataType="viewmodel:VideoSource">
             <TreeViewItem IsSelected="{x:Bind IsSelected, Mode=TwoWay}"
                           IsEnabled="{x:Bind IsReady, Mode=OneWay}"
                           RightTapped="WorkspaceBrowserTreeView_RightTapped">
