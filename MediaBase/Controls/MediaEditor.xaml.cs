@@ -34,6 +34,7 @@ using Windows.Media.Playback;
 using Windows.UI;
 using Windows.UI.Core;
 using Windows.UI.Text;
+using System.Timers;
 
 namespace MediaBase.Controls
 {
@@ -52,6 +53,7 @@ namespace MediaBase.Controls
         private FollowMode _prevFollowMode;
         private ValueDragType _scrubType;
         private int _trackCount;
+        private DateTime _sourceChangeTimestamp;
 
         double _mouseOffsetX, _mouseOffsetY;
         #endregion
@@ -268,6 +270,18 @@ namespace MediaBase.Controls
                                         typeof(TimeDisplayFormat),
                                         typeof(MediaEditor),
                                         new PropertyMetadata(TimeDisplayFormat.None));
+
+        public double TitleDisplayDuration
+        {
+            get => (double)GetValue(TitleDisplayDurationProperty);
+            set => SetValue(TitleDisplayDurationProperty, value);
+        }
+
+        public static readonly DependencyProperty TitleDisplayDurationProperty =
+            DependencyProperty.Register("TitleDisplayDuration",
+                                        typeof(double),
+                                        typeof(MediaEditor),
+                                        new PropertyMetadata(3.0));
 
         public Color TextOverlayColor
         {
@@ -798,6 +812,17 @@ namespace MediaBase.Controls
                     _ => string.Empty
                 };
 
+                var timeRemainStr = TimeDisplayMode switch
+                {
+                    TimeDisplayFormat.FrameNumber
+                        => $"-{Source.TotalFrames - CurrentFrame:#}",
+                    TimeDisplayFormat.TimecodeWithFrame
+                        => $"-{(decimal.ToDouble(Source.Duration) - CurrentPosition.TotalSeconds).ToTimecodeString(FramesPerSecond)}",
+                    TimeDisplayFormat.TimecodeWithMillis
+                        => $"-{(decimal.ToDouble(Source.Duration) - CurrentPosition.TotalSeconds).ToTimecodeString(FramesPerSecond, true)}",
+                    _ => string.Empty
+                };
+
                 using var positionTextFormat = new CanvasTextFormat
                 {
                     FontFamily = TextOverlayFontFamily,
@@ -808,11 +833,52 @@ namespace MediaBase.Controls
                     HorizontalAlignment = CanvasHorizontalAlignment.Left
                 };
 
+                using var remainingTextFormat = new CanvasTextFormat
+                {
+                    FontFamily = TextOverlayFontFamily,
+                    FontSize = TextOverlayFontSize,
+                    FontStretch = TextOverlayFontStretch,
+                    FontStyle = TextOverlayFontStyle,
+                    FontWeight = TextOverlayFontWeight,
+                    HorizontalAlignment = CanvasHorizontalAlignment.Right
+                };
+
                 using var positionTextLayout = new CanvasTextLayout(ds, timeStr, positionTextFormat,
                     (float)SwapChainCanvas.ActualWidth, (float)SwapChainCanvas.ActualHeight);
                 using var positionTextGeometry = CanvasGeometry.CreateText(positionTextLayout);
-                ds.FillGeometry(positionTextGeometry, 5, 5, TextOverlayColor);
-                ds.DrawGeometry(positionTextGeometry, 5, 5, TextOverlayOutlineColor, 0.5f);
+
+                using var remainingTextLayout = new CanvasTextLayout(ds, timeRemainStr, remainingTextFormat,
+                    (float)SwapChainCanvas.ActualWidth, (float)SwapChainCanvas.ActualHeight);
+                using var remainingTextGeometry = CanvasGeometry.CreateText(remainingTextLayout);
+
+                ds.FillGeometry(positionTextGeometry, 15, 15, TextOverlayColor);
+                ds.DrawGeometry(positionTextGeometry, 15, 15, TextOverlayOutlineColor, 0.5f);
+
+                ds.FillGeometry(remainingTextGeometry, -15, 15, TextOverlayColor);
+                ds.DrawGeometry(remainingTextGeometry, -15, 15, TextOverlayOutlineColor, 0.5f);
+            }
+
+            // Draw source title
+            if (DateTime.Now - _sourceChangeTimestamp <= TimeSpan.FromSeconds(TitleDisplayDuration))
+            {
+                using var titleTextFormat = new CanvasTextFormat
+                {
+                    FontFamily = TextOverlayFontFamily,
+                    FontSize = TextOverlayFontSize,
+                    FontStretch = TextOverlayFontStretch,
+                    FontStyle = TextOverlayFontStyle,
+                    FontWeight = TextOverlayFontWeight,
+                    HorizontalAlignment = CanvasHorizontalAlignment.Left
+                };
+
+                using var titleTextLayout = new CanvasTextLayout(ds, Source.Name, titleTextFormat,
+                    (float)SwapChainCanvas.ActualWidth, (float)SwapChainCanvas.ActualHeight);
+                using var titleTextGeometry = CanvasGeometry.CreateText(titleTextLayout);
+
+                var x = (float)((SwapChainCanvas.ActualWidth / 2.0) - (titleTextLayout.DrawBounds.Width / 2.0));
+                var y = (float)(SwapChainCanvas.ActualHeight - titleTextLayout.DrawBounds.Height - 15);
+                ds.FillGeometry(titleTextGeometry, x, y, TextOverlayColor);
+                ds.DrawGeometry(titleTextGeometry, x, y, TextOverlayOutlineColor, 0.5f);
             }
 
 #if DEBUG
@@ -1895,6 +1961,8 @@ namespace MediaBase.Controls
                 TimeDisplayMode = TimeDisplayFormat.None;
                 return;
             }
+
+            _sourceChangeTimestamp = DateTime.Now;
 
             FramesPerSecond = (int)Math.Ceiling(Source.FramesPerSecond);
             if (Source is ImageFile image)
