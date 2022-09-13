@@ -54,6 +54,7 @@ namespace MediaBase.Controls
         private ValueDragType _scrubType;
         private int _trackCount;
         private DateTime _sourceChangeTimestamp;
+        private double _sourceNameOpacity, _sourceNameOpacityIncrement;
 
         double _mouseOffsetX, _mouseOffsetY;
         #endregion
@@ -281,7 +282,19 @@ namespace MediaBase.Controls
             DependencyProperty.Register("TitleDisplayDuration",
                                         typeof(double),
                                         typeof(MediaEditor),
-                                        new PropertyMetadata(3.0));
+                                        new PropertyMetadata(2.0));
+
+        public double TitleDisplayFadeDuration
+        {
+            get => (double)GetValue(TimeDisplayFadeDurationProperty);
+            set => SetValue(TimeDisplayFadeDurationProperty, value);
+        }
+
+        public static readonly DependencyProperty TimeDisplayFadeDurationProperty =
+            DependencyProperty.Register("TimeDisplayFadeDuration",
+                                        typeof(double),
+                                        typeof(MediaEditor),
+                                        new PropertyMetadata(0.5));
 
         public Color TextOverlayColor
         {
@@ -861,6 +874,20 @@ namespace MediaBase.Controls
             // Draw source title
             if (DateTime.Now - _sourceChangeTimestamp <= TimeSpan.FromSeconds(TitleDisplayDuration))
             {
+                _sourceNameOpacity = 1.0;
+                _sourceNameOpacityIncrement = 0;
+            }
+            else if (_sourceNameOpacity == 1.0 && _sourceNameOpacityIncrement == 0)
+            {
+                _sourceNameOpacityIncrement = 1.0 / (TitleDisplayFadeDuration * Source.FramesPerSecond);
+            }
+            else if (_sourceNameOpacity > 0 && _sourceNameOpacityIncrement > 0)
+            {
+                _sourceNameOpacity -= _sourceNameOpacityIncrement;
+            }
+
+            if (_sourceNameOpacity > 0)
+            {
                 using var titleTextFormat = new CanvasTextFormat
                 {
                     FontFamily = TextOverlayFontFamily,
@@ -877,8 +904,10 @@ namespace MediaBase.Controls
 
                 var x = (float)((SwapChainCanvas.ActualWidth / 2.0) - (titleTextLayout.DrawBounds.Width / 2.0));
                 var y = (float)(SwapChainCanvas.ActualHeight - titleTextLayout.DrawBounds.Height - 15);
-                ds.FillGeometry(titleTextGeometry, x, y, TextOverlayColor);
-                ds.DrawGeometry(titleTextGeometry, x, y, TextOverlayOutlineColor, 0.5f);
+                ds.FillGeometry(titleTextGeometry, x, y, Color.FromArgb((byte)(_sourceNameOpacity * 255),
+                    TextOverlayColor.R, TextOverlayColor.G, TextOverlayColor.B));
+                ds.DrawGeometry(titleTextGeometry, x, y, Color.FromArgb((byte)(_sourceNameOpacity * 255),
+                    TextOverlayOutlineColor.R, TextOverlayOutlineColor.G, TextOverlayOutlineColor.B), 0.5f);
             }
 
 #if DEBUG
