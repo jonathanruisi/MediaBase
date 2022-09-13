@@ -54,7 +54,7 @@ namespace MediaBase.Controls
         private ValueDragType _scrubType;
         private int _trackCount;
         private DateTime _sourceChangeTimestamp;
-        private double _sourceNameOpacity, _sourceNameOpacityIncrement;
+        private double _sourceTextOpacity, _sourceTextOpacityIncrement;
 
         double _mouseOffsetX, _mouseOffsetY;
         #endregion
@@ -320,6 +320,18 @@ namespace MediaBase.Controls
                                         typeof(MediaEditor),
                                         new PropertyMetadata(Colors.White));
 
+        public double TextOverlayOutlineThickness
+        {
+            get => (double)GetValue(TextOverlayOutlineThicknessProperty);
+            set => SetValue(TextOverlayOutlineThicknessProperty, value);
+        }
+
+        public static readonly DependencyProperty TextOverlayOutlineThicknessProperty =
+            DependencyProperty.Register("TextOverlayOutlineThickness",
+                                        typeof(double),
+                                        typeof(MediaEditor),
+                                        new PropertyMetadata(0.5));
+
         public string TextOverlayFontFamily
         {
             get => (string)GetValue(TextOverlayFontFamilyProperty);
@@ -332,17 +344,17 @@ namespace MediaBase.Controls
                                         typeof(MediaEditor),
                                         new PropertyMetadata(null));
 
-        public float TextOverlayFontSize
+        public double TextOverlayFontSize
         {
-            get => (float)GetValue(TextOverlayFontSizeProperty);
+            get => (double)GetValue(TextOverlayFontSizeProperty);
             set => SetValue(TextOverlayFontSizeProperty, value);
         }
 
         public static readonly DependencyProperty TextOverlayFontSizeProperty =
             DependencyProperty.Register("TextOverlayFontSize",
-                                        typeof(float),
+                                        typeof(double),
                                         typeof(MediaEditor),
-                                        new PropertyMetadata(24.0f));
+                                        new PropertyMetadata(24.0));
 
         public FontStretch TextOverlayFontStretch
         {
@@ -839,7 +851,7 @@ namespace MediaBase.Controls
                 using var positionTextFormat = new CanvasTextFormat
                 {
                     FontFamily = TextOverlayFontFamily,
-                    FontSize = TextOverlayFontSize,
+                    FontSize = (float)TextOverlayFontSize,
                     FontStretch = TextOverlayFontStretch,
                     FontStyle = TextOverlayFontStyle,
                     FontWeight = TextOverlayFontWeight,
@@ -849,7 +861,7 @@ namespace MediaBase.Controls
                 using var remainingTextFormat = new CanvasTextFormat
                 {
                     FontFamily = TextOverlayFontFamily,
-                    FontSize = TextOverlayFontSize,
+                    FontSize = (float)TextOverlayFontSize,
                     FontStretch = TextOverlayFontStretch,
                     FontStyle = TextOverlayFontStyle,
                     FontWeight = TextOverlayFontWeight,
@@ -865,49 +877,70 @@ namespace MediaBase.Controls
                 using var remainingTextGeometry = CanvasGeometry.CreateText(remainingTextLayout);
 
                 ds.FillGeometry(positionTextGeometry, 15, 15, TextOverlayColor);
-                ds.DrawGeometry(positionTextGeometry, 15, 15, TextOverlayOutlineColor, 0.5f);
+                ds.DrawGeometry(positionTextGeometry, 15, 15, TextOverlayOutlineColor, (float)TextOverlayOutlineThickness);
 
                 ds.FillGeometry(remainingTextGeometry, -15, 15, TextOverlayColor);
-                ds.DrawGeometry(remainingTextGeometry, -15, 15, TextOverlayOutlineColor, 0.5f);
+                ds.DrawGeometry(remainingTextGeometry, -15, 15, TextOverlayOutlineColor, (float)TextOverlayOutlineThickness);
             }
 
-            // Draw source title
+            // Determine text overlay opacity (for fading out of view)
             if (DateTime.Now - _sourceChangeTimestamp <= TimeSpan.FromSeconds(TitleDisplayDuration))
             {
-                _sourceNameOpacity = 1.0;
-                _sourceNameOpacityIncrement = 0;
+                _sourceTextOpacity = 1.0;
+                _sourceTextOpacityIncrement = 0;
             }
-            else if (_sourceNameOpacity == 1.0 && _sourceNameOpacityIncrement == 0)
+            else if (_sourceTextOpacity == 1.0 && _sourceTextOpacityIncrement == 0)
             {
-                _sourceNameOpacityIncrement = 1.0 / (TitleDisplayFadeDuration * Source.FramesPerSecond);
+                _sourceTextOpacityIncrement = 1.0 / (TitleDisplayFadeDuration * Source.FramesPerSecond);
             }
-            else if (_sourceNameOpacity > 0 && _sourceNameOpacityIncrement > 0)
+            else if (_sourceTextOpacity > 0 && _sourceTextOpacityIncrement > 0)
             {
-                _sourceNameOpacity -= _sourceNameOpacityIncrement;
+                _sourceTextOpacity -= _sourceTextOpacityIncrement;
             }
 
-            if (_sourceNameOpacity > 0)
+            if (_sourceTextOpacity > 0)
             {
-                using var titleTextFormat = new CanvasTextFormat
+                using var sourceChangeTextFormat = new CanvasTextFormat
                 {
                     FontFamily = TextOverlayFontFamily,
-                    FontSize = TextOverlayFontSize,
+                    FontSize = (float)TextOverlayFontSize,
                     FontStretch = TextOverlayFontStretch,
                     FontStyle = TextOverlayFontStyle,
                     FontWeight = TextOverlayFontWeight,
                     HorizontalAlignment = CanvasHorizontalAlignment.Left
                 };
 
-                using var titleTextLayout = new CanvasTextLayout(ds, Source.Name, titleTextFormat,
+                // Current item number out of total in folder
+                var currentItemNumber = Source.Parent.Children.IndexOf(Source) + 1;
+                var totalItemCount = Source.Parent.Children.Count;
+
+                using var itemNumberTextLayout = new CanvasTextLayout(ds,
+                    $"{currentItemNumber}/{totalItemCount}", sourceChangeTextFormat,
+                    (float)SwapChainCanvas.ActualWidth, (float)SwapChainCanvas.ActualHeight);
+                using var itemNumberTextGeometry = CanvasGeometry.CreateText(itemNumberTextLayout);
+
+                var x = (float)((SwapChainCanvas.ActualWidth / 2.0) - (itemNumberTextLayout.DrawBounds.Width / 2.0));
+                var y = 5.0f;
+
+                ds.FillGeometry(itemNumberTextGeometry, x, y, Color.FromArgb((byte)(_sourceTextOpacity * 255),
+                    TextOverlayColor.R, TextOverlayColor.G, TextOverlayColor.B));
+                ds.DrawGeometry(itemNumberTextGeometry, x, y, Color.FromArgb((byte)(_sourceTextOpacity * 255),
+                    TextOverlayOutlineColor.R, TextOverlayOutlineColor.G, TextOverlayOutlineColor.B),
+                    (float)TextOverlayOutlineThickness);
+
+                // Source title
+                using var titleTextLayout = new CanvasTextLayout(ds, Source.Name, sourceChangeTextFormat,
                     (float)SwapChainCanvas.ActualWidth, (float)SwapChainCanvas.ActualHeight);
                 using var titleTextGeometry = CanvasGeometry.CreateText(titleTextLayout);
 
-                var x = (float)((SwapChainCanvas.ActualWidth / 2.0) - (titleTextLayout.DrawBounds.Width / 2.0));
-                var y = (float)(SwapChainCanvas.ActualHeight - titleTextLayout.DrawBounds.Height - 15);
-                ds.FillGeometry(titleTextGeometry, x, y, Color.FromArgb((byte)(_sourceNameOpacity * 255),
+                x = (float)((SwapChainCanvas.ActualWidth / 2.0) - (titleTextLayout.DrawBounds.Width / 2.0));
+                y = (float)(SwapChainCanvas.ActualHeight - titleTextLayout.DrawBounds.Height - 15);
+
+                ds.FillGeometry(titleTextGeometry, x, y, Color.FromArgb((byte)(_sourceTextOpacity * 255),
                     TextOverlayColor.R, TextOverlayColor.G, TextOverlayColor.B));
-                ds.DrawGeometry(titleTextGeometry, x, y, Color.FromArgb((byte)(_sourceNameOpacity * 255),
-                    TextOverlayOutlineColor.R, TextOverlayOutlineColor.G, TextOverlayOutlineColor.B), 0.5f);
+                ds.DrawGeometry(titleTextGeometry, x, y, Color.FromArgb((byte)(_sourceTextOpacity * 255),
+                    TextOverlayOutlineColor.R, TextOverlayOutlineColor.G, TextOverlayOutlineColor.B),
+                    (float)TextOverlayOutlineThickness);
             }
 
 #if DEBUG
@@ -926,64 +959,64 @@ namespace MediaBase.Controls
             using var line1Geometry = CanvasGeometry.CreateText(new CanvasTextLayout(ds,
                 $"    Mouse: @ {_prevLeftMousePosition.X:0},{_prevLeftMousePosition.Y:0}",
                 debugTextFormat, (float)SwapChainCanvas.ActualWidth, 40));
-            ds.FillGeometry(line1Geometry, 20, 20, Colors.Black);
-            ds.DrawGeometry(line1Geometry, 20, 20, Colors.White, 0.5f);
+            ds.FillGeometry(line1Geometry, 20, 20, TextOverlayColor);
+            ds.DrawGeometry(line1Geometry, 20, 20, TextOverlayOutlineColor, (float)TextOverlayOutlineThickness);
 
             // Source rectangle
             using var line2Geometry = CanvasGeometry.CreateText(new CanvasTextLayout(ds,
                 $"   Source: {_sourceRect.Width:0}x{_sourceRect.Height:0} @ {_sourceRect.X:0},{_sourceRect.Y:0}",
                 debugTextFormat, (float)SwapChainCanvas.ActualWidth, 40));
-            ds.FillGeometry(line2Geometry, 20, 80, Colors.Black);
-            ds.DrawGeometry(line2Geometry, 20, 80, Colors.White, 0.5f);
+            ds.FillGeometry(line2Geometry, 20, 80, TextOverlayColor);
+            ds.DrawGeometry(line2Geometry, 20, 80, TextOverlayOutlineColor, (float)TextOverlayOutlineThickness);
 
             // Destination rectangle
             using var line3Geometry = CanvasGeometry.CreateText(new CanvasTextLayout(ds,
                 $"     Dest: {_destRect.Width:0}x{_destRect.Height:0} @ {_destRect.X:0},{_destRect.Y:0}",
                 debugTextFormat, (float)SwapChainCanvas.ActualWidth, 40));
-            ds.FillGeometry(line3Geometry, 20, 112, Colors.Black);
-            ds.DrawGeometry(line3Geometry, 20, 112, Colors.White, 0.5f);
+            ds.FillGeometry(line3Geometry, 20, 112, TextOverlayColor);
+            ds.DrawGeometry(line3Geometry, 20, 112, TextOverlayOutlineColor, (float)TextOverlayOutlineThickness);
 
             // Full destination rectangle
             using var line4Geometry = CanvasGeometry.CreateText(new CanvasTextLayout(ds,
                 $"Full Dest: {_fullDestRect.Width:0}x{_fullDestRect.Height:0} @ {_fullDestRect.X:0},{_fullDestRect.Y:0}",
                 debugTextFormat, (float)SwapChainCanvas.ActualWidth, 40));
-            ds.FillGeometry(line4Geometry, 20, 144, Colors.Black);
-            ds.DrawGeometry(line4Geometry, 20, 144, Colors.White, 0.5f);
+            ds.FillGeometry(line4Geometry, 20, 144, TextOverlayColor);
+            ds.DrawGeometry(line4Geometry, 20, 144, TextOverlayOutlineColor, (float)TextOverlayOutlineThickness);
 
             // Scale factor (linear and logaritmic)
             using var line5Geometry = CanvasGeometry.CreateText(new CanvasTextLayout(ds,
                 $"   Scale: {_scaleFactor:0.####}  [{FrameScale:0.##}]",
                 debugTextFormat, (float)SwapChainCanvas.ActualWidth, 40));
-            ds.FillGeometry(line5Geometry, 20, 204, Colors.Black);
-            ds.DrawGeometry(line5Geometry, 20, 204, Colors.White, 0.5f);
+            ds.FillGeometry(line5Geometry, 20, 204, TextOverlayColor);
+            ds.DrawGeometry(line5Geometry, 20, 204, TextOverlayOutlineColor, (float)TextOverlayOutlineThickness);
 
             // Horizontal frame offset (pixels)
             using var line6Geometry = CanvasGeometry.CreateText(new CanvasTextLayout(ds,
                 $"X Offset: {FrameOffsetX:0}",
                 debugTextFormat, (float)SwapChainCanvas.ActualWidth, 40));
-            ds.FillGeometry(line6Geometry, 20, 236, Colors.Black);
-            ds.DrawGeometry(line6Geometry, 20, 236, Colors.White, 0.5f);
+            ds.FillGeometry(line6Geometry, 20, 236, TextOverlayColor);
+            ds.DrawGeometry(line6Geometry, 20, 236, TextOverlayOutlineColor, (float)TextOverlayOutlineThickness);
 
             // Vertical frame offset (pixels)
             using var line7Geometry = CanvasGeometry.CreateText(new CanvasTextLayout(ds,
                 $"Y Offset: {FrameOffsetY:0}",
                 debugTextFormat, (float)SwapChainCanvas.ActualWidth, 40));
-            ds.FillGeometry(line7Geometry, 20, 268, Colors.Black);
-            ds.DrawGeometry(line7Geometry, 20, 268, Colors.White, 0.5f);
+            ds.FillGeometry(line7Geometry, 20, 268, TextOverlayColor);
+            ds.DrawGeometry(line7Geometry, 20, 268, TextOverlayOutlineColor, (float)TextOverlayOutlineThickness);
 
             // Horizontal mouse offset from center
             using var line8Geometry = CanvasGeometry.CreateText(new CanvasTextLayout(ds,
                 $"X Mouse Offset: {_mouseOffsetX:0.##}",
                 debugTextFormat, (float)SwapChainCanvas.ActualWidth, 40));
-            ds.FillGeometry(line8Geometry, 20, 328, Colors.Black);
-            ds.DrawGeometry(line8Geometry, 20, 328, Colors.White, 0.5f);
+            ds.FillGeometry(line8Geometry, 20, 328, TextOverlayColor);
+            ds.DrawGeometry(line8Geometry, 20, 328, TextOverlayOutlineColor, (float)TextOverlayOutlineThickness);
 
             // Vertical mouse offset from center
             using var line9Geometry = CanvasGeometry.CreateText(new CanvasTextLayout(ds,
                 $"Y Mouse Offset: {_mouseOffsetY:0.##}",
                 debugTextFormat, (float)SwapChainCanvas.ActualWidth, 40));
-            ds.FillGeometry(line9Geometry, 20, 360, Colors.Black);
-            ds.DrawGeometry(line9Geometry, 20, 360, Colors.White, 0.5f);
+            ds.FillGeometry(line9Geometry, 20, 360, TextOverlayColor);
+            ds.DrawGeometry(line9Geometry, 20, 360, TextOverlayOutlineColor, (float)TextOverlayOutlineThickness);
 #endif
 
             SwapChainCanvas.SwapChain.Present();
