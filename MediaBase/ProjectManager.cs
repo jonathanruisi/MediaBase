@@ -147,7 +147,7 @@ namespace MediaBase
         }
         #endregion
 
-        #region Event Handlers
+        #region Event Handlers (General)
         private void Projects_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
             if (Projects.Count == 0)
@@ -156,6 +156,80 @@ namespace MediaBase
                 Name = $"Workspace: {Projects[0].Name}";
             else
                 Name = $"Workspace: {Projects.Count} Projects";
+        }
+        #endregion
+
+        #region Event Handlers (Commands - CanExecuteRequested)
+        private void ProjectNewCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = true;
+        }
+
+        private void ProjectOpenCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ProjectSaveCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ProjectSaveAsCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ProjectSaveWorkspaceCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ProjectSaveWorkspaceAsCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ProjectCloseWorkspaceCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+
+        }
+        #endregion
+
+        #region Event Handlers (Commands - ExecuteRequested)
+        private void ProjectNewCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ProjectOpenCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ProjectSaveCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ProjectSaveAsCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ProjectSaveWorkspaceCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ProjectSaveWorkspaceAsCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void ProjectCloseWorkspaceCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+
         }
         #endregion
 
@@ -338,6 +412,41 @@ namespace MediaBase
                 Description = "Toggle multiple selection mode",
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xE762 }
             };
+
+            ProjectNewCommand.CanExecuteRequested +=
+                ProjectNewCommand_CanExecuteRequested;
+            ProjectNewCommand.ExecuteRequested +=
+                ProjectNewCommand_ExecuteRequested;
+
+            ProjectOpenCommand.CanExecuteRequested +=
+                ProjectOpenCommand_CanExecuteRequested;
+            ProjectOpenCommand.ExecuteRequested +=
+                ProjectOpenCommand_ExecuteRequested;
+
+            ProjectSaveCommand.CanExecuteRequested +=
+                ProjectSaveCommand_CanExecuteRequested;
+            ProjectSaveCommand.ExecuteRequested +=
+                ProjectSaveCommand_ExecuteRequested;
+
+            ProjectSaveAsCommand.CanExecuteRequested +=
+                ProjectSaveAsCommand_CanExecuteRequested;
+            ProjectSaveAsCommand.ExecuteRequested +=
+                ProjectSaveAsCommand_ExecuteRequested;
+
+            ProjectSaveWorkspaceCommand.CanExecuteRequested +=
+                ProjectSaveWorkspaceCommand_CanExecuteRequested;
+            ProjectSaveWorkspaceCommand.ExecuteRequested +=
+                ProjectSaveWorkspaceCommand_ExecuteRequested;
+
+            ProjectSaveWorkspaceAsCommand.CanExecuteRequested +=
+                ProjectSaveWorkspaceAsCommand_CanExecuteRequested;
+            ProjectSaveWorkspaceAsCommand.ExecuteRequested +=
+                ProjectSaveWorkspaceAsCommand_ExecuteRequested;
+
+            ProjectCloseWorkspaceCommand.CanExecuteRequested +=
+                ProjectCloseWorkspaceCommand_CanExecuteRequested;
+            ProjectCloseWorkspaceCommand.ExecuteRequested +=
+                ProjectCloseWorkspaceCommand_ExecuteRequested;
         }
         #endregion
     }

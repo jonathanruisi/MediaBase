@@ -33,7 +33,17 @@ namespace MediaBase.Controls
         {
             InitializeComponent();
             DataContext = App.Current.Services.GetService<ProjectManager>();
+
+            InitializeCommands();
         }
+        #endregion
+
+        #region Event Handlers (Commands - CanExecuteRequested)
+
+        #endregion
+
+        #region Event Handlers (Commands - ExecuteRequested)
+
         #endregion
 
         #region Event Handlers (TreeView)
@@ -58,6 +68,13 @@ namespace MediaBase.Controls
         private void WorkspaceBrowserTreeView_Expanding(TreeView sender, TreeViewExpandingEventArgs args)
         {
 
+        }
+        #endregion
+
+        #region Private Methods
+        private void InitializeCommands()
+        {
+            
         }
         #endregion
     }

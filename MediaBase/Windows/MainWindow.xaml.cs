@@ -278,23 +278,35 @@ namespace MediaBase
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xF3B1 }
             };
 
-            ViewNormalCommand.CanExecuteRequested += ViewChangePresenter_CanExecuteRequested;
-            ViewNormalCommand.ExecuteRequested += ViewChangePresenter_ExecuteRequested;
+            ViewNormalCommand.CanExecuteRequested +=
+                ViewChangePresenter_CanExecuteRequested;
+            ViewNormalCommand.ExecuteRequested +=
+                ViewChangePresenter_ExecuteRequested;
 
-            ViewCompactCommand.CanExecuteRequested += ViewChangePresenter_CanExecuteRequested;
-            ViewCompactCommand.ExecuteRequested += ViewChangePresenter_ExecuteRequested;
+            ViewCompactCommand.CanExecuteRequested +=
+                ViewChangePresenter_CanExecuteRequested;
+            ViewCompactCommand.ExecuteRequested +=
+                ViewChangePresenter_ExecuteRequested;
 
-            ViewFullscreenCommand.CanExecuteRequested += ViewChangePresenter_CanExecuteRequested;
-            ViewFullscreenCommand.ExecuteRequested += ViewChangePresenter_ExecuteRequested;
+            ViewFullscreenCommand.CanExecuteRequested +=
+                ViewChangePresenter_CanExecuteRequested;
+            ViewFullscreenCommand.ExecuteRequested +=
+                ViewChangePresenter_ExecuteRequested;
 
-            HelpDebugLogWindowCommand.CanExecuteRequested += HelpDebugLogWindowCommand_CanExecuteRequested;
-            HelpDebugLogWindowCommand.ExecuteRequested += HelpDebugLogWindowCommand_ExecuteRequested;
+            HelpDebugLogWindowCommand.CanExecuteRequested +=
+                HelpDebugLogWindowCommand_CanExecuteRequested;
+            HelpDebugLogWindowCommand.ExecuteRequested +=
+                HelpDebugLogWindowCommand_ExecuteRequested;
 
-            HelpAboutCommand.CanExecuteRequested += HelpAboutCommand_CanExecuteRequested;
-            HelpAboutCommand.ExecuteRequested += HelpAboutCommand_ExecuteRequested;
+            HelpAboutCommand.CanExecuteRequested +=
+                HelpAboutCommand_CanExecuteRequested;
+            HelpAboutCommand.ExecuteRequested +=
+                HelpAboutCommand_ExecuteRequested;
 
-            ExitCommand.CanExecuteRequested += ExitCommand_CanExecuteRequested;
-            ExitCommand.ExecuteRequested += ExitCommand_ExecuteRequested;
+            ExitCommand.CanExecuteRequested +=
+                ExitCommand_CanExecuteRequested;
+            ExitCommand.ExecuteRequested +=
+                ExitCommand_ExecuteRequested;
         }
 
         private void RegisterMessages()
