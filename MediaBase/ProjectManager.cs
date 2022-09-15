@@ -19,6 +19,7 @@ using Microsoft.UI.Xaml.Input;
 
 using Windows.Storage;
 using Windows.System;
+using JLR.Utility.WinUI.Dialogs;
 
 namespace MediaBase
 {
@@ -40,7 +41,7 @@ namespace MediaBase
 
         #region Fields
         private StorageFile _file;
-        private ViewModelNode _activeWorkspaceNode;
+        private ViewModelNode _activeNode;
         private MultimediaSource _activeMediaSource;
         private bool _hasUnsavedChanges;
         #endregion
@@ -61,16 +62,16 @@ namespace MediaBase
         /// </summary>
         public ViewModelNode ActiveNode
         {
-            get => _activeWorkspaceNode;
+            get => _activeNode;
             set
             {
-                if (_activeWorkspaceNode != null)
-                    _activeWorkspaceNode.IsSelected = false;
+                if (_activeNode != null)
+                    _activeNode.IsSelected = false;
 
-                SetProperty(ref _activeWorkspaceNode, value);
+                SetProperty(ref _activeNode, value);
 
-                if (_activeWorkspaceNode != null)
-                    _activeWorkspaceNode.IsSelected = true;
+                if (_activeNode != null)
+                    _activeNode.IsSelected = true;
             }
         }
 
@@ -132,7 +133,7 @@ namespace MediaBase
         #region Constructor
         public ProjectManager()
         {
-            _activeWorkspaceNode = null;
+            _activeNode = null;
             _activeMediaSource = null;
             _hasUnsavedChanges = false;
 
@@ -167,39 +168,64 @@ namespace MediaBase
 
         private void ProjectOpenCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            
+            args.CanExecute = true;
         }
 
         private void ProjectSaveCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            
+            args.CanExecute = (_activeNode is Project project) && project.IsActive && project.HasUnsavedChanges;
         }
 
         private void ProjectSaveAsCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            
+            args.CanExecute = (_activeNode is Project project) && project.IsActive;
+        }
+
+        private void ProjectOpenWorkspaceCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = true;
         }
 
         private void ProjectSaveWorkspaceCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            
+            args.CanExecute = IsActive && HasUnsavedChanges;
         }
 
         private void ProjectSaveWorkspaceAsCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            
+            args.CanExecute = IsActive;
         }
 
         private void ProjectCloseWorkspaceCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-
+            args.CanExecute = true;
         }
         #endregion
 
         #region Event Handlers (Commands - ExecuteRequested)
-        private void ProjectNewCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        private async void ProjectNewCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+            var dlg = new TextPromptDialog
+            {
+                Title = "New Project",
+                PromptText = "Enter a name for the new project",
+                PrimaryButtonText = "OK",
+                CloseButtonText = "Cancel",
+                XamlRoot = App.Window.Content.XamlRoot
+            };
+
+            var result = await dlg.ShowAsync();
+            if (result == ContentDialogResult.Primary)
+            {
+                var newProject = new Project
+                {
+                    IsActive = false,
+                    Name = dlg.Text
+                };
+                newProject.IsActive = true;
+
+                Projects.Add(newProject);
+            }
         }
 
         private void ProjectOpenCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
@@ -215,6 +241,11 @@ namespace MediaBase
         private void ProjectSaveAsCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
             
+        }
+
+        private void ProjectOpenWorkspaceCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+
         }
 
         private void ProjectSaveWorkspaceCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
@@ -432,6 +463,11 @@ namespace MediaBase
                 ProjectSaveAsCommand_CanExecuteRequested;
             ProjectSaveAsCommand.ExecuteRequested +=
                 ProjectSaveAsCommand_ExecuteRequested;
+
+            ProjectOpenWorkspaceCommand.CanExecuteRequested +=
+                ProjectOpenWorkspaceCommand_CanExecuteRequested;
+            ProjectOpenWorkspaceCommand.ExecuteRequested +=
+                ProjectOpenWorkspaceCommand_ExecuteRequested;
 
             ProjectSaveWorkspaceCommand.CanExecuteRequested +=
                 ProjectSaveWorkspaceCommand_CanExecuteRequested;

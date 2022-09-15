@@ -46,9 +46,6 @@
     <ProjectReference Include="..\..\Utility.NET\Utility.WinUI\Utility.WinUI.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Dialogs\" />
-  </ItemGroup>
-  <ItemGroup>
     <Page Update="General\MediaBaseResourceDictionary.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -57,5 +54,8 @@
     <Page Update="Controls\WorkspaceBrowser.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Dialogs\" />
   </ItemGroup>
 </Project>
