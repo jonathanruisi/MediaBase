@@ -110,19 +110,28 @@
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
             <toolkit:Expander Grid.Row="0" Grid.Column="0" Grid.RowSpan="2"
+                              ExpandDirection="Right" IsExpanded="False"
+                              HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                              Header="System Browser">
+                <controls:SystemBrowser x:Name="SystemBrowser" Width="500"
+                                        HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+            </toolkit:Expander>
+            
+            <toolkit:Expander Grid.Row="0" Grid.Column="1" Grid.RowSpan="2"
                               ExpandDirection="Right" IsExpanded="True"
                               HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
                               Header="Workspace">
-                <controls:WorkspaceBrowser x:Name="WorkspaceBrowser" Grid.Column="0" Width="500"
+                <controls:WorkspaceBrowser x:Name="WorkspaceBrowser" Width="500"
                                            HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
             </toolkit:Expander>
 
             <!-- Properties -->
-            <toolkit:Expander Grid.Row="1" Grid.Column="1"
+            <toolkit:Expander Grid.Row="1" Grid.Column="2"
                               ExpandDirection="Down" IsExpanded="False"
                               HorizontalContentAlignment="Stretch"
                               Header="Properties">

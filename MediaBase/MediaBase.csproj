@@ -17,6 +17,7 @@
   <ItemGroup>
     <None Remove="Assets\Logo_Package.scale-400.png" />
     <None Remove="Assets\Logo_Tile_Medium.scale-400.png" />
+    <None Remove="Controls\SystemBrowser.xaml" />
     <None Remove="Controls\WorkspaceBrowser.xaml" />
     <None Remove="General\MediaBaseResourceDictionary.xaml" />
   </ItemGroup>
@@ -57,5 +58,11 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Dialogs\" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomAdditionalCompileInputs Remove="Controls\SystemBrowser.xaml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Remove="Controls\SystemBrowser.xaml" />
   </ItemGroup>
 </Project>
