@@ -589,7 +589,7 @@ namespace MediaBase.ViewModel
             {
                 case 1:
                     ActiveMediaSource.IsCategory1 = !ActiveMediaSource.IsCategory1;
-                    if (InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Shift).HasFlag(CoreVirtualKeyStates.Down))
+                    if (InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control).HasFlag(CoreVirtualKeyStates.Down))
                     {
                         for (var i = ActiveMediaSource.Parent.Children.IndexOf(ActiveMediaSource) - 1; i >= 0; i--)
                         {
@@ -604,7 +604,7 @@ namespace MediaBase.ViewModel
                     break;
                 case 2:
                     ActiveMediaSource.IsCategory2 = !ActiveMediaSource.IsCategory2;
-                    if (InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Shift).HasFlag(CoreVirtualKeyStates.Down))
+                    if (InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control).HasFlag(CoreVirtualKeyStates.Down))
                     {
                         for (var i = ActiveMediaSource.Parent.Children.IndexOf(ActiveMediaSource) - 1; i >= 0; i--)
                         {
@@ -619,7 +619,7 @@ namespace MediaBase.ViewModel
                     break;
                 case 3:
                     ActiveMediaSource.IsCategory3 = !ActiveMediaSource.IsCategory3;
-                    if (InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Shift).HasFlag(CoreVirtualKeyStates.Down))
+                    if (InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control).HasFlag(CoreVirtualKeyStates.Down))
                     {
                         for (var i = ActiveMediaSource.Parent.Children.IndexOf(ActiveMediaSource) - 1; i >= 0; i--)
                         {
@@ -634,7 +634,7 @@ namespace MediaBase.ViewModel
                     break;
                 case 4:
                     ActiveMediaSource.IsCategory4 = !ActiveMediaSource.IsCategory4;
-                    if (InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Shift).HasFlag(CoreVirtualKeyStates.Down))
+                    if (InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control).HasFlag(CoreVirtualKeyStates.Down))
                     {
                         for (var i = ActiveMediaSource.Parent.Children.IndexOf(ActiveMediaSource) - 1; i >= 0; i--)
                         {
@@ -864,7 +864,20 @@ namespace MediaBase.ViewModel
             ToolsMark1Command.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.Number1,
-                Modifiers = VirtualKeyModifiers.Shift,
+                Modifiers = VirtualKeyModifiers.Control,
+                IsEnabled = true
+            });
+
+            ToolsMark1Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.NumberPad1,
+                IsEnabled = true
+            });
+
+            ToolsMark1Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.NumberPad1,
+                Modifiers = VirtualKeyModifiers.Control,
                 IsEnabled = true
             });
 
@@ -884,7 +897,20 @@ namespace MediaBase.ViewModel
             ToolsMark2Command.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.Number2,
-                Modifiers = VirtualKeyModifiers.Shift,
+                Modifiers = VirtualKeyModifiers.Control,
+                IsEnabled = true
+            });
+
+            ToolsMark2Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.NumberPad2,
+                IsEnabled = true
+            });
+
+            ToolsMark2Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.NumberPad2,
+                Modifiers = VirtualKeyModifiers.Control,
                 IsEnabled = true
             });
 
@@ -904,7 +930,20 @@ namespace MediaBase.ViewModel
             ToolsMark3Command.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.Number3,
-                Modifiers = VirtualKeyModifiers.Shift,
+                Modifiers = VirtualKeyModifiers.Control,
+                IsEnabled = true
+            });
+
+            ToolsMark3Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.NumberPad3,
+                IsEnabled = true
+            });
+
+            ToolsMark3Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.NumberPad3,
+                Modifiers = VirtualKeyModifiers.Control,
                 IsEnabled = true
             });
 
@@ -924,7 +963,20 @@ namespace MediaBase.ViewModel
             ToolsMark4Command.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.Number4,
-                Modifiers = VirtualKeyModifiers.Shift,
+                Modifiers = VirtualKeyModifiers.Control,
+                IsEnabled = true
+            });
+
+            ToolsMark4Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.NumberPad4,
+                IsEnabled = true
+            });
+
+            ToolsMark4Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.NumberPad4,
+                Modifiers = VirtualKeyModifiers.Control,
                 IsEnabled = true
             });
             #endregion
