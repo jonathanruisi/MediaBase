@@ -7,9 +7,22 @@
     mc:Ignorable="d"
     xmlns:controls="using:MediaBase.Controls"
     xmlns:windowing="using:Microsoft.UI.Windowing"
-    xmlns:toolkit="using:CommunityToolkit.WinUI.UI.Controls">
+    xmlns:toolkit="using:CommunityToolkit.WinUI.UI.Controls"
+    xmlns:toolkit_converters="using:CommunityToolkit.WinUI.UI.Converters"
+    xmlns:xaml="using:Microsoft.UI.Xaml">
 
     <Grid>
+        <Grid.Resources>
+            <toolkit_converters:BoolToVisibilityConverter x:Key="TrueToVisibleConverter">
+                <toolkit_converters:BoolToVisibilityConverter.TrueValue>
+                    <xaml:Visibility>Visible</xaml:Visibility>
+                </toolkit_converters:BoolToVisibilityConverter.TrueValue>
+                <toolkit_converters:BoolToVisibilityConverter.FalseValue>
+                    <xaml:Visibility>Collapsed</xaml:Visibility>
+                </toolkit_converters:BoolToVisibilityConverter.FalseValue>
+            </toolkit_converters:BoolToVisibilityConverter>
+        </Grid.Resources>
+        
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -29,6 +42,7 @@
                     <ColumnDefinition Width="0" x:Name="LeftPaddingColumn"/>
                     <ColumnDefinition Width="Auto" x:Name="IconColumn"/>
                     <ColumnDefinition Width="Auto" x:Name="MenuColumn"/>
+                    <ColumnDefinition Width="Auto" x:Name="ToggleColumn"/>
                     <ColumnDefinition Width="*" x:Name="LeftDragColumn"/>
                 </Grid.ColumnDefinitions>
 
@@ -80,6 +94,16 @@
                         <MenuFlyoutItem Command="{x:Bind HelpAboutCommand}"/>
                     </MenuBarItem>
                 </MenuBar>
+                
+                <!-- Workspace Toggles -->
+                <StackPanel Grid.Column="3" Orientation="Horizontal">
+                    <ToggleButton Content="Browser" Width="100" VerticalAlignment="Top"
+                                  Margin="20,0,5,0" Padding="0,0,0,2" CornerRadius="0,0,10,10"
+                                  IsChecked="True" Click="SystemBrowserToggle_Click"/>
+                    <ToggleButton Content="Workspace" Width="100" VerticalAlignment="Top"
+                                  Margin="0" Padding="0,0,0,2" CornerRadius="0,0,10,10"
+                                  IsChecked="True" Click="WorkspaceBrowserToggle_Click"/>
+                </StackPanel>
             </Grid>
 
             <!-- App Title -->
@@ -109,29 +133,49 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto" x:Name="SystemBrowserColumn"/>
+                <ColumnDefinition Width="Auto" x:Name="SystemBrowserResizeColumn"/>
+                <ColumnDefinition Width="Auto" x:Name="WorkspaceBrowserColumn"/>
+                <ColumnDefinition Width="Auto" x:Name="WorkspaceBrowserResizeColumn"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <toolkit:Expander Grid.Row="0" Grid.Column="0" Grid.RowSpan="2"
-                              ExpandDirection="Right" IsExpanded="False"
-                              HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
-                              Header="System Browser">
-                <controls:SystemBrowser x:Name="SystemBrowser" Width="500"
-                                        HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-            </toolkit:Expander>
-            
-            <toolkit:Expander Grid.Row="0" Grid.Column="1" Grid.RowSpan="2"
-                              ExpandDirection="Right" IsExpanded="True"
-                              HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
-                              Header="Workspace">
-                <controls:WorkspaceBrowser x:Name="WorkspaceBrowser" Width="500"
-                                           HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-            </toolkit:Expander>
+            <StackPanel x:Name="SystemBrowserPanel" Orientation="Vertical" Visibility="Visible"
+                        Grid.Row="0" Grid.Column="0" Grid.RowSpan="2" MinWidth="250"
+                        Background="#282828">
+                <Border Background="#080828" BorderThickness="0" BorderBrush="Transparent">
+                    <StackPanel Orientation="Vertical">
+                        <TextBlock FontSize="14" FontWeight="Bold" Margin="10,5,0,5" Foreground="#2828F0"
+                                   Text="System Browser"/>
+                        <Rectangle Stretch="Fill" Height="3" Fill="#0808A0"/>
+                    </StackPanel>
+                </Border>
+                <controls:SystemBrowser x:Name="SystemBrowser"/>
+            </StackPanel>
+
+            <StackPanel x:Name="WorkspaceBrowserPanel" Orientation="Vertical" Visibility="Visible"
+                        Grid.Row="0" Grid.Column="2" Grid.RowSpan="2" MinWidth="250"
+                        Background="#282828">
+                <Border Background="#082808" BorderThickness="0" BorderBrush="Transparent">
+                    <StackPanel Orientation="Vertical">
+                        <TextBlock FontSize="14" FontWeight="Bold" Margin="10,5,0,5" Foreground="#28F028"
+                                   Text="Workspace Browser"/>
+                        <Rectangle Stretch="Fill" Height="3" Fill="#08A008"/>
+                    </StackPanel>
+                </Border>
+                <controls:WorkspaceBrowser x:Name="WorkspaceBrowser"/>
+            </StackPanel>
+
+            <toolkit:GridSplitter x:Name="SystemBrowserGridSplitter" Grid.Row="0" Grid.Column="1" Grid.RowSpan="2"
+                                  ResizeBehavior="PreviousAndNext" ResizeDirection="Columns" Margin="0,0,5,0"
+                                  CursorBehavior="ChangeOnSplitterHover" GripperCursor="SizeWestEast"/>
+
+            <toolkit:GridSplitter x:Name="WorkspaceBrowserGridSplitter" Grid.Row="0" Grid.Column="3" Grid.RowSpan="2"
+                                  ResizeBehavior="PreviousAndNext" ResizeDirection="Columns" Margin="0,0,5,0"
+                                  CursorBehavior="ChangeOnSplitterHover" GripperCursor="SizeWestEast"/>
 
             <!-- Properties -->
-            <toolkit:Expander Grid.Row="1" Grid.Column="2"
+            <toolkit:Expander Grid.Row="1" Grid.Column="4"
                               ExpandDirection="Down" IsExpanded="False"
                               HorizontalContentAlignment="Stretch"
                               Header="Properties">

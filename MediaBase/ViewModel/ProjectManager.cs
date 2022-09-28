@@ -10,8 +10,6 @@ using System.Xml;
 using JLR.Utility.WinUI.Messaging;
 using JLR.Utility.WinUI.ViewModel;
 
-using MediaBase.ViewModel;
-
 using CommunityToolkit.Mvvm.Messaging;
 
 using Microsoft.UI.Xaml.Controls;
@@ -21,7 +19,7 @@ using Windows.Storage;
 using Windows.System;
 using JLR.Utility.WinUI.Dialogs;
 
-namespace MediaBase
+namespace MediaBase.ViewModel
 {
     [ViewModelType("Workspace")]
     public sealed class ProjectManager : ViewModelElement
@@ -230,17 +228,17 @@ namespace MediaBase
 
         private void ProjectOpenCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+
         }
 
         private void ProjectSaveCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+
         }
 
         private void ProjectSaveAsCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+
         }
 
         private void ProjectOpenWorkspaceCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
@@ -250,12 +248,12 @@ namespace MediaBase
 
         private void ProjectSaveWorkspaceCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+
         }
 
         private void ProjectSaveWorkspaceAsCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+
         }
 
         private void ProjectCloseWorkspaceCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)

@@ -44,6 +44,7 @@ namespace MediaBase
     {
         #region Fields
         private readonly AppWindow _appWindow;
+        private GridLength _systemBrowserWidth, _workspaceBrowserWidth;
         #endregion
 
         #region Properties
@@ -193,6 +194,40 @@ namespace MediaBase
                 default:
                     sender.TitleBar.ResetToDefault();
                     break;
+            }
+        }
+
+        private void SystemBrowserToggle_Click(object sender, RoutedEventArgs e)
+        {
+            if (SystemBrowserPanel.Visibility == Visibility.Visible)
+            {
+                _systemBrowserWidth = SystemBrowserColumn.Width;
+                SystemBrowserColumn.Width = new GridLength(0);
+                SystemBrowserPanel.Visibility = Visibility.Collapsed;
+                SystemBrowserGridSplitter.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                SystemBrowserColumn.Width = _systemBrowserWidth;
+                SystemBrowserPanel.Visibility = Visibility.Visible;
+                SystemBrowserGridSplitter.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void WorkspaceBrowserToggle_Click(object sender, RoutedEventArgs e)
+        {
+            if (WorkspaceBrowserPanel.Visibility == Visibility.Visible)
+            {
+                _workspaceBrowserWidth = WorkspaceBrowserColumn.Width;
+                WorkspaceBrowserColumn.Width = new GridLength(0);
+                WorkspaceBrowserPanel.Visibility = Visibility.Collapsed;
+                WorkspaceBrowserGridSplitter.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                WorkspaceBrowserColumn.Width = _workspaceBrowserWidth;
+                WorkspaceBrowserPanel.Visibility = Visibility.Visible;
+                WorkspaceBrowserGridSplitter.Visibility = Visibility.Visible;
             }
         }
         #endregion
@@ -369,7 +404,8 @@ namespace MediaBase
             RectInt32 dragRect;
             dragRect.X = (int)((LeftPaddingColumn.ActualWidth +
                                 IconColumn.ActualWidth +
-                                MenuColumn.ActualWidth) * scaleAdjustment);
+                                MenuColumn.ActualWidth +
+                                ToggleColumn.ActualWidth) * scaleAdjustment);
             dragRect.Y = 0;
             dragRect.Width = (int)((LeftDragColumn.ActualWidth +
                                     AppTitleUnsavedIndicatorTextBlock.ActualWidth +
