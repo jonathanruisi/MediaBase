@@ -101,6 +101,7 @@ namespace MediaBase.ViewModel
             set => SetProperty(ref _hasUnsavedChanges, value, true);
         }
 
+        [ViewModelCollection(nameof(Projects), nameof(Project), false, false, true)]
         public ObservableCollection<Project> Projects { get; }
 
         public Dictionary<Guid, IMultimediaItem> MediaDictionary { get; }
@@ -259,6 +260,18 @@ namespace MediaBase.ViewModel
         private void ProjectCloseWorkspaceCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
 
+        }
+        #endregion
+
+        #region Method Overrides (ViewModelElement)
+        protected override object HijackDeserialization(string propertyName, ref XmlReader reader)
+        {
+            return null;
+        }
+
+        protected override void HijackSerialization(string propertyName, object value, ref XmlWriter writer)
+        {
+            
         }
         #endregion
 

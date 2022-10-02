@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 
 using JLR.Utility.WinUI.ViewModel;
 
+using CommunityToolkit.Mvvm.Messaging;
+
 using Windows.Storage;
 
 namespace MediaBase.ViewModel
@@ -44,11 +46,43 @@ namespace MediaBase.ViewModel
         #endregion
 
         #region Constructor
+        public Project() : this(string.Empty) { }
 
+        public Project(string name)
+        {
+            Name = name;
+        }
+        #endregion
+
+        #region Method Overrides (ObservableRecipient)
+        protected override void OnActivated()
+        {
+            base.OnActivated();
+            RegisterForViewModelSerializedPropertyChangeNotification();
+        }
+
+        protected override void OnDeactivated()
+        {
+            Messenger.Unregister<SerializedPropertyChangedMessage>(this);
+            base.OnDeactivated();
+        }
         #endregion
 
         #region Private Methods
+        private void RegisterForViewModelSerializedPropertyChangeNotification()
+        {
+            Messenger.Register<SerializedPropertyChangedMessage>(this, (r, m) =>
+            {
+                if (m.Sender is ViewModelNode node && node.Root == this)
+                {
+                    HasUnsavedChanges = true;
 
+                    // Unregister from further messages.
+                    // We will re-register when project is saved.
+                    Messenger.Unregister<SerializedPropertyChangedMessage>(this);
+                }
+            });
+        }
         #endregion
     }
 }

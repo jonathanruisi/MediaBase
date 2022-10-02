@@ -7,6 +7,7 @@
 
     <!-- Brushes -->
     <SolidColorBrush x:Key="RedBrush" Color="#C72335"/>
+    <SolidColorBrush x:Key="WhiteBrush" Color="White"/>
     
     <!-- Shapes -->
     <Polygon x:Key="CategoryShape1"
@@ -29,7 +30,7 @@
     <toolkit_converters:BoolToObjectConverter
         x:Key="TrueToRedBrushConverter"
         TrueValue="{StaticResource RedBrush}"
-        FalseValue="{ThemeResource ListBoxForegroundThemeBrush}"/>
+        FalseValue="{ThemeResource WhiteBrush}"/>
 
     <toolkit_converters:BoolToVisibilityConverter x:Key="FalseToVisibleConverter">
         <toolkit_converters:BoolToVisibilityConverter.TrueValue>

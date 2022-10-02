@@ -235,7 +235,41 @@ namespace MediaBase
         #region Event Handlers (Temporary Debug Actions)
         private void MenuFlyoutItemDebugAction_Click(object sender, RoutedEventArgs e)
         {
-            ViewModel.Projects.Add(new Project { Name = "Jon" });
+            var folder1 = new MediaFolder("Folder 1");
+            var folder2 = new MediaFolder("Folder 2");
+            var folder3 = new MediaFolder("Folder 3");
+            var folder4 = new MediaFolder("Folder 4");
+            var folder5 = new MediaFolder("Folder 5");
+            var folderA = new MediaFolder("Folder A");
+            var folderB = new MediaFolder("Folder B");
+
+            var project1 = new Project("Project 1");
+            var project2 = new Project("Project 2");
+            var project3 = new Project("Project 3");
+
+            folderA.Children.Add(folderB);
+            folder2.Children.Add(folderA);
+
+            project1.Children.Add(folder1);
+            project2.Children.Add(folder2);
+            project3.Children.Add(folder3);
+            project3.Children.Add(folder4);
+            project3.Children.Add(folder5);
+
+            ViewModel.Projects.Add(project1);
+            ViewModel.Projects.Add(project2);
+            ViewModel.Projects.Add(project3);
+
+            folder1.IsActive = true;
+            folder2.IsActive = true;
+            folder3.IsActive = true;
+            folder4.IsActive = true;
+            folder5.IsActive = true;
+            folderA.IsActive = true;
+            folderB.IsActive = true;
+            project1.IsActive = true;
+            project2.IsActive = true;
+            project3.IsActive = true;
         }
         #endregion
 

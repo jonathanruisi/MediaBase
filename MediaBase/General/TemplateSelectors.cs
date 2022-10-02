@@ -23,7 +23,7 @@ namespace MediaBase
         public DataTemplate ImageFileTemplate { get; set; }
         public DataTemplate VideoFileTemplate { get; set; }
 
-        protected override DataTemplate SelectTemplateCore(object item, DependencyObject container)
+        protected override DataTemplate SelectTemplateCore(object item)
         {
             if (item is not TreeViewNode node)
                 return DefaultTemplate;
@@ -60,7 +60,7 @@ namespace MediaBase
         public DataTemplate ImageTemplate { get; set; }
         public DataTemplate VideoTemplate { get; set; }
 
-        protected override DataTemplate SelectTemplateCore(object item, DependencyObject container)
+        protected override DataTemplate SelectTemplateCore(object item)
         {
             return item switch
             {
