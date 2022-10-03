@@ -6,7 +6,8 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
     xmlns:mediabase="using:MediaBase"
-    xmlns:storage="using:Windows.Storage">
+    xmlns:storage="using:Windows.Storage"
+    Loaded="UserControl_Loaded">
 
     <UserControl.Resources>
         <!-- Data Templates -->

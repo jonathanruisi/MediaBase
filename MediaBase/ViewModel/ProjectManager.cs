@@ -18,6 +18,10 @@ using Microsoft.UI.Xaml.Input;
 using Windows.Storage;
 using Windows.System;
 using JLR.Utility.WinUI.Dialogs;
+using CommunityToolkit.Mvvm.Messaging.Messages;
+using JLR.Utility.WinUI;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.UI.Xaml.Media;
 
 namespace MediaBase.ViewModel
 {
@@ -26,11 +30,6 @@ namespace MediaBase.ViewModel
     {
         #region Constants
         public static readonly string DefaultTitle = "MediaBASE";
-        public static readonly string[] MediaFileExtensions = new[]
-        {
-            ".jpg", ".jpeg", ".png", ".bmp", ".avi", ".mov", ".wmv", ".mp4", ".mkv"
-        };
-
         public static readonly string[] MediaBaseFileExtensions = new[]
         {
             ".mbw", ".mbp"
@@ -41,6 +40,7 @@ namespace MediaBase.ViewModel
         private StorageFile _file;
         private ViewModelNode _activeNode;
         private MultimediaSource _activeMediaSource;
+        private Func<IList<TreeViewNode>> _systemBrowserSelectedNodesFunction;
         private bool _hasUnsavedChanges;
         #endregion
 
@@ -91,6 +91,12 @@ namespace MediaBase.ViewModel
             }
         }
 
+        public Func<IList<TreeViewNode>> SystemBrowserSelectedNodesFunction
+        {
+            get => _systemBrowserSelectedNodesFunction;
+            set => SetProperty(ref _systemBrowserSelectedNodesFunction, value);
+        }
+
         /// <summary>
         /// Gets a value indicating whether or not there are changes to
         /// any project in the workspace that have not been saved.
@@ -105,6 +111,7 @@ namespace MediaBase.ViewModel
         public ObservableCollection<Project> Projects { get; }
 
         public Dictionary<Guid, IMultimediaItem> MediaDictionary { get; }
+        public Dictionary<string, Guid> MediaFileDictionary { get; }
 
         public ObservableCollection<string> TagDatabase { get; }
         #endregion
@@ -114,19 +121,17 @@ namespace MediaBase.ViewModel
         public XamlUICommand ProjectOpenCommand { get; private set; }
         public XamlUICommand ProjectSaveCommand { get; private set; }
         public XamlUICommand ProjectSaveAsCommand { get; private set; }
-        public XamlUICommand ProjectOpenWorkspaceCommand { get; private set; }
-        public XamlUICommand ProjectSaveWorkspaceCommand { get; private set; }
-        public XamlUICommand ProjectSaveWorkspaceAsCommand { get; private set; }
-        public XamlUICommand ProjectCloseWorkspaceCommand { get; private set; }
-        public XamlUICommand ProjectNewFolderCommand { get; private set; }
-        public XamlUICommand ProjectImportFilesCommand { get; private set; }
-        public XamlUICommand ProjectImportFolderCommand { get; private set; }
-        public XamlUICommand ProjectRemoveItemCommand { get; private set; }
-        public XamlUICommand ProjectRemoveSelectedCommand { get; private set; }
-        public XamlUICommand ProjectRemoveAllCommand { get; private set; }
-        public XamlUICommand ProjectRenameItemCommand { get; private set; }
-        public XamlUICommand ProjectSelectMultipleCommand { get; private set; }
-        public XamlUICommand ProjectDeleteMarkerCommand { get; private set; }
+        public XamlUICommand ProjectCloseCommand { get; private set; }
+        public XamlUICommand WorkspaceOpenCommand { get; private set; }
+        public XamlUICommand WorkspaceSaveCommand { get; private set; }
+        public XamlUICommand WorkspaceSaveAsCommand { get; private set; }
+        public XamlUICommand WorkspaceCloseCommand { get; private set; }
+        public XamlUICommand WorkspaceNewFolderCommand { get; private set; }
+        public XamlUICommand WorkspaceImportCommand { get; private set; }
+        public XamlUICommand WorkspaceRemoveItemCommand { get; private set; }
+        public XamlUICommand WorkspaceRemoveSelectedCommand { get; private set; }
+        public XamlUICommand WorkspaceRenameItemCommand { get; private set; }
+        public XamlUICommand WorkspaceSelectMultipleCommand { get; private set; }
         #endregion
 
         #region Constructor
@@ -134,16 +139,51 @@ namespace MediaBase.ViewModel
         {
             _activeNode = null;
             _activeMediaSource = null;
+            _systemBrowserSelectedNodesFunction = null;
             _hasUnsavedChanges = false;
 
             Projects = new ObservableCollection<Project>();
             MediaDictionary = new Dictionary<Guid, IMultimediaItem>();
+            MediaFileDictionary = new Dictionary<string, Guid>();
             TagDatabase = new ObservableCollection<string>();
 
             Projects.CollectionChanged += Projects_CollectionChanged;
 
             InitializeCommands();
             RegisterMessages();
+
+            IsActive = true;
+        }
+        #endregion
+
+        #region Public Methods
+        public static async Task MakeItemsReadyAsync(ViewModelNode node)
+        {
+            var messenger = App.Current.Services.GetService<IMessenger>();
+
+            int count = 0, errors = 0;
+            foreach (var item in node.Children.OfType<IMultimediaItem>())
+            {
+                if (item.IsReady)
+                    continue;
+
+                if (await item.MakeReady() == false)
+                    errors++;
+
+                count++;
+            }
+
+            // Warn user if errors occurred
+            if (errors > 0)
+            {
+                messenger.Send(new SetInfoBarMessage
+                {
+                    Title = "Media Error",
+                    Message = $"Unable to prepare {errors} out of {count} item{(errors != 1 ? "s" : "")}.",
+                    Severity = InfoBarSeverity.Warning,
+                    IsCloseable = true
+                });
+            }
         }
         #endregion
 
@@ -162,42 +202,75 @@ namespace MediaBase.ViewModel
         #region Event Handlers (Commands - CanExecuteRequested)
         private void ProjectNewCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = true;
+            args.CanExecute = IsActive;
         }
 
         private void ProjectOpenCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = true;
+            args.CanExecute = IsActive;
         }
 
         private void ProjectSaveCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = (_activeNode is Project project) && project.IsActive && project.HasUnsavedChanges;
+            args.CanExecute = (ActiveNode is Project project && project.HasUnsavedChanges) ||
+                              (Projects.Count == 1 && Projects[0].HasUnsavedChanges);
         }
 
         private void ProjectSaveAsCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = (_activeNode is Project project) && project.IsActive;
+            args.CanExecute = ActiveNode is Project project || Projects.Count == 1;
         }
 
-        private void ProjectOpenWorkspaceCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        private void ProjectCloseCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = ActiveNode is Project project || Projects.Count == 1;
+        }
+
+        private void WorkspaceOpenCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
             args.CanExecute = true;
         }
 
-        private void ProjectSaveWorkspaceCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        private void WorkspaceSaveCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = IsActive && HasUnsavedChanges;
+            args.CanExecute = HasUnsavedChanges;
         }
 
-        private void ProjectSaveWorkspaceAsCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        private void WorkspaceSaveAsCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = IsActive && Projects.Count > 0;
+        }
+
+        private void WorkspaceCloseCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
             args.CanExecute = IsActive;
         }
 
-        private void ProjectCloseWorkspaceCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        private void WorkspaceNewFolderCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = true;
+            args.CanExecute = ActiveNode is MediaFolder;
+        }
+
+        private void WorkspaceImportCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = ActiveNode is MediaFolder &&
+                              SystemBrowserSelectedNodesFunction != null &&
+                              SystemBrowserSelectedNodesFunction().Any();
+        }
+
+        private void WorkspaceRemoveItemCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = ActiveNode is ViewModelNode;
+        }
+
+        private void WorkspaceRemoveSelectedCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = Projects.Any(x => x.DepthFirstEnumerable().Any(y => y.IsSelected));
+        }
+
+        private void WorkspaceRenameItemCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = ActiveNode is ViewModelNode;
         }
         #endregion
 
@@ -229,37 +302,207 @@ namespace MediaBase.ViewModel
 
         private void ProjectOpenCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-
+            
         }
 
         private void ProjectSaveCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-
+            
         }
 
         private void ProjectSaveAsCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-
+            
         }
 
-        private void ProjectOpenWorkspaceCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        private void ProjectCloseCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-
+            
         }
 
-        private void ProjectSaveWorkspaceCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        private void WorkspaceOpenCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-
+            
         }
 
-        private void ProjectSaveWorkspaceAsCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        private void WorkspaceSaveCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-
+            
         }
 
-        private void ProjectCloseWorkspaceCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        private void WorkspaceSaveAsCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
+            
+        }
 
+        private void WorkspaceCloseCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private async void WorkspaceNewFolderCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            var dlg = new TextPromptDialog
+            {
+                Title = "New Folder",
+                PromptText = "Enter a name for the new folder",
+                PrimaryButtonText = "OK",
+                CloseButtonText = "Cancel",
+                XamlRoot = App.Window.Content.XamlRoot
+            };
+
+            var result = await dlg.ShowAsync();
+            if (result == ContentDialogResult.Primary)
+            {
+                ActiveNode.Children.Add(new MediaFolder(dlg.Text));
+            }
+        }
+
+        private async void WorkspaceImportCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            int fileCount = 0, folderCount = 0;
+            var messenger = App.Current.Services.GetService<IMessenger>();
+            var selectedNodes = SystemBrowserSelectedNodesFunction();
+
+            var folderList = new List<StorageFolder>();
+            var fileList = new List<StorageFile>();
+
+            foreach (var node in selectedNodes)
+            {
+                if (HasSelectedAncestor(node))
+                    continue;
+
+                if (node.Content is StorageFolder folder)
+                    folderList.Add(folder);
+                else if (node.Content is StorageFile file)
+                    fileList.Add(file);
+            }
+
+            // Recursively import top-level folders
+            foreach (var folder in folderList)
+            {
+                await AddFolder(folder, (MediaFolder)ActiveNode);
+            }
+
+            // Import all top-level files
+            foreach (var file in fileList)
+            {
+                AddFile(file, (MediaFolder)ActiveNode);
+            }
+
+            // Import complete - display results
+            var message = new StringBuilder();
+            message.Append($"Imported {folderCount} folder{(folderCount != 1 ? "s" : "")} and ");
+            message.Append($"{fileCount} file{(fileCount != 1 ? "s" : "")}");
+            messenger.Send(new SetInfoBarMessage
+            {
+                Title = "Done",
+                Message = message.ToString(),
+                Severity = InfoBarSeverity.Success,
+                IsCloseable = true
+            });
+
+            bool HasSelectedAncestor(TreeViewNode node)
+            {
+                while (node.Parent != null)
+                {
+                    if (selectedNodes.Contains(node.Parent))
+                        return true;
+
+                    node = node.Parent;
+                }
+
+                return false;
+            }
+
+            void AddFile(StorageFile sourceFile, MediaFolder destinationFolder)
+            {
+                if (MediaFileDictionary.ContainsKey(sourceFile.Path))
+                {
+                    var file = MediaDictionary[MediaFileDictionary[sourceFile.Path]];
+                    if (file is not MediaFile) throw new Exception(
+                        $"Database lookup error: Unable to find MediaFile associated with the file at {sourceFile.Path}");
+
+                    if (((MediaFile)file).ContentType == MediaContentType.Image)
+                    {
+                        fileCount++;
+                        var imageSource = new ImageSource(file);
+                        MediaDictionary.Add(imageSource.Id, imageSource);
+                        destinationFolder.Children.Add(imageSource);
+                    }
+                    else if (((MediaFile)file).ContentType == MediaContentType.Video)
+                    {
+                        fileCount++;
+                        var videoSource = new VideoSource(file);
+                        MediaDictionary.Add(videoSource.Id, videoSource);
+                        destinationFolder.Children.Add(videoSource);
+                    }
+                }
+                else if (sourceFile.ContentType.ToLower().Contains("image"))
+                {
+                    fileCount++;
+                    var imageFile = new ImageFile(sourceFile);
+                    MediaDictionary.Add(imageFile.Id, imageFile);
+                    MediaFileDictionary.Add(sourceFile.Path, imageFile.Id);
+
+                    var imageSource = new ImageSource(imageFile);
+                    MediaDictionary.Add(imageSource.Id, imageSource);
+                    destinationFolder.Children.Add(imageSource);
+                }
+                else if (sourceFile.ContentType.ToLower().Contains("video"))
+                {
+                    fileCount++;
+                    var videoFile = new VideoFile(sourceFile);
+                    MediaDictionary.Add(videoFile.Id, videoFile);
+                    MediaFileDictionary.Add(sourceFile.Path, videoFile.Id);
+
+                    var videoSource = new VideoSource(videoFile);
+                    MediaDictionary.Add(videoSource.Id, videoSource);
+                    destinationFolder.Children.Add(videoSource);
+                }
+            }
+
+            async Task AddFolder(StorageFolder sourceFolder, MediaFolder destinationFolder)
+            {
+                messenger.Send(new SetInfoBarMessage
+                {
+                    Title = "Importing Folder",
+                    Message = sourceFolder.Path,
+                    Severity = InfoBarSeverity.Informational,
+                    IsCloseable = false
+                });
+
+                var items = await sourceFolder.GetItemsAsync();
+                if (items.Count == 0)
+                    return;
+
+                folderCount++;
+                var newFolder = new MediaFolder(sourceFolder.DisplayName);
+                destinationFolder.Children.Add(newFolder);
+
+                foreach (var item in items)
+                {
+                    if (item is StorageFile file)
+                        AddFile(file, newFolder);
+                    else if (item is StorageFolder subFolder)
+                        await AddFolder(subFolder, newFolder);
+                }
+            }
+        }
+
+        private void WorkspaceRemoveItemCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void WorkspaceRemoveSelectedCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
+        }
+
+        private void WorkspaceRenameItemCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            
         }
         #endregion
 
@@ -296,39 +539,30 @@ namespace MediaBase.ViewModel
                         TagDatabase.Add(tag);
                 }
             });
-        }
 
-        private void RegisterForViewModelSerializedPropertyChangeNotification()
-        {
-            Messenger.Register<SerializedPropertyChangedMessage>(this, (r, m) =>
+            Messenger.Register<PropertyChangedMessage<bool>>(this, (r, m) =>
             {
-                HasUnsavedChanges = true;
-
-                // Unregister from further messages.
-                // We will re-register when project is saved.
-                Messenger.Unregister<SerializedPropertyChangedMessage>(this);
+                if (m.Sender is Project && m.PropertyName == nameof(Project.HasUnsavedChanges))
+                {
+                    HasUnsavedChanges = Projects.Count(x => x.HasUnsavedChanges) > 0;
+                }
             });
         }
 
         private void InitializeCommands()
         {
+            // New Project
             ProjectNewCommand = new XamlUICommand
             {
-                Label = "New...",
+                Label = "New Project...",
                 Description = "Begin a new project",
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xE81E }
             };
 
-            ProjectNewCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
-            {
-                Key = VirtualKey.N,
-                Modifiers = VirtualKeyModifiers.Control,
-                IsEnabled = true
-            });
-
+            // Open Project
             ProjectOpenCommand = new XamlUICommand
             {
-                Label = "Open...",
+                Label = "Open Project...",
                 Description = "Open an existing project",
                 IconSource = new SymbolIconSource { Symbol = Symbol.OpenLocal }
             };
@@ -340,115 +574,129 @@ namespace MediaBase.ViewModel
                 IsEnabled = true
             });
 
+            // Save Project
             ProjectSaveCommand = new XamlUICommand
             {
-                Label = "Save",
+                Label = "Save Project",
                 Description = "Save the current project",
                 IconSource = new SymbolIconSource { Symbol = Symbol.SaveLocal }
             };
 
-            ProjectSaveCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
-            {
-                Key = VirtualKey.S,
-                Modifiers = VirtualKeyModifiers.Control,
-                IsEnabled = true
-            });
-
+            // Save Project As
             ProjectSaveAsCommand = new XamlUICommand
             {
-                Label = "Save As...",
+                Label = "Save Project As...",
                 Description = "Save the current project to a different file",
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xE792 }
             };
 
-            ProjectSaveAsCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            // Close Project
+            ProjectCloseCommand = new XamlUICommand
             {
-                Key = VirtualKey.S,
-                Modifiers = VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift,
-                IsEnabled = true
-            });
+                Label = "Close Project",
+                Description = "Close the current project",
+                IconSource = new SymbolIconSource { Symbol = (Symbol)0xE8BB }
+            };
 
-            ProjectOpenWorkspaceCommand = new XamlUICommand
+            // Open Workspace
+            WorkspaceOpenCommand = new XamlUICommand
             {
                 Label = "Open Workspace...",
                 Description = "Open an existing workspace",
                 IconSource = new SymbolIconSource { Symbol = Symbol.Library }
             };
 
-            ProjectSaveWorkspaceCommand = new XamlUICommand
+            // Save Workspace
+            WorkspaceSaveCommand = new XamlUICommand
             {
                 Label = "Save Workspace",
                 Description = "Save the current workspace",
                 IconSource = new SymbolIconSource { Symbol = Symbol.SaveLocal }
             };
 
-            ProjectSaveWorkspaceAsCommand = new XamlUICommand
+            WorkspaceSaveCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.S,
+                Modifiers = VirtualKeyModifiers.Control,
+                IsEnabled = true
+            });
+
+            // Save Workspace As
+            WorkspaceSaveAsCommand = new XamlUICommand
             {
                 Label = "Save Workspace As...",
                 Description = "Save the current workspace to a different file",
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xE792 }
             };
 
-            ProjectCloseWorkspaceCommand = new XamlUICommand
+            WorkspaceSaveAsCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.S,
+                Modifiers = VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift,
+                IsEnabled = true
+            });
+
+            // Close Workspace
+            WorkspaceCloseCommand = new XamlUICommand
             {
                 Label = "Close Workspace",
                 Description = "Close the current workspace",
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xE8BB }
             };
 
-            ProjectNewFolderCommand = new XamlUICommand
+            // New Folder
+            WorkspaceNewFolderCommand = new XamlUICommand
             {
                 Label = "New Folder...",
                 Description = "Create a new folder at this location",
                 IconSource = new SymbolIconSource { Symbol = Symbol.NewFolder }
             };
 
-            ProjectImportFilesCommand = new XamlUICommand
+            WorkspaceNewFolderCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
-                Label = "Files...",
-                Description = "Browse for and import media files to this location",
+                Key = VirtualKey.N,
+                Modifiers = VirtualKeyModifiers.Control,
+                IsEnabled = true
+            });
+
+            // Import Item(s)
+            WorkspaceImportCommand = new XamlUICommand
+            {
+                Label = "Import Selected",
+                Description = "Import items selected in the System Browser",
                 IconSource = new SymbolIconSource { Symbol = Symbol.Import }
             };
 
-            ProjectImportFolderCommand = new XamlUICommand
+            // Remove Item
+            WorkspaceRemoveItemCommand = new XamlUICommand
             {
-                Label = "Folder...",
-                Description = "Browse for and import a folder to this location",
-                IconSource = new SymbolIconSource { Symbol = Symbol.ImportAll }
-            };
-
-            ProjectRemoveItemCommand = new XamlUICommand
-            {
-                Label = "Item",
+                Label = "Remove Item",
                 Description = "Remove this item"
             };
 
-            ProjectRemoveItemCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            WorkspaceRemoveItemCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.Delete,
                 IsEnabled = true
             });
 
-            ProjectRemoveSelectedCommand = new XamlUICommand
+            // Remove Selected
+            WorkspaceRemoveSelectedCommand = new XamlUICommand
             {
-                Label = "Selected",
+                Label = "Remove Selected",
                 Description = "Remove selected (checked) items"
             };
 
-            ProjectRemoveAllCommand = new XamlUICommand
-            {
-                Label = "All",
-                Description = "Remove all items"
-            };
-
-            ProjectRenameItemCommand = new XamlUICommand
+            // Rename Item
+            WorkspaceRenameItemCommand = new XamlUICommand
             {
                 Label = "Rename...",
                 Description = "Rename this item",
                 IconSource = new SymbolIconSource { Symbol = Symbol.Rename }
             };
 
-            ProjectSelectMultipleCommand = new XamlUICommand
+            // Toggle Multiple Selection
+            WorkspaceSelectMultipleCommand = new XamlUICommand
             {
                 Label = "Toggle Multi-Select",
                 Description = "Toggle multiple selection mode",
@@ -475,25 +723,55 @@ namespace MediaBase.ViewModel
             ProjectSaveAsCommand.ExecuteRequested +=
                 ProjectSaveAsCommand_ExecuteRequested;
 
-            ProjectOpenWorkspaceCommand.CanExecuteRequested +=
-                ProjectOpenWorkspaceCommand_CanExecuteRequested;
-            ProjectOpenWorkspaceCommand.ExecuteRequested +=
-                ProjectOpenWorkspaceCommand_ExecuteRequested;
+            ProjectCloseCommand.CanExecuteRequested +=
+                ProjectCloseCommand_CanExecuteRequested;
+            ProjectCloseCommand.ExecuteRequested +=
+                ProjectCloseCommand_ExecuteRequested;
 
-            ProjectSaveWorkspaceCommand.CanExecuteRequested +=
-                ProjectSaveWorkspaceCommand_CanExecuteRequested;
-            ProjectSaveWorkspaceCommand.ExecuteRequested +=
-                ProjectSaveWorkspaceCommand_ExecuteRequested;
+            WorkspaceOpenCommand.CanExecuteRequested +=
+                WorkspaceOpenCommand_CanExecuteRequested;
+            WorkspaceOpenCommand.ExecuteRequested +=
+                WorkspaceOpenCommand_ExecuteRequested;
 
-            ProjectSaveWorkspaceAsCommand.CanExecuteRequested +=
-                ProjectSaveWorkspaceAsCommand_CanExecuteRequested;
-            ProjectSaveWorkspaceAsCommand.ExecuteRequested +=
-                ProjectSaveWorkspaceAsCommand_ExecuteRequested;
+            WorkspaceSaveCommand.CanExecuteRequested +=
+                WorkspaceSaveCommand_CanExecuteRequested;
+            WorkspaceSaveCommand.ExecuteRequested +=
+                WorkspaceSaveCommand_ExecuteRequested;
 
-            ProjectCloseWorkspaceCommand.CanExecuteRequested +=
-                ProjectCloseWorkspaceCommand_CanExecuteRequested;
-            ProjectCloseWorkspaceCommand.ExecuteRequested +=
-                ProjectCloseWorkspaceCommand_ExecuteRequested;
+            WorkspaceSaveAsCommand.CanExecuteRequested +=
+                WorkspaceSaveAsCommand_CanExecuteRequested;
+            WorkspaceSaveAsCommand.ExecuteRequested +=
+                WorkspaceSaveAsCommand_ExecuteRequested;
+
+            WorkspaceCloseCommand.CanExecuteRequested +=
+                WorkspaceCloseCommand_CanExecuteRequested;
+            WorkspaceCloseCommand.ExecuteRequested +=
+                WorkspaceCloseCommand_ExecuteRequested;
+
+            WorkspaceNewFolderCommand.CanExecuteRequested +=
+                WorkspaceNewFolderCommand_CanExecuteRequested;
+            WorkspaceNewFolderCommand.ExecuteRequested +=
+                WorkspaceNewFolderCommand_ExecuteRequested;
+
+            WorkspaceImportCommand.CanExecuteRequested +=
+                WorkspaceImportCommand_CanExecuteRequested;
+            WorkspaceImportCommand.ExecuteRequested +=
+                WorkspaceImportCommand_ExecuteRequested;
+
+            WorkspaceRemoveItemCommand.CanExecuteRequested +=
+                WorkspaceRemoveItemCommand_CanExecuteRequested;
+            WorkspaceRemoveItemCommand.ExecuteRequested +=
+                WorkspaceRemoveItemCommand_ExecuteRequested;
+
+            WorkspaceRemoveSelectedCommand.CanExecuteRequested +=
+                WorkspaceRemoveSelectedCommand_CanExecuteRequested;
+            WorkspaceRemoveSelectedCommand.ExecuteRequested +=
+                WorkspaceRemoveSelectedCommand_ExecuteRequested;
+
+            WorkspaceRenameItemCommand.CanExecuteRequested +=
+                WorkspaceRenameItemCommand_CanExecuteRequested;
+            WorkspaceRenameItemCommand.ExecuteRequested +=
+                WorkspaceRenameItemCommand_ExecuteRequested;
         }
         #endregion
     }

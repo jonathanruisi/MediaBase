@@ -14,10 +14,7 @@ namespace MediaBase
     {
         public object Convert(object value, Type targetType, object parameter, string language)
         {
-            if (value is not double rating)
-                throw new ArgumentException("Object must be implicitly convertible to a double", nameof(value));
-
-            return rating switch
+            return (int)value switch
             {
                 5 => new SolidColorBrush(Colors.Orange),
                 4 => new SolidColorBrush(Colors.HotPink),

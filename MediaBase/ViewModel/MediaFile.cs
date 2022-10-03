@@ -65,6 +65,7 @@ namespace MediaBase.ViewModel
 
         protected MediaFile(string path)
         {
+            _id = Guid.NewGuid();
             _isReady = false;
             _file = null;
             _path = path;
@@ -73,6 +74,7 @@ namespace MediaBase.ViewModel
 
         protected MediaFile(StorageFile file)
         {
+            _id = Guid.NewGuid();
             _isReady = false;
             _file = file;
             _path = file?.Path;

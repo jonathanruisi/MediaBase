@@ -5,6 +5,11 @@ using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
 
+using JLR.Utility.WinUI;
+
+using MediaBase.ViewModel;
+
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -22,13 +27,15 @@ namespace MediaBase.Controls
     public sealed partial class SystemBrowser : UserControl
     {
         #region Properties
-
+        public ProjectManager ViewModel => (ProjectManager)DataContext;
         #endregion
 
         #region Constructor
         public SystemBrowser()
         {
             InitializeComponent();
+            DataContext = App.Current.Services.GetService<ProjectManager>();
+
             InitializeTreeView();
         }
         #endregion
@@ -94,7 +101,7 @@ namespace MediaBase.Controls
 
             foreach (var file in items.OfType<StorageFile>())
             {
-                var extension = file.Name.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Last().ToLower();
+                var extension = file.GetFileExtension();
                 var contentType = file.ContentType.ToLower();
 
                 if (extension != "mbw" &&
@@ -106,6 +113,16 @@ namespace MediaBase.Controls
                 var newNode = new TreeViewNode { Content = file };
                 node.Children.Add(newNode);
             }
+        }
+        #endregion
+
+        #region Event Handlers (UserControl)
+        private void UserControl_Loaded(object sender, RoutedEventArgs e)
+        {
+            ViewModel.SystemBrowserSelectedNodesFunction = new Func<IList<TreeViewNode>>(() =>
+            {
+                return SystemBrowserTreeView.SelectedNodes;
+            });
         }
         #endregion
 
@@ -135,7 +152,7 @@ namespace MediaBase.Controls
 
         private void SystemBrowserTreeView_RightTapped(object sender, RightTappedRoutedEventArgs e)
         {
-
+            
         }
         #endregion
     }

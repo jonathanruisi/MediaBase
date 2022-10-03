@@ -62,18 +62,18 @@
                         <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectOpenCommand}"/>
                         <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectSaveCommand}"/>
                         <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectSaveAsCommand}"/>
+                        <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectCloseCommand}"/>
                         <MenuFlyoutSeparator/>
-                        <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectOpenWorkspaceCommand}"/>
-                        <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectSaveWorkspaceCommand}"/>
-                        <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectSaveWorkspaceAsCommand}"/>
-                        <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectCloseWorkspaceCommand}"/>
+                        <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceOpenCommand}"/>
+                        <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceSaveCommand}"/>
+                        <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceSaveAsCommand}"/>
+                        <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceCloseCommand}"/>
                         <MenuFlyoutSeparator/>
                         <MenuFlyoutItem Command="{x:Bind ExitCommand}"/>
                     </MenuBarItem>
                     
                     <MenuBarItem Title="Tools" Margin="0" VerticalAlignment="Bottom">
-                        <MenuFlyoutItem Text="Debug Action"
-                                        Click="MenuFlyoutItemDebugAction_Click"/>
+                        
                     </MenuBarItem>
                     
                     <MenuBarItem Title="View" Margin="0" VerticalAlignment="Bottom">
@@ -140,31 +140,39 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <StackPanel x:Name="SystemBrowserPanel" Orientation="Vertical" Visibility="Visible"
-                        Grid.Row="0" Grid.Column="0" Grid.RowSpan="2" MinWidth="250"
-                        Background="#282828">
-                <Border Background="#080828" BorderThickness="0" BorderBrush="Transparent">
+            <Grid x:Name="SystemBrowserPanel" Grid.Row="0" Grid.Column="0" Grid.RowSpan="2"
+                  Visibility="Visible" MinWidth="250" Background="#282828">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                
+                <Border Grid.Row="0" Background="#080828" BorderThickness="0" BorderBrush="Transparent">
                     <StackPanel Orientation="Vertical">
                         <TextBlock FontSize="14" FontWeight="Bold" Margin="10,5,0,5" Foreground="#2828F0"
                                    Text="System Browser"/>
                         <Rectangle Stretch="Fill" Height="3" Fill="#0808A0"/>
                     </StackPanel>
                 </Border>
-                <controls:SystemBrowser x:Name="SystemBrowser"/>
-            </StackPanel>
+                <controls:SystemBrowser x:Name="SystemBrowser" Grid.Row="1"/>
+            </Grid>
 
-            <StackPanel x:Name="WorkspaceBrowserPanel" Orientation="Vertical" Visibility="Visible"
-                        Grid.Row="0" Grid.Column="2" Grid.RowSpan="2" MinWidth="250"
-                        Background="#282828">
-                <Border Background="#082808" BorderThickness="0" BorderBrush="Transparent">
+            <Grid x:Name="WorkspaceBrowserPanel" Grid.Row="0" Grid.Column="2" Grid.RowSpan="2"
+                        Visibility="Visible" MinWidth="250" Background="#282828">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                
+                <Border Grid.Row="0" Background="#082808" BorderThickness="0" BorderBrush="Transparent">
                     <StackPanel Orientation="Vertical">
                         <TextBlock FontSize="14" FontWeight="Bold" Margin="10,5,0,5" Foreground="#28F028"
                                    Text="Workspace Browser"/>
                         <Rectangle Stretch="Fill" Height="3" Fill="#08A008"/>
                     </StackPanel>
                 </Border>
-                <controls:WorkspaceBrowser x:Name="WorkspaceBrowser"/>
-            </StackPanel>
+                <controls:WorkspaceBrowser x:Name="WorkspaceBrowser" Grid.Row="1"/>
+            </Grid>
 
             <toolkit:GridSplitter x:Name="SystemBrowserGridSplitter" Grid.Row="0" Grid.Column="1" Grid.RowSpan="2"
                                   ResizeBehavior="PreviousAndNext" ResizeDirection="Columns" Margin="0,0,5,0"

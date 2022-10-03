@@ -39,11 +39,20 @@ namespace MediaBase.Controls
         #endregion
 
         #region Event Handlers (Commands - CanExecuteRequested)
-
+        private void WorkspaceSelectMultipleCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = ViewModel != null && ViewModel.IsActive;
+        }
         #endregion
 
         #region Event Handlers (Commands - ExecuteRequested)
-
+        private void WorkspaceSelectMultipleCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            if (WorkspaceBrowserTreeView.SelectionMode == TreeViewSelectionMode.Single)
+                WorkspaceBrowserTreeView.SelectionMode = TreeViewSelectionMode.Multiple;
+            else
+                WorkspaceBrowserTreeView.SelectionMode = TreeViewSelectionMode.Single;
+        }
         #endregion
 
         #region Event Handlers (TreeView)
@@ -65,16 +74,22 @@ namespace MediaBase.Controls
             e.Handled = true;
         }
 
-        private void WorkspaceBrowserTreeView_Expanding(TreeView sender, TreeViewExpandingEventArgs args)
+        private async void WorkspaceBrowserTreeView_Expanding(TreeView sender, TreeViewExpandingEventArgs args)
         {
+            if (args.Item is not ViewModelNode node)
+                return;
 
+            await ProjectManager.MakeItemsReadyAsync(node);
         }
         #endregion
 
         #region Private Methods
         private void InitializeCommands()
         {
-            
+            ViewModel.WorkspaceSelectMultipleCommand.CanExecuteRequested +=
+                WorkspaceSelectMultipleCommand_CanExecuteRequested;
+            ViewModel.WorkspaceSelectMultipleCommand.ExecuteRequested +=
+                WorkspaceSelectMultipleCommand_ExecuteRequested;
         }
         #endregion
     }

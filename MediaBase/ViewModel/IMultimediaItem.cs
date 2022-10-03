@@ -12,6 +12,11 @@ namespace MediaBase.ViewModel
     public interface IMultimediaItem
     {
         /// <summary>
+        /// Gets or sets the name of the media item.
+        /// </summary>
+        string Name { get; set; }
+
+        /// <summary>
         /// Gets or sets a <see cref="Guid"/> which uniquely identifies this object.
         /// </summary>
         Guid Id { get; set; }

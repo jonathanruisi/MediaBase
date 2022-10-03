@@ -136,6 +136,7 @@ namespace MediaBase.ViewModel
             _heightInPixels = 0;
             _framesPerSecond = 0;
             _duration = 0;
+            Name = _source?.Name;
 
             Tags = new ObservableCollection<string>();
             Tags.CollectionChanged += Tags_CollectionChanged;
@@ -181,19 +182,16 @@ namespace MediaBase.ViewModel
             }
 
             // Make sure SourceId is set
-            if (Source != null && SourceId == Guid.Empty)
-            {
+            if (SourceId == Guid.Empty)
                 SourceId = Source.Id;
-            }
-            else if (Source == null)
-            {
-                IsReady = false;
-                return false;
-            }
 
             // Make source ready if necessary
             if (Source.IsReady || await Source.MakeReady())
             {
+                // Set name from source if name is not already set
+                if (string.IsNullOrEmpty(Name) && !string.IsNullOrEmpty(Source.Name))
+                    Name = Source.Name;
+
                 // Set dimensions
                 if (Source is IMediaDimensions dimensions)
                 {
