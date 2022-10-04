@@ -43,7 +43,6 @@
     <ProjectCapability Include="Msix" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Utility.NET\Utility.NET\Utility.NET.csproj" />
     <ProjectReference Include="..\..\Utility.NET\Utility.WinUI\Utility.WinUI.csproj" />
   </ItemGroup>
   <ItemGroup>

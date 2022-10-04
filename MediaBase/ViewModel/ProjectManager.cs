@@ -22,6 +22,8 @@ using CommunityToolkit.Mvvm.Messaging.Messages;
 using JLR.Utility.WinUI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml.Media;
+using Windows.Storage.Pickers;
+using WinRT.Interop;
 
 namespace MediaBase.ViewModel
 {
@@ -151,12 +153,124 @@ namespace MediaBase.ViewModel
 
             InitializeCommands();
             RegisterMessages();
-
-            IsActive = true;
         }
         #endregion
 
         #region Public Methods
+        /// <summary>
+        /// Saves the XML representation of this <see cref="ProjectManager"/>
+        /// to the <see cref="StorageFile"/> pointed to by <see cref="File"/>.
+        /// </summary>
+        public async Task SaveAsync()
+        {
+            if (!HasUnsavedChanges)
+                return;
+
+            // Save each project in the workspace
+            foreach (var project in Projects)
+            {
+                if (project.File == null || !project.File.IsAvailable)
+                {
+                    if (await project.PromptSaveLocation() == false)
+                        return;
+                }
+
+                await project.SaveAsync();
+            }
+
+            // Save the workspace itself
+            if (await SaveAsync(File))
+            {
+                HasUnsavedChanges = false;
+            }
+        }
+
+        /// <summary>
+        /// Alerts the user that unsaved changes exist,
+        /// asking whether or not to save those changes.
+        /// </summary>
+        /// <returns>
+        /// <b><c>true</c></b> if the user chose either <b>Yes</b> or <b>No</b>,
+        /// <b><c>false</c></b> if the user chose <b>Cancel</b>.
+        /// </returns>
+        public async Task<bool> PromptSaveChanges()
+        {
+            if (!IsActive || !HasUnsavedChanges)
+                return true;
+
+            var dlg = new ContentDialog
+            {
+                Title = "Unsaved Changes",
+                Content = $"Save changes to workspace {Name}?",
+                PrimaryButtonText = "Yes",
+                SecondaryButtonText = "No",
+                CloseButtonText = "Cancel",
+                XamlRoot = App.Window.Content.XamlRoot
+            };
+
+            var choice = await dlg.ShowAsync();
+
+            // Cancel
+            if (choice == ContentDialogResult.None)
+                return false;
+
+            // Yes
+            if (choice == ContentDialogResult.Primary)
+            {
+                if (File == null || !File.IsAvailable)
+                {
+                    if (await PromptSaveLocation() == false)
+                        return false;
+                }
+
+                await SaveAsync();
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Prompts the user to choose a location and a
+        /// filename to which the workspace will be saved.
+        /// The <see cref="File"/> property will be updated
+        /// if a file is chosen.
+        /// </summary>
+        /// <returns>
+        /// <b><c>true</c></b> if a file is chosen,
+        /// <b><c>false</c></b> otherwise.
+        /// </returns>
+        public async Task<bool> PromptSaveLocation()
+        {
+            var picker = new FileSavePicker
+            {
+                SuggestedStartLocation = PickerLocationId.Desktop,
+                CommitButtonText = "Save",
+                SuggestedFileName = "Workspace"
+            };
+
+            picker.FileTypeChoices.Add("MediaBase Workspace Files", new List<string> { ".mbw" });
+            InitializeWithWindow.Initialize(picker, App.WindowHandle);
+
+            var file = await picker.PickSaveFileAsync();
+            if (file != null && file.IsAvailable)
+            {
+                File = file;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Calls <see cref="IMultimediaItem.MakeReady"/> on
+        /// every <see cref="IMultimediaItem"/> in the specified
+        /// <see cref="ViewModelNode"/>. This operation is not
+        /// recursive, therefore only the node's immediate children
+        /// will be affected.
+        /// </summary>
+        /// <param name="node">
+        /// The <see cref="ViewModelNode"/> to process.
+        /// </param>
         public static async Task MakeItemsReadyAsync(ViewModelNode node)
         {
             var messenger = App.Current.Services.GetService<IMessenger>();
@@ -305,34 +419,115 @@ namespace MediaBase.ViewModel
             
         }
 
-        private void ProjectSaveCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        private async void ProjectSaveCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+            Project project = null;
+            if (ActiveNode is Project)
+                project = ActiveNode as Project;
+            else if (Projects.Count == 1)
+                project = Projects[0];
+
+            if (project.File == null || !project.File.IsAvailable)
+            {
+                if (await project.PromptSaveLocation() == false)
+                    return;
+            }
+
+            await project.SaveAsync();
         }
 
-        private void ProjectSaveAsCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        private async void ProjectSaveAsCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+            Project project = null;
+            if (ActiveNode is Project)
+                project = ActiveNode as Project;
+            else if (Projects.Count == 1)
+                project = Projects[0];
+
+            if (await project.PromptSaveLocation())
+                await project.SaveAsync();
         }
 
-        private void ProjectCloseCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        private async void ProjectCloseCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+            Project project = null;
+            if (ActiveNode is Project)
+                project = ActiveNode as Project;
+            else if (Projects.Count == 1)
+                project = Projects[0];
+
+            if (await project.PromptSaveChanges() == false)
+                return;
+
+            project.IsActive = false;
+            Projects.Remove(project);
         }
 
-        private void WorkspaceOpenCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        private async void WorkspaceOpenCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+            // Prompt user to save unsaved changes
+            if (await PromptSaveChanges() == false)
+                return;
+
+            var picker = new FileOpenPicker
+            {
+                ViewMode = PickerViewMode.List,
+                SuggestedStartLocation = PickerLocationId.Desktop,
+                CommitButtonText = "Open Workspace",
+                FileTypeFilter = { ".mbw" }
+            };
+
+            InitializeWithWindow.Initialize(picker, App.WindowHandle);
+
+            var file = await picker.PickSingleFileAsync();
+            if (file == null || !file.IsAvailable)
+                return;
+
+            // Read workspace file
+            var workspace = (ProjectManager)await FromFileAsync(file);
+            if (workspace == null)
+                return;
+
+            // Reset singleton workspace
+            IsActive = false;
+            Projects.Clear();
+            Name = workspace.Name;
+            File = file;
+            IsActive = true;
+
+            // Open each project in the workspace
+            foreach (var project in workspace.Projects)
+            {
+                var projectFile = await StorageFile.GetFileFromPathAsync(project.Path);
+                if (projectFile == null || !projectFile.IsAvailable)
+                    continue;
+
+                var newProject = (Project)await FromFileAsync(projectFile);
+                newProject.File = projectFile;
+                newProject.Path = projectFile.Path;
+                newProject.IsActive = true;
+
+                Projects.Add(newProject);
+            }
+
+            // TODO: Need to populate the media file database somehow!
         }
 
-        private void WorkspaceSaveCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        private async void WorkspaceSaveCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+            if (File == null || !File.IsAvailable)
+            {
+                if (await PromptSaveLocation() == false)
+                    return;
+            }
+
+            await SaveAsync();
         }
 
-        private void WorkspaceSaveAsCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        private async void WorkspaceSaveAsCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+            if (await PromptSaveLocation())
+                await SaveAsync();
         }
 
         private void WorkspaceCloseCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
@@ -509,12 +704,32 @@ namespace MediaBase.ViewModel
         #region Method Overrides (ViewModelElement)
         protected override object HijackDeserialization(string propertyName, ref XmlReader reader)
         {
+            if (propertyName == nameof(Project))
+            {
+                reader.ReadStartElement();
+                var path = reader.ReadElementContentAsString();
+                reader.ReadEndElement();
+
+                return new Project { Path = path };
+            }
+
             return null;
         }
 
         protected override void HijackSerialization(string propertyName, object value, ref XmlWriter writer)
         {
-            
+            if (propertyName == nameof(Project))
+            {
+                if (value is not Project project)
+                    throw new Exception("Argument passed to custom serializer could not be cast to Project");
+
+                if (project.File == null || !project.File.IsAvailable)
+                    throw new Exception("Project does not have an associated save file");
+
+                writer.WriteStartElement(propertyName);
+                writer.WriteElementString("Path", project.File.Path);
+                writer.WriteEndElement();
+            }
         }
         #endregion
 

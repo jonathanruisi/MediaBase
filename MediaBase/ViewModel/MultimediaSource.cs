@@ -125,7 +125,7 @@ namespace MediaBase.ViewModel
 
         protected MultimediaSource(Guid id, IMultimediaItem source)
         {
-            if (source.ContentType != ContentType)
+            if (source != null && source.ContentType != ContentType)
                 throw new ArgumentException("Invalid media content type", nameof(source));
 
             _id = id;

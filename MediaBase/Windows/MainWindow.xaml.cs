@@ -66,6 +66,8 @@ namespace MediaBase
             InitializeComponent();
 
             ViewModel = App.Current.Services.GetService<ProjectManager>();
+            if (!ViewModel.IsActive)
+                ViewModel.IsActive = true;
 
             Activated += MainWindow_Activated;
             Closed += MainWindow_Closed;

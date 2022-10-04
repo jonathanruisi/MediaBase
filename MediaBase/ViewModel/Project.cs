@@ -9,6 +9,11 @@ using JLR.Utility.WinUI.ViewModel;
 using CommunityToolkit.Mvvm.Messaging;
 
 using Windows.Storage;
+using Microsoft.UI.Xaml.Controls;
+using Windows.Storage.Pickers;
+using WinRT.Interop;
+using System.IO;
+using System.Xml;
 
 namespace MediaBase.ViewModel
 {
@@ -20,6 +25,7 @@ namespace MediaBase.ViewModel
     {
         #region Fields
         private StorageFile _file;
+        private string _path;
         private bool _hasUnsavedChanges;
         #endregion
 
@@ -43,14 +49,127 @@ namespace MediaBase.ViewModel
             get => _file;
             set => SetProperty(ref _file, value, true);
         }
+
+        /// <summary>
+        /// Gets or sets the path of the file used to save this <see cref="Project"/>.
+        /// </summary>
+        /// <remarks>
+        /// This property is used by <see cref="ProjectManager"/> during deserialization.
+        /// </remarks>
+        public string Path
+        {
+            get => _path;
+            set => SetProperty(ref _path, value);
+        }
         #endregion
 
-        #region Constructor
+        #region Constructors
         public Project() : this(string.Empty) { }
 
-        public Project(string name)
+        public Project(string name) : base(name)
         {
-            Name = name;
+            _file = null;
+            _path = string.Empty;
+        }
+
+        public Project(StorageFile file) : base(file?.DisplayName)
+        {
+            _file = file;
+            _path = file?.Path;
+        }
+        #endregion
+
+        #region Public Methods
+        /// <summary>
+        /// Saves the XML representation of this <see cref="Project"/>
+        /// to the <see cref="StorageFile"/> pointed to by <see cref="File"/>.
+        /// </summary>
+        public async Task SaveAsync()
+        {
+            if (!HasUnsavedChanges)
+                return;
+
+            if (await SaveAsync(File))
+            {
+                HasUnsavedChanges = false;
+                RegisterForViewModelSerializedPropertyChangeNotification();
+            }
+        }
+
+        /// <summary>
+        /// Alerts the user that unsaved changes exist,
+        /// asking whether or not to save those changes.
+        /// </summary>
+        /// <returns>
+        /// <b><c>true</c></b> if the user chose either <b>Yes</b> or <b>No</b>,
+        /// <b><c>false</c></b> if the user chose <b>Cancel</b>.
+        /// </returns>
+        public async Task<bool> PromptSaveChanges()
+        {
+            if (!IsActive || !HasUnsavedChanges)
+                return true;
+
+            var dlg = new ContentDialog
+            {
+                Title = "Unsaved Changes",
+                Content = $"Save changes to project {Name}?",
+                PrimaryButtonText = "Yes",
+                SecondaryButtonText = "No",
+                CloseButtonText = "Cancel",
+                XamlRoot = App.Window.Content.XamlRoot
+            };
+
+            var choice = await dlg.ShowAsync();
+
+            // Cancel
+            if (choice == ContentDialogResult.None)
+                return false;
+
+            // Yes
+            if (choice == ContentDialogResult.Primary)
+            {
+                if (File == null || !File.IsAvailable)
+                {
+                    if (await PromptSaveLocation() == false)
+                        return false;
+                }
+
+                await SaveAsync();
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Prompts the user to choose a location and a
+        /// filename to which the project will be saved.
+        /// The <see cref="File"/> property will be updated
+        /// if a file is chosen.
+        /// </summary>
+        /// <returns>
+        /// <b><c>true</c></b> if a file is chosen,
+        /// <b><c>false</c></b> otherwise.
+        /// </returns>
+        public async Task<bool> PromptSaveLocation()
+        {
+            var picker = new FileSavePicker
+            {
+                SuggestedStartLocation = PickerLocationId.Desktop,
+                CommitButtonText = "Save",
+                SuggestedFileName = Name
+            };
+
+            picker.FileTypeChoices.Add("MediaBase Project Files", new List<string> { ".mbp" });
+            InitializeWithWindow.Initialize(picker, App.WindowHandle);
+
+            var file = await picker.PickSaveFileAsync();
+            if (file != null && file.IsAvailable)
+            {
+                File = file;
+                return true;
+            }
+
+            return false;
         }
         #endregion
 

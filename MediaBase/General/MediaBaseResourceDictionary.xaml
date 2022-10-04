@@ -6,7 +6,7 @@
     xmlns:xaml="using:Microsoft.UI.Xaml">
 
     <!-- Brushes -->
-    <SolidColorBrush x:Key="RedBrush" Color="#C72335"/>
+    <SolidColorBrush x:Key="RedBrush" Color="Red"/>
     <SolidColorBrush x:Key="WhiteBrush" Color="White"/>
     
     <!-- Shapes -->
