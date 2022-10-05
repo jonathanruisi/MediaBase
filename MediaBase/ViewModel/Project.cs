@@ -12,8 +12,6 @@ using Windows.Storage;
 using Microsoft.UI.Xaml.Controls;
 using Windows.Storage.Pickers;
 using WinRT.Interop;
-using System.IO;
-using System.Xml;
 
 namespace MediaBase.ViewModel
 {
@@ -61,6 +59,11 @@ namespace MediaBase.ViewModel
             get => _path;
             set => SetProperty(ref _path, value);
         }
+
+        [ViewModelCollection(nameof(MediaFileDictionary), "FileReference", true)]
+        public Dictionary<string, Guid> MediaFileDictionary { get; }
+
+        public Dictionary<Guid, IMultimediaItem> MediaItemDictionary { get; }
         #endregion
 
         #region Constructors
@@ -70,12 +73,8 @@ namespace MediaBase.ViewModel
         {
             _file = null;
             _path = string.Empty;
-        }
-
-        public Project(StorageFile file) : base(file?.DisplayName)
-        {
-            _file = file;
-            _path = file?.Path;
+            MediaFileDictionary = new Dictionary<string, Guid>();
+            MediaItemDictionary = new Dictionary<Guid, IMultimediaItem>();
         }
         #endregion
 
@@ -170,6 +169,19 @@ namespace MediaBase.ViewModel
             }
 
             return false;
+        }
+        #endregion
+
+        #region Method Overrides (ViewModelElement)
+        protected override object CustomPropertyParser(string propertyName, string content)
+        {
+            if (propertyName == "FileReference")
+            {
+                var kvpStrings = content[1..^1].Split(',', StringSplitOptions.TrimEntries);
+                return KeyValuePair.Create((object)kvpStrings[0], (object)Guid.Parse(kvpStrings[1]));
+            }
+
+            return null;
         }
         #endregion
 

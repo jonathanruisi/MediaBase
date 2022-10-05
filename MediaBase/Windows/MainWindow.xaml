@@ -115,7 +115,7 @@
                 <TextBlock x:Name="AppTitleProjectNameTextBlock"
                            HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="0,0,0,3"
                            Foreground="White" FontFamily="Segoe UI" FontWeight="Bold" FontSize="14"
-                           Text="{x:Bind ViewModel.Name, Mode=OneWay}"/>
+                           Text="{x:Bind ViewModel.Description, Mode=OneWay}"/>
             </StackPanel>
 
             <Grid Grid.Column="2">

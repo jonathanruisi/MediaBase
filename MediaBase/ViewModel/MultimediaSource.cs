@@ -146,7 +146,11 @@ namespace MediaBase.ViewModel
         #region Event Handlers
         private void Tags_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
-            var tagMessage = new CollectionChangedMessage<string>(this, nameof(Tags));
+            var tagMessage = new CollectionChangedMessage<string>(this, nameof(Tags), e.Action)
+            {
+                OldStartingIndex = e.OldStartingIndex,
+                NewStartingIndex = e.NewStartingIndex
+            };
 
             if (e.OldItems != null)
             {

@@ -31,6 +31,7 @@ namespace MediaBase.ViewModel
     public sealed class ProjectManager : ViewModelElement
     {
         #region Constants
+        public static readonly string DefaultName = "Workspace";
         public static readonly string DefaultTitle = "MediaBASE";
         public static readonly string[] MediaBaseFileExtensions = new[]
         {
@@ -43,6 +44,7 @@ namespace MediaBase.ViewModel
         private ViewModelNode _activeNode;
         private MultimediaSource _activeMediaSource;
         private Func<IList<TreeViewNode>> _systemBrowserSelectedNodesFunction;
+        private string _description;
         private bool _hasUnsavedChanges;
         #endregion
 
@@ -93,10 +95,31 @@ namespace MediaBase.ViewModel
             }
         }
 
+        /// <summary>
+        /// Gets or sets a delegate which is resposnible for enumerating
+        /// all selected items in a <see cref="TreeView"/>.
+        /// </summary>
+        /// <remarks>
+        /// Since <see cref="TreeView"/> doesn't have an event for alerting
+        /// of a change to the items which are selected, <see cref="ProjectManager"/>
+        /// will call this function when it needs to obtain the list of selected items.
+        /// </remarks>
         public Func<IList<TreeViewNode>> SystemBrowserSelectedNodesFunction
         {
             get => _systemBrowserSelectedNodesFunction;
             set => SetProperty(ref _systemBrowserSelectedNodesFunction, value);
+        }
+
+        /// <summary>
+        /// Gets or sets a user-friendly description of the workspace.
+        /// </summary>
+        /// <remarks>
+        /// This property is useful as a window title.
+        /// </remarks>
+        public string Description
+        {
+            get => _description;
+            set => SetProperty(ref _description, value);
         }
 
         /// <summary>
@@ -111,9 +134,6 @@ namespace MediaBase.ViewModel
 
         [ViewModelCollection(nameof(Projects), nameof(Project), false, false, true)]
         public ObservableCollection<Project> Projects { get; }
-
-        public Dictionary<Guid, IMultimediaItem> MediaDictionary { get; }
-        public Dictionary<string, Guid> MediaFileDictionary { get; }
 
         public ObservableCollection<string> TagDatabase { get; }
         #endregion
@@ -139,14 +159,14 @@ namespace MediaBase.ViewModel
         #region Constructor
         public ProjectManager()
         {
+            Name = DefaultName;
+            _description = DefaultTitle;
             _activeNode = null;
             _activeMediaSource = null;
             _systemBrowserSelectedNodesFunction = null;
             _hasUnsavedChanges = false;
 
             Projects = new ObservableCollection<Project>();
-            MediaDictionary = new Dictionary<Guid, IMultimediaItem>();
-            MediaFileDictionary = new Dictionary<string, Guid>();
             TagDatabase = new ObservableCollection<string>();
 
             Projects.CollectionChanged += Projects_CollectionChanged;
@@ -245,7 +265,7 @@ namespace MediaBase.ViewModel
             {
                 SuggestedStartLocation = PickerLocationId.Desktop,
                 CommitButtonText = "Save",
-                SuggestedFileName = "Workspace"
+                SuggestedFileName = DefaultName
             };
 
             picker.FileTypeChoices.Add("MediaBase Workspace Files", new List<string> { ".mbw" });
@@ -305,11 +325,11 @@ namespace MediaBase.ViewModel
         private void Projects_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
             if (Projects.Count == 0)
-                Name = DefaultTitle;
+                Description = DefaultTitle;
             else if (Projects.Count == 1)
-                Name = $"Workspace: {Projects[0].Name}";
+                Description = Projects[0].Name;
             else
-                Name = $"Workspace: {Projects.Count} Projects";
+                Description = $"{Name}: {Projects.Count} Projects";
         }
         #endregion
 
@@ -332,12 +352,12 @@ namespace MediaBase.ViewModel
 
         private void ProjectSaveAsCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = ActiveNode is Project project || Projects.Count == 1;
+            args.CanExecute = ActiveNode is Project || Projects.Count == 1;
         }
 
         private void ProjectCloseCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = ActiveNode is Project project || Projects.Count == 1;
+            args.CanExecute = ActiveNode is Project || Projects.Count == 1;
         }
 
         private void WorkspaceOpenCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
@@ -374,7 +394,7 @@ namespace MediaBase.ViewModel
 
         private void WorkspaceRemoveItemCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = ActiveNode is ViewModelNode;
+            args.CanExecute = ActiveNode is not null;
         }
 
         private void WorkspaceRemoveSelectedCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
@@ -384,7 +404,7 @@ namespace MediaBase.ViewModel
 
         private void WorkspaceRenameItemCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = ActiveNode is ViewModelNode;
+            args.CanExecute = ActiveNode is not null;
         }
         #endregion
 
@@ -555,6 +575,9 @@ namespace MediaBase.ViewModel
 
         private async void WorkspaceImportCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
+            if (((MediaFolder)ActiveNode).Root is not Project parentProject)
+                throw new Exception("Unable to find target project");
+
             int fileCount = 0, folderCount = 0;
             var messenger = App.Current.Services.GetService<IMessenger>();
             var selectedNodes = SystemBrowserSelectedNodesFunction();
@@ -612,24 +635,24 @@ namespace MediaBase.ViewModel
 
             void AddFile(StorageFile sourceFile, MediaFolder destinationFolder)
             {
-                if (MediaFileDictionary.ContainsKey(sourceFile.Path))
+                if (parentProject.MediaFileDictionary.ContainsKey(sourceFile.Path))
                 {
-                    var file = MediaDictionary[MediaFileDictionary[sourceFile.Path]];
-                    if (file is not MediaFile) throw new Exception(
+                    var mediaFile = (MediaFile)parentProject.MediaItemDictionary[parentProject.MediaFileDictionary[sourceFile.Path]];
+                    if (mediaFile is null) throw new Exception(
                         $"Database lookup error: Unable to find MediaFile associated with the file at {sourceFile.Path}");
 
-                    if (((MediaFile)file).ContentType == MediaContentType.Image)
+                    if (mediaFile.ContentType == MediaContentType.Image)
                     {
                         fileCount++;
-                        var imageSource = new ImageSource(file);
-                        MediaDictionary.Add(imageSource.Id, imageSource);
+                        var imageSource = new ImageSource(mediaFile);
+                        parentProject.MediaItemDictionary.Add(imageSource.Id, imageSource);
                         destinationFolder.Children.Add(imageSource);
                     }
-                    else if (((MediaFile)file).ContentType == MediaContentType.Video)
+                    else if (mediaFile.ContentType == MediaContentType.Video)
                     {
                         fileCount++;
-                        var videoSource = new VideoSource(file);
-                        MediaDictionary.Add(videoSource.Id, videoSource);
+                        var videoSource = new VideoSource(mediaFile);
+                        parentProject.MediaItemDictionary.Add(videoSource.Id, videoSource);
                         destinationFolder.Children.Add(videoSource);
                     }
                 }
@@ -637,22 +660,20 @@ namespace MediaBase.ViewModel
                 {
                     fileCount++;
                     var imageFile = new ImageFile(sourceFile);
-                    MediaDictionary.Add(imageFile.Id, imageFile);
-                    MediaFileDictionary.Add(sourceFile.Path, imageFile.Id);
+                    parentProject.MediaItemDictionary.Add(imageFile.Id, imageFile);
+                    parentProject.MediaFileDictionary.Add(sourceFile.Path, imageFile.Id);
 
                     var imageSource = new ImageSource(imageFile);
-                    MediaDictionary.Add(imageSource.Id, imageSource);
                     destinationFolder.Children.Add(imageSource);
                 }
                 else if (sourceFile.ContentType.ToLower().Contains("video"))
                 {
                     fileCount++;
                     var videoFile = new VideoFile(sourceFile);
-                    MediaDictionary.Add(videoFile.Id, videoFile);
-                    MediaFileDictionary.Add(sourceFile.Path, videoFile.Id);
+                    parentProject.MediaItemDictionary.Add(videoFile.Id, videoFile);
+                    parentProject.MediaFileDictionary.Add(sourceFile.Path, videoFile.Id);
 
                     var videoSource = new VideoSource(videoFile);
-                    MediaDictionary.Add(videoSource.Id, videoSource);
                     destinationFolder.Children.Add(videoSource);
                 }
             }
@@ -738,8 +759,13 @@ namespace MediaBase.ViewModel
         {
             Messenger.Register<MediaLookupRequestMessage>(this, (r, m) =>
             {
-                if (MediaDictionary.ContainsKey(m.Id))
-                    m.Reply(MediaDictionary[m.Id]);
+                foreach (var project in Projects)
+                {
+                    if (!project.MediaItemDictionary.ContainsKey(m.Id))
+                        continue;
+
+                    m.Reply(project.MediaItemDictionary[m.Id]);
+                }
             });
 
             Messenger.Register<CollectionChangedMessage<string>>(this, (r, m) =>
@@ -759,7 +785,7 @@ namespace MediaBase.ViewModel
             {
                 if (m.Sender is Project && m.PropertyName == nameof(Project.HasUnsavedChanges))
                 {
-                    HasUnsavedChanges = Projects.Count(x => x.HasUnsavedChanges) > 0;
+                    HasUnsavedChanges = Projects.Any(x => x.HasUnsavedChanges);
                 }
             });
         }
