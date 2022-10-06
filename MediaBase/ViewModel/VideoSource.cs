@@ -101,7 +101,7 @@ namespace MediaBase.ViewModel
         #region Event Handlers
         private void Markers_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
-            var markerMessage = new CollectionChangedMessage<Marker>(this, nameof(Markers));
+            var markerMessage = new CollectionChangedMessage<Marker>(this, nameof(Markers), e.Action);
 
             if (e.OldItems != null)
             {
@@ -123,7 +123,7 @@ namespace MediaBase.ViewModel
         {
             EvaluateCuts();
 
-            var cutMessage = new CollectionChangedMessage<(decimal start, decimal end)>(this, nameof(Cuts));
+            var cutMessage = new CollectionChangedMessage<(decimal start, decimal end)>(this, nameof(Cuts), e.Action);
 
             if (e.OldItems != null)
             {

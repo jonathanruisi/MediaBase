@@ -186,7 +186,7 @@ namespace MediaBase.ViewModel
         #region Event Handlers
         private void Tags_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
-            var tagMessage = new CollectionChangedMessage<string>(this, nameof(Tags));
+            var tagMessage = new CollectionChangedMessage<string>(this, nameof(Tags), e.Action);
 
             if (e.OldItems != null)
             {
@@ -213,7 +213,7 @@ namespace MediaBase.ViewModel
                     Duration = maxTime;
             }
 
-            var keyframeMessage = new CollectionChangedMessage<ITimelineMarker>(this, nameof(Keyframes));
+            var keyframeMessage = new CollectionChangedMessage<ITimelineMarker>(this, nameof(Keyframes), e.Action);
 
             if (e.OldItems != null)
             {
