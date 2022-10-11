@@ -24,6 +24,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml.Media;
 using Windows.Storage.Pickers;
 using WinRT.Interop;
+using System.Diagnostics;
 
 namespace MediaBase.ViewModel
 {
@@ -136,6 +137,10 @@ namespace MediaBase.ViewModel
         public ObservableCollection<Project> Projects { get; }
 
         public ObservableCollection<string> TagDatabase { get; }
+
+        public Dictionary<Guid, IMultimediaItem> MediaItemDictionary { get; }
+
+        public Dictionary<Guid, IList<Guid>> MediaItemDependencyDictionary { get; }
         #endregion
 
         #region Commands
@@ -168,6 +173,8 @@ namespace MediaBase.ViewModel
 
             Projects = new ObservableCollection<Project>();
             TagDatabase = new ObservableCollection<string>();
+            MediaItemDictionary = new Dictionary<Guid, IMultimediaItem>();
+            MediaItemDependencyDictionary = new Dictionary<Guid, IList<Guid>>();
 
             Projects.CollectionChanged += Projects_CollectionChanged;
 
@@ -499,12 +506,12 @@ namespace MediaBase.ViewModel
 
             InitializeWithWindow.Initialize(picker, App.WindowHandle);
 
-            var file = await picker.PickSingleFileAsync();
-            if (file == null || !file.IsAvailable)
+            var workspaceFile = await picker.PickSingleFileAsync();
+            if (workspaceFile == null || !workspaceFile.IsAvailable)
                 return;
 
             // Read workspace file
-            var workspace = (ProjectManager)await FromFileAsync(file);
+            var workspace = (ProjectManager)await FromFileAsync(workspaceFile);
             if (workspace == null)
                 return;
 
@@ -512,7 +519,7 @@ namespace MediaBase.ViewModel
             IsActive = false;
             Projects.Clear();
             Name = workspace.Name;
-            File = file;
+            File = workspaceFile;
             IsActive = true;
 
             // Open each project in the workspace
@@ -528,9 +535,26 @@ namespace MediaBase.ViewModel
                 newProject.IsActive = true;
 
                 Projects.Add(newProject);
-            }
 
-            // TODO: Need to populate the media file database somehow!
+                // Add file references to MediaItemDatabase
+                foreach (var path in newProject.MediaFileDictionary.Keys)
+                {
+                    var mediaFile = await StorageFile.GetFileFromPathAsync(path);
+                    if (mediaFile == null || !mediaFile.IsAvailable)
+                        continue;
+
+                    if (mediaFile.ContentType.ToLower().Contains("image"))
+                    {
+                        var imageFile = new ImageFile(mediaFile) { Id = newProject.MediaFileDictionary[path] };
+                        MediaItemDictionary.Add(imageFile.Id, imageFile);
+                    }
+                    else if (mediaFile.ContentType.ToLower().Contains("video"))
+                    {
+                        var videoFile = new VideoFile(mediaFile) { Id = newProject.MediaFileDictionary[path] };
+                        MediaItemDictionary.Add(videoFile.Id, videoFile);
+                    }
+                }
+            }
         }
 
         private async void WorkspaceSaveCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
@@ -637,7 +661,7 @@ namespace MediaBase.ViewModel
             {
                 if (parentProject.MediaFileDictionary.ContainsKey(sourceFile.Path))
                 {
-                    var mediaFile = (MediaFile)parentProject.MediaItemDictionary[parentProject.MediaFileDictionary[sourceFile.Path]];
+                    var mediaFile = (MediaFile)MediaItemDictionary[parentProject.MediaFileDictionary[sourceFile.Path]];
                     if (mediaFile is null) throw new Exception(
                         $"Database lookup error: Unable to find MediaFile associated with the file at {sourceFile.Path}");
 
@@ -645,14 +669,14 @@ namespace MediaBase.ViewModel
                     {
                         fileCount++;
                         var imageSource = new ImageSource(mediaFile);
-                        parentProject.MediaItemDictionary.Add(imageSource.Id, imageSource);
+                        MediaItemDictionary.Add(imageSource.Id, imageSource);
                         destinationFolder.Children.Add(imageSource);
                     }
                     else if (mediaFile.ContentType == MediaContentType.Video)
                     {
                         fileCount++;
                         var videoSource = new VideoSource(mediaFile);
-                        parentProject.MediaItemDictionary.Add(videoSource.Id, videoSource);
+                        MediaItemDictionary.Add(videoSource.Id, videoSource);
                         destinationFolder.Children.Add(videoSource);
                     }
                 }
@@ -660,7 +684,7 @@ namespace MediaBase.ViewModel
                 {
                     fileCount++;
                     var imageFile = new ImageFile(sourceFile);
-                    parentProject.MediaItemDictionary.Add(imageFile.Id, imageFile);
+                    MediaItemDictionary.Add(imageFile.Id, imageFile);
                     parentProject.MediaFileDictionary.Add(sourceFile.Path, imageFile.Id);
 
                     var imageSource = new ImageSource(imageFile);
@@ -670,7 +694,7 @@ namespace MediaBase.ViewModel
                 {
                     fileCount++;
                     var videoFile = new VideoFile(sourceFile);
-                    parentProject.MediaItemDictionary.Add(videoFile.Id, videoFile);
+                    MediaItemDictionary.Add(videoFile.Id, videoFile);
                     parentProject.MediaFileDictionary.Add(sourceFile.Path, videoFile.Id);
 
                     var videoSource = new VideoSource(videoFile);
@@ -757,17 +781,16 @@ namespace MediaBase.ViewModel
         #region Private Methods
         private void RegisterMessages()
         {
+            // Media lookup request
             Messenger.Register<MediaLookupRequestMessage>(this, (r, m) =>
             {
-                foreach (var project in Projects)
-                {
-                    if (!project.MediaItemDictionary.ContainsKey(m.Id))
-                        continue;
-
-                    m.Reply(project.MediaItemDictionary[m.Id]);
-                }
+                if (MediaItemDictionary.ContainsKey(m.Id))
+                    m.Reply(MediaItemDictionary[m.Id]);
+                else
+                    m.Reply(null);
             });
 
+            // Tag added to media item
             Messenger.Register<CollectionChangedMessage<string>>(this, (r, m) =>
             {
                 if (m.Sender is not IMediaMetadata &&
@@ -781,6 +804,54 @@ namespace MediaBase.ViewModel
                 }
             });
 
+            // Media item added/removed
+            Messenger.Register<CollectionChangedMessage<ViewModelNode>>(this, (r, m) =>
+            {
+                if (m.Sender is not MediaFolder folder &&
+                    m.PropertyName != nameof(MediaFolder.Children))
+                    return;
+
+                if (m.Action is NotifyCollectionChangedAction.Remove or
+                                NotifyCollectionChangedAction.Replace)
+                {
+                    foreach (var item in m.OldValue.OfType<IMultimediaItem>())
+                    {
+                        if (item is MultimediaSource source)
+                        {
+                            if (MediaItemDependencyDictionary.ContainsKey(source.SourceId))
+                            {
+                                MediaItemDependencyDictionary[source.SourceId].Remove(item.Id);
+
+                                if (MediaItemDependencyDictionary[source.SourceId].Count == 0)
+                                    MediaItemDependencyDictionary.Remove(source.SourceId);
+                            }
+                        }
+
+                        if (MediaItemDictionary.ContainsKey(item.Id))
+                            MediaItemDictionary.Remove(item.Id);
+                    }
+                }
+
+                if (m.Action is NotifyCollectionChangedAction.Add or
+                                NotifyCollectionChangedAction.Replace)
+                {
+                    foreach (var item in m.NewValue.OfType<IMultimediaItem>())
+                    {
+                        if (!MediaItemDictionary.ContainsKey(item.Id))
+                            MediaItemDictionary.Add(item.Id, item);
+
+                        if (item is MultimediaSource source)
+                        {
+                            if (MediaItemDependencyDictionary.ContainsKey(source.SourceId))
+                                MediaItemDependencyDictionary[source.SourceId].Add(item.Id);
+                            else
+                                MediaItemDependencyDictionary.Add(source.SourceId, new List<Guid> { item.Id });
+                        }
+                    }
+                }
+            });
+
+            // Project unsaved changes
             Messenger.Register<PropertyChangedMessage<bool>>(this, (r, m) =>
             {
                 if (m.Sender is Project && m.PropertyName == nameof(Project.HasUnsavedChanges))

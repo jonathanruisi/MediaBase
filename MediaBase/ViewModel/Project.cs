@@ -62,8 +62,6 @@ namespace MediaBase.ViewModel
 
         [ViewModelCollection(nameof(MediaFileDictionary), "FileReference", true)]
         public Dictionary<string, Guid> MediaFileDictionary { get; }
-
-        public Dictionary<Guid, IMultimediaItem> MediaItemDictionary { get; }
         #endregion
 
         #region Constructors
@@ -74,7 +72,6 @@ namespace MediaBase.ViewModel
             _file = null;
             _path = string.Empty;
             MediaFileDictionary = new Dictionary<string, Guid>();
-            MediaItemDictionary = new Dictionary<Guid, IMultimediaItem>();
         }
         #endregion
 
