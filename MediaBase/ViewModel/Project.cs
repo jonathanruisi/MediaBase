@@ -45,7 +45,12 @@ namespace MediaBase.ViewModel
         public StorageFile File
         {
             get => _file;
-            set => SetProperty(ref _file, value, true);
+            set
+            {
+                SetProperty(ref _file, value, true);
+                if (File is not null && File.IsAvailable)
+                    Path = File.Path;
+            }
         }
 
         /// <summary>
@@ -180,9 +185,7 @@ namespace MediaBase.ViewModel
 
             return null;
         }
-        #endregion
 
-        #region Method Overrides (ObservableRecipient)
         protected override void OnActivated()
         {
             base.OnActivated();

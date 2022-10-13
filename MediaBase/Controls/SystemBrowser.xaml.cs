@@ -5,6 +5,9 @@ using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
 
+using CommunityToolkit.Mvvm.Messaging.Messages;
+using CommunityToolkit.Mvvm.Messaging;
+
 using JLR.Utility.WinUI;
 
 using MediaBase.ViewModel;
@@ -37,6 +40,56 @@ namespace MediaBase.Controls
             DataContext = App.Current.Services.GetService<ProjectManager>();
 
             InitializeTreeView();
+        }
+        #endregion
+
+        #region Event Handlers (UserControl)
+        private void UserControl_Loaded(object sender, RoutedEventArgs e)
+        {
+            var messenger = App.Current.Services.GetService<IMessenger>();
+
+            messenger.Register<RequestMessage<bool>>(this, (r, m) =>
+            {
+                m.Reply(SystemBrowserTreeView.SelectedNodes.Any());
+            });
+
+            messenger.Register<CollectionRequestMessage<TreeViewNode>>(this, (r, m) =>
+            {
+                foreach (var node in SystemBrowserTreeView.SelectedNodes)
+                {
+                    m.Reply(node);
+                }
+            });
+        }
+        #endregion
+
+        #region Event Handlers (TreeView)
+        private async void SystemBrowserTreeView_Expanding(TreeView sender, TreeViewExpandingEventArgs args)
+        {
+            if (args.Node.HasUnrealizedChildren)
+                await FillTreeNode(args.Node);
+        }
+
+        private void SystemBrowserTreeView_Collapsed(TreeView sender, TreeViewCollapsedEventArgs args)
+        {
+            args.Node.Children.Clear();
+            args.Node.HasUnrealizedChildren = true;
+        }
+
+        private void SystemBrowserTreeView_ItemInvoked(TreeView sender, TreeViewItemInvokedEventArgs args)
+        {
+            if (args.InvokedItem is not TreeViewNode node)
+                return;
+
+            if (node.Content is StorageFolder)
+            {
+                node.IsExpanded = !node.IsExpanded;
+            }
+        }
+
+        private void SystemBrowserTreeView_RightTapped(object sender, RightTappedRoutedEventArgs e)
+        {
+
         }
         #endregion
 
@@ -113,46 +166,6 @@ namespace MediaBase.Controls
                 var newNode = new TreeViewNode { Content = file };
                 node.Children.Add(newNode);
             }
-        }
-        #endregion
-
-        #region Event Handlers (UserControl)
-        private void UserControl_Loaded(object sender, RoutedEventArgs e)
-        {
-            ViewModel.SystemBrowserSelectedNodesFunction = new Func<IList<TreeViewNode>>(() =>
-            {
-                return SystemBrowserTreeView.SelectedNodes;
-            });
-        }
-        #endregion
-
-        #region Event Handlers (TreeView)
-        private async void SystemBrowserTreeView_Expanding(TreeView sender, TreeViewExpandingEventArgs args)
-        {
-            if (args.Node.HasUnrealizedChildren)
-                await FillTreeNode(args.Node);
-        }
-
-        private void SystemBrowserTreeView_Collapsed(TreeView sender, TreeViewCollapsedEventArgs args)
-        {
-            args.Node.Children.Clear();
-            args.Node.HasUnrealizedChildren = true;
-        }
-
-        private void SystemBrowserTreeView_ItemInvoked(TreeView sender, TreeViewItemInvokedEventArgs args)
-        {
-            if (args.InvokedItem is not TreeViewNode node)
-                return;
-
-            if (node.Content is StorageFolder)
-            {
-                node.IsExpanded = !node.IsExpanded;
-            }
-        }
-
-        private void SystemBrowserTreeView_RightTapped(object sender, RightTappedRoutedEventArgs e)
-        {
-            
         }
         #endregion
     }

@@ -44,7 +44,6 @@ namespace MediaBase.ViewModel
         private StorageFile _file;
         private ViewModelNode _activeNode;
         private MultimediaSource _activeMediaSource;
-        private Func<IList<TreeViewNode>> _systemBrowserSelectedNodesFunction;
         private string _description;
         private bool _hasUnsavedChanges;
         #endregion
@@ -94,21 +93,6 @@ namespace MediaBase.ViewModel
                 if (_activeMediaSource != null)
                     _activeMediaSource.IsSelected = true;
             }
-        }
-
-        /// <summary>
-        /// Gets or sets a delegate which is resposnible for enumerating
-        /// all selected items in a <see cref="TreeView"/>.
-        /// </summary>
-        /// <remarks>
-        /// Since <see cref="TreeView"/> doesn't have an event for alerting
-        /// of a change to the items which are selected, <see cref="ProjectManager"/>
-        /// will call this function when it needs to obtain the list of selected items.
-        /// </remarks>
-        public Func<IList<TreeViewNode>> SystemBrowserSelectedNodesFunction
-        {
-            get => _systemBrowserSelectedNodesFunction;
-            set => SetProperty(ref _systemBrowserSelectedNodesFunction, value);
         }
 
         /// <summary>
@@ -168,7 +152,6 @@ namespace MediaBase.ViewModel
             _description = DefaultTitle;
             _activeNode = null;
             _activeMediaSource = null;
-            _systemBrowserSelectedNodesFunction = null;
             _hasUnsavedChanges = false;
 
             Projects = new ObservableCollection<Project>();
@@ -393,9 +376,15 @@ namespace MediaBase.ViewModel
 
         private void WorkspaceImportCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = ActiveNode is MediaFolder &&
-                              SystemBrowserSelectedNodesFunction != null &&
-                              SystemBrowserSelectedNodesFunction().Any();
+            if (ActiveNode is MediaFolder)
+            {
+                var request = Messenger.Send<RequestMessage<bool>>();
+                args.CanExecute = request.HasReceivedResponse && request.Response;
+            }
+            else
+            {
+                args.CanExecute = false;
+            }
         }
 
         private void WorkspaceRemoveItemCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
@@ -611,13 +600,12 @@ namespace MediaBase.ViewModel
                 throw new Exception("Unable to find target project");
 
             int fileCount = 0, folderCount = 0;
-            var messenger = App.Current.Services.GetService<IMessenger>();
-            var selectedNodes = SystemBrowserSelectedNodesFunction();
-
             var folderList = new List<StorageFolder>();
             var fileList = new List<StorageFile>();
 
-            foreach (var node in selectedNodes)
+            // Get list of selected nodes in the System Browser
+            var request = Messenger.Send(new CollectionRequestMessage<TreeViewNode>());
+            foreach (var node in request.Responses)
             {
                 if (HasSelectedAncestor(node))
                     continue;
@@ -644,7 +632,7 @@ namespace MediaBase.ViewModel
             var message = new StringBuilder();
             message.Append($"Imported {folderCount} folder{(folderCount != 1 ? "s" : "")} and ");
             message.Append($"{fileCount} file{(fileCount != 1 ? "s" : "")}");
-            messenger.Send(new SetInfoBarMessage
+            Messenger.Send(new SetInfoBarMessage
             {
                 Title = "Done",
                 Message = message.ToString(),
@@ -656,7 +644,7 @@ namespace MediaBase.ViewModel
             {
                 while (node.Parent != null)
                 {
-                    if (selectedNodes.Contains(node.Parent))
+                    if (request.Responses.Contains(node.Parent))
                         return true;
 
                     node = node.Parent;
@@ -712,7 +700,7 @@ namespace MediaBase.ViewModel
 
             async Task AddFolder(StorageFolder sourceFolder, MediaFolder destinationFolder)
             {
-                messenger.Send(new SetInfoBarMessage
+                Messenger.Send(new SetInfoBarMessage
                 {
                     Title = "Importing Folder",
                     Message = sourceFolder.Path,
@@ -759,11 +747,14 @@ namespace MediaBase.ViewModel
         {
             if (propertyName == nameof(Project))
             {
+                reader.MoveToFirstAttribute();
+                var name = reader.ReadContentAsString();
+                reader.MoveToElement();
                 reader.ReadStartElement();
                 var path = reader.ReadElementContentAsString();
                 reader.ReadEndElement();
 
-                return new Project { Path = path };
+                return new Project(name) { Path = path };
             }
 
             return null;
@@ -780,7 +771,8 @@ namespace MediaBase.ViewModel
                     throw new Exception("Project does not have an associated save file");
 
                 writer.WriteStartElement(propertyName);
-                writer.WriteElementString("Path", project.File.Path);
+                writer.WriteAttributeString(nameof(project.Name), project.Name);
+                writer.WriteElementString(nameof(project.Path), project.Path);
                 writer.WriteEndElement();
             }
         }

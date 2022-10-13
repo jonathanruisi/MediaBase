@@ -48,7 +48,12 @@ namespace MediaBase.ViewModel
         public StorageFile File
         {
             get => _file;
-            set => SetProperty(ref _file, value);
+            set
+            {
+                SetProperty(ref _file, value, true);
+                if (File is not null && File.IsAvailable)
+                    Path = File.Path;
+            }
         }
 
         public bool IsReady
