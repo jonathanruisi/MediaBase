@@ -790,25 +790,10 @@ namespace MediaBase.ViewModel
                     m.Reply(null);
             });
 
-            // Tag added to media item
-            Messenger.Register<CollectionChangedMessage<string>>(this, (r, m) =>
-            {
-                if (m.Sender is not IMediaMetadata &&
-                    m.PropertyName != nameof(IMediaMetadata.Tags))
-                    return;
-
-                foreach (var tag in m.NewValue)
-                {
-                    if (!TagDatabase.Contains(tag))
-                        TagDatabase.Add(tag);
-                }
-            });
-
             // Media item added/removed
-            Messenger.Register<CollectionChangedMessage<ViewModelNode>>(this, (r, m) =>
+            Messenger.Register<CollectionChangedMessage<ViewModelNode>, string>(this, nameof(ViewModelNode.Children), (r, m) =>
             {
-                if (m.Sender is not MediaFolder folder &&
-                    m.PropertyName != nameof(MediaFolder.Children))
+                if (m.Sender is not MediaFolder folder)
                     return;
 
                 if (m.Action is NotifyCollectionChangedAction.Remove or
@@ -848,6 +833,16 @@ namespace MediaBase.ViewModel
                                 MediaItemDependencyDictionary.Add(source.SourceId, new List<Guid> { item.Id });
                         }
                     }
+                }
+            });
+
+            // Tag added to media item
+            Messenger.Register<CollectionChangedMessage<string>, string>(this, nameof(IMediaMetadata.Tags), (r, m) =>
+            {
+                foreach (var tag in m.NewValue)
+                {
+                    if (!TagDatabase.Contains(tag))
+                        TagDatabase.Add(tag);
                 }
             });
 

@@ -164,7 +164,7 @@ namespace MediaBase.ViewModel
                     tagMessage.NewValue.Add(newTag);
             }
 
-            Messenger.Send(tagMessage);
+            Messenger.Send(tagMessage, nameof(Tags));
             NotifySerializedCollectionChanged(nameof(Tags));
         }
         #endregion
