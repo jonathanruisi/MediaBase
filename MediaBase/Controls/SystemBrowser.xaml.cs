@@ -79,7 +79,7 @@ namespace MediaBase.Controls
             }
         }
 
-        private async Task FillTreeNode(TreeViewNode node)
+        private static async Task FillTreeNode(TreeViewNode node)
         {
             if (node.Content is not StorageFolder folder)
                 return;

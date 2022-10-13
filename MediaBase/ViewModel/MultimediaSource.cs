@@ -221,7 +221,7 @@ namespace MediaBase.ViewModel
         #region Method Overrides (ViewModelElement)
         protected override object CustomPropertyParser(string propertyName, string content)
         {
-            if (propertyName == nameof(Id) || propertyName == nameof(SourceId))
+            if (propertyName is (nameof(Id)) or (nameof(SourceId)))
                 return Guid.Parse(content);
 
             return null;

@@ -179,7 +179,6 @@ namespace MediaBase.ViewModel
             Projects.CollectionChanged += Projects_CollectionChanged;
 
             InitializeCommands();
-            RegisterMessages();
         }
         #endregion
 
@@ -510,34 +509,43 @@ namespace MediaBase.ViewModel
             if (workspaceFile == null || !workspaceFile.IsAvailable)
                 return;
 
-            // Read workspace file
-            var workspace = (ProjectManager)await FromFileAsync(workspaceFile);
-            if (workspace == null)
-                return;
-
-            // Reset singleton workspace
+            // Reset singleton workspace and load from workspace file
             IsActive = false;
-            Projects.Clear();
-            Name = workspace.Name;
             File = workspaceFile;
+
+            XmlReader reader = null;
+            try
+            {
+                reader = await GetXmlReaderForFileAsync(workspaceFile);
+                ReadXml(reader);
+            }
+            finally
+            {
+                reader.Close();
+            }
             IsActive = true;
 
             // Open each project in the workspace
-            foreach (var project in workspace.Projects)
+            foreach (var project in Projects)
             {
                 var projectFile = await StorageFile.GetFileFromPathAsync(project.Path);
                 if (projectFile == null || !projectFile.IsAvailable)
                     continue;
 
-                var newProject = (Project)await FromFileAsync(projectFile);
-                newProject.File = projectFile;
-                newProject.Path = projectFile.Path;
-                newProject.IsActive = true;
-
-                Projects.Add(newProject);
+                try
+                {
+                    reader = await GetXmlReaderForFileAsync(projectFile);
+                    project.ReadXml(reader);
+                }
+                finally
+                {
+                    reader.Close();
+                }
+                project.File = projectFile;
+                project.IsActive = true;
 
                 // Add file references to MediaItemDatabase
-                foreach (var path in newProject.MediaFileDictionary.Keys)
+                foreach (var path in project.MediaFileDictionary.Keys)
                 {
                     var mediaFile = await StorageFile.GetFileFromPathAsync(path);
                     if (mediaFile == null || !mediaFile.IsAvailable)
@@ -545,12 +553,12 @@ namespace MediaBase.ViewModel
 
                     if (mediaFile.ContentType.ToLower().Contains("image"))
                     {
-                        var imageFile = new ImageFile(mediaFile) { Id = newProject.MediaFileDictionary[path] };
+                        var imageFile = new ImageFile(mediaFile) { Id = project.MediaFileDictionary[path] };
                         MediaItemDictionary.Add(imageFile.Id, imageFile);
                     }
                     else if (mediaFile.ContentType.ToLower().Contains("video"))
                     {
-                        var videoFile = new VideoFile(mediaFile) { Id = newProject.MediaFileDictionary[path] };
+                        var videoFile = new VideoFile(mediaFile) { Id = project.MediaFileDictionary[path] };
                         MediaItemDictionary.Add(videoFile.Id, videoFile);
                     }
                 }
@@ -776,11 +784,11 @@ namespace MediaBase.ViewModel
                 writer.WriteEndElement();
             }
         }
-        #endregion
 
-        #region Private Methods
-        private void RegisterMessages()
+        protected override void OnActivated()
         {
+            base.OnActivated();
+
             // Media lookup request
             Messenger.Register<MediaLookupRequestMessage>(this, (r, m) =>
             {
@@ -861,6 +869,18 @@ namespace MediaBase.ViewModel
             });
         }
 
+        protected override void OnDeactivated()
+        {
+            base.OnDeactivated();
+
+            Projects.Clear();
+            TagDatabase.Clear();
+            MediaItemDictionary.Clear();
+            MediaItemDependencyDictionary.Clear();
+        }
+        #endregion
+
+        #region Private Methods
         private void InitializeCommands()
         {
             // New Project
