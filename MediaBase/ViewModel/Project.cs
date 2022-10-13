@@ -519,7 +519,8 @@ namespace MediaBase.ViewModel
                 return;
 
             // Read project file and populate project browser
-            var newProject = (Project)await FromFileAsync(file);
+            var reader = await GetXmlReaderForFileAsync(file);
+            var newProject = (Project)FromXml(reader);
             if (newProject == null)
                 return;
 
