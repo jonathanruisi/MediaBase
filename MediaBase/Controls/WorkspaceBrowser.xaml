@@ -42,7 +42,7 @@
                           RightTapped="WorkspaceBrowserTreeView_RightTapped">
                 <TreeViewItem.Content>
                     <StackPanel Orientation="Horizontal">
-                        <FontIcon Margin="0,0,10,0"
+                        <FontIcon Margin="0,0,6,0"
                                   FontFamily="Segoe Fluent Icons"
                                   Glyph="&#xF156;"
                                   Foreground="{x:Bind HasUnsavedChanges,
@@ -65,7 +65,7 @@
                 <TreeViewItem.Content>
                     <StackPanel Orientation="Horizontal">
                         <FontIcon x:Name="Symbol"
-                                  Margin="0,0,10,0"
+                                  Margin="0,0,6,0"
                                   FontFamily="Segoe Fluent Icons">
                             <interactivity:Interaction.Behaviors>
                                 <interactions_core:DataTriggerBehavior Binding="{Binding ElementName=Item, Path=IsExpanded}"
@@ -100,7 +100,6 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
@@ -108,32 +107,41 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <!-- Not Ready Indicator -->
-                        <FontIcon Grid.Column="0"
-                                  Width="15" Height="15" Margin="0,0,2,0"
-                                  HorizontalAlignment="Center" VerticalAlignment="Center"
-                                  Glyph="&#xE783;"
-                                  Foreground="{StaticResource RedBrush}"
-                                  Visibility="{x:Bind IsReady,
-                                                      Converter={StaticResource FalseToVisibleConverter},
-                                                      Mode=OneWay}"/>
-
-                        <!-- Rating Indicator -->
-                        <Rectangle Grid.Column="1" Width="5" Height="15" Stretch="Fill"
-                                   Fill="{x:Bind Rating,
-                                                 Converter={StaticResource RatingToBrushConverter},
-                                                 Mode=OneWay}"/>
+                        <StackPanel Grid.Column="0" Width="27" Margin="-27,0,0,0"
+                                    Orientation="Horizontal"
+                                    FlowDirection="RightToLeft">
+                            <!-- Rating Indicator -->
+                            <Rectangle Width="3" Height="20" Stretch="Fill"
+                                       Margin="2,0"
+                                       Fill="{x:Bind Rating,
+                                                     Converter={StaticResource RatingToBrushConverter},
+                                                     Mode=OneWay}"/>
+                            
+                            <!-- Not Ready Indicator -->
+                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center"
+                                      Glyph="&#xE783;"
+                                      Foreground="{StaticResource RedBrush}"
+                                      Visibility="{x:Bind IsReady,
+                                                          Converter={StaticResource BoolToVisibilityConverter},
+                                                          ConverterParameter=True,
+                                                          Mode=OneWay}"/>
+                        </StackPanel>
 
                         <!-- Image Icon -->
-                        <FontIcon Grid.Column="2"
+                        <FontIcon Grid.Column="1"
                                   FontFamily="Segoe Fluent Icons"
                                   Glyph="&#xEB9F;"
-                                  Margin="3,0,10,0"/>
+                                  Margin="0,0,6,0"/>
 
                         <!-- Media Name -->
-                        <TextBlock Grid.Column="3"
+                        <TextBlock Grid.Column="2"
                                    HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Left"
                                    Text="{x:Bind Name, Mode=OneWay}"/>
+
+                        <Rectangle Grid.Column="3" Width="5" Height="20" Stretch="Fill" Fill="White"
+                                   Visibility="{x:Bind GroupFlags,
+                                                       Converter={StaticResource GroupMaskToVisibilityConverter},
+                                                       ConverterParameter=1}"/>
                     </Grid>
                 </TreeViewItem.Content>
             </TreeViewItem>
@@ -149,7 +157,6 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
@@ -157,29 +164,34 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <!-- Not Ready Indicator -->
-                        <FontIcon Grid.Column="0"
-                                  Width="15" Height="15" Margin="0,0,2,0"
-                                  HorizontalAlignment="Center" VerticalAlignment="Center"
-                                  Foreground="{StaticResource RedBrush}"
-                                  Visibility="{x:Bind IsReady,
-                                                      Converter={StaticResource FalseToVisibleConverter},
-                                                      Mode=OneWay}"/>
+                        <StackPanel Grid.Column="0" Width="27" Margin="-27,0,0,0"
+                                    Orientation="Horizontal"
+                                    FlowDirection="RightToLeft">
+                            <!-- Rating Indicator -->
+                            <Rectangle Width="3" Height="20" Stretch="Fill"
+                                       Margin="2,0"
+                                       Fill="{x:Bind Rating,
+                                                     Converter={StaticResource RatingToBrushConverter},
+                                                     Mode=OneWay}"/>
 
-                        <!-- Rating Indicator -->
-                        <Rectangle Grid.Column="1" Width="5" Height="15" Stretch="Fill"
-                                   Fill="{x:Bind Rating,
-                                                 Converter={StaticResource RatingToBrushConverter},
-                                                 Mode=OneWay}"/>
+                            <!-- Not Ready Indicator -->
+                            <FontIcon Glyph="&#xE783;"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center"
+                                      Foreground="{StaticResource RedBrush}"
+                                      Visibility="{x:Bind IsReady,
+                                                          Converter={StaticResource BoolToVisibilityConverter},
+                                                          ConverterParameter=True,
+                                                          Mode=OneWay}"/>
+                        </StackPanel>
 
                         <!-- Video Icon -->
-                        <FontIcon Grid.Column="2"
+                        <FontIcon Grid.Column="1"
                                   FontFamily="Segoe Fluent Icons"
                                   Glyph="&#xE8B2;"
-                                  Margin="3,0,10,0"/>
+                                  Margin="0,0,6,0"/>
 
                         <!-- Media Name -->
-                        <TextBlock Grid.Column="3"
+                        <TextBlock Grid.Column="2"
                                    HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Left"
                                    Text="{x:Bind Name, Mode=OneWay}"/>
                     </Grid>

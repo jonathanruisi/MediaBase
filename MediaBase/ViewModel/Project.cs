@@ -204,13 +204,13 @@ namespace MediaBase.ViewModel
         {
             Messenger.Register<SerializedPropertyChangedMessage>(this, (r, m) =>
             {
-                if (m.Sender is ViewModelNode node && node.Root == this)
+                if (m.Sender is ViewModelNode node && node.Root == r)
                 {
-                    HasUnsavedChanges = true;
+                    ((Project)r).HasUnsavedChanges = true;
 
                     // Unregister from further messages.
                     // We will re-register when project is saved.
-                    Messenger.Unregister<SerializedPropertyChangedMessage>(this);
+                    Messenger.Unregister<SerializedPropertyChangedMessage>(r);
                 }
             });
         }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
@@ -37,6 +38,7 @@ namespace MediaBase.ViewModel
         private uint _widthInPixels, _heightInPixels;
         private double _framesPerSecond;
         private decimal _duration;
+        private byte _groupFlags;
         #endregion
 
         #region Properties
@@ -103,6 +105,13 @@ namespace MediaBase.ViewModel
             set => SetProperty(ref _duration, value);
         }
 
+        [ViewModelProperty(nameof(GroupFlags), XmlNodeType.Element)]
+        public virtual byte GroupFlags
+        {
+            get => _groupFlags;
+            set => SetProperty(ref _groupFlags, value);
+        }
+
         public abstract MediaContentType ContentType { get; }
 
         public abstract bool IsReady { get; protected set; }
@@ -136,10 +145,31 @@ namespace MediaBase.ViewModel
             _heightInPixels = 0;
             _framesPerSecond = 0;
             _duration = 0;
+            _groupFlags = 0;
             Name = _source?.Name;
 
             Tags = new ObservableCollection<string>();
             Tags.CollectionChanged += Tags_CollectionChanged;
+        }
+        #endregion
+
+        #region Public Methods
+        public bool CheckGroupFlag(int group)
+        {
+            group--;
+            if (group is < 0 or > 7)
+                throw new ArgumentOutOfRangeException(nameof(group));
+
+            return (byte)(GroupFlags & (1 << group)) == 1;
+        }
+
+        public void ToggleGroupFlag(int group)
+        {
+
+            if (group is < 0 or > 7)
+                throw new ArgumentOutOfRangeException(nameof(group));
+
+            GroupFlags ^= (byte)(1 << group);
         }
         #endregion
 
@@ -176,7 +206,7 @@ namespace MediaBase.ViewModel
             if (Source == null && SourceId != Guid.Empty)
             {
                 var response = Messenger.Send(new MediaLookupRequestMessage(SourceId));
-                if (response == null)
+                if (response == null || response.Response == null)
                 {
                     IsReady = false;
                     return false;

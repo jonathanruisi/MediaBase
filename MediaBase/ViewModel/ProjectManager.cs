@@ -25,6 +25,7 @@ using Microsoft.UI.Xaml.Media;
 using Windows.Storage.Pickers;
 using WinRT.Interop;
 using System.Diagnostics;
+using System.IO;
 
 namespace MediaBase.ViewModel
 {
@@ -536,9 +537,15 @@ namespace MediaBase.ViewModel
                 // Add file references to MediaItemDatabase
                 foreach (var path in project.MediaFileDictionary.Keys)
                 {
-                    var mediaFile = await StorageFile.GetFileFromPathAsync(path);
-                    if (mediaFile == null || !mediaFile.IsAvailable)
+                    StorageFile mediaFile;
+                    try
+                    {
+                        mediaFile = await StorageFile.GetFileFromPathAsync(path);
+                    }
+                    catch (FileNotFoundException)
+                    {
                         continue;
+                    }
 
                     if (mediaFile.ContentType.ToLower().Contains("image"))
                     {
@@ -784,8 +791,8 @@ namespace MediaBase.ViewModel
             // Media lookup request
             Messenger.Register<MediaLookupRequestMessage>(this, (r, m) =>
             {
-                if (MediaItemDictionary.ContainsKey(m.Id))
-                    m.Reply(MediaItemDictionary[m.Id]);
+                if (((ProjectManager)r).MediaItemDictionary.ContainsKey(m.Id))
+                    m.Reply(((ProjectManager)r).MediaItemDictionary[m.Id]);
                 else
                     m.Reply(null);
             });
@@ -803,17 +810,17 @@ namespace MediaBase.ViewModel
                     {
                         if (item is MultimediaSource source)
                         {
-                            if (MediaItemDependencyDictionary.ContainsKey(source.SourceId))
+                            if (((ProjectManager)r).MediaItemDependencyDictionary.ContainsKey(source.SourceId))
                             {
-                                MediaItemDependencyDictionary[source.SourceId].Remove(item.Id);
+                                ((ProjectManager)r).MediaItemDependencyDictionary[source.SourceId].Remove(item.Id);
 
-                                if (MediaItemDependencyDictionary[source.SourceId].Count == 0)
-                                    MediaItemDependencyDictionary.Remove(source.SourceId);
+                                if (((ProjectManager)r).MediaItemDependencyDictionary[source.SourceId].Count == 0)
+                                    ((ProjectManager)r).MediaItemDependencyDictionary.Remove(source.SourceId);
                             }
                         }
 
-                        if (MediaItemDictionary.ContainsKey(item.Id))
-                            MediaItemDictionary.Remove(item.Id);
+                        if (((ProjectManager)r).MediaItemDictionary.ContainsKey(item.Id))
+                            ((ProjectManager)r).MediaItemDictionary.Remove(item.Id);
                     }
                 }
 
@@ -822,15 +829,15 @@ namespace MediaBase.ViewModel
                 {
                     foreach (var item in m.NewValue.OfType<IMultimediaItem>())
                     {
-                        if (!MediaItemDictionary.ContainsKey(item.Id))
-                            MediaItemDictionary.Add(item.Id, item);
+                        if (!((ProjectManager)r).MediaItemDictionary.ContainsKey(item.Id))
+                            ((ProjectManager)r).MediaItemDictionary.Add(item.Id, item);
 
                         if (item is MultimediaSource source)
                         {
-                            if (MediaItemDependencyDictionary.ContainsKey(source.SourceId))
-                                MediaItemDependencyDictionary[source.SourceId].Add(item.Id);
+                            if (((ProjectManager)r).MediaItemDependencyDictionary.ContainsKey(source.SourceId))
+                                ((ProjectManager)r).MediaItemDependencyDictionary[source.SourceId].Add(item.Id);
                             else
-                                MediaItemDependencyDictionary.Add(source.SourceId, new List<Guid> { item.Id });
+                                ((ProjectManager)r).MediaItemDependencyDictionary.Add(source.SourceId, new List<Guid> { item.Id });
                         }
                     }
                 }
@@ -841,8 +848,8 @@ namespace MediaBase.ViewModel
             {
                 foreach (var tag in m.NewValue)
                 {
-                    if (!TagDatabase.Contains(tag))
-                        TagDatabase.Add(tag);
+                    if (!((ProjectManager)r).TagDatabase.Contains(tag))
+                        ((ProjectManager)r).TagDatabase.Add(tag);
                 }
             });
 
@@ -851,7 +858,7 @@ namespace MediaBase.ViewModel
             {
                 if (m.Sender is Project && m.PropertyName == nameof(Project.HasUnsavedChanges))
                 {
-                    HasUnsavedChanges = Projects.Any(x => x.HasUnsavedChanges);
+                    ((ProjectManager)r).HasUnsavedChanges = ((ProjectManager)r).Projects.Any(x => x.HasUnsavedChanges);
                 }
             });
         }

@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using Microsoft.UI;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Media;
 
@@ -23,6 +24,26 @@ namespace MediaBase
                 1 => new SolidColorBrush(Colors.LightGray),
                 _ => new SolidColorBrush(Colors.Transparent)
             };
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, string language)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class GroupMaskToVisibilityConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, string language)
+        {
+            if (!int.TryParse(parameter as string, out int group))
+                throw new ArgumentNullException(nameof(parameter));
+
+            group--;
+            if (group is < 0 or > 7)
+                throw new ArgumentOutOfRangeException(nameof(parameter));
+
+            return (byte)((byte)value & (1 << group)) == 1 ? Visibility.Visible : Visibility.Collapsed;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, string language)

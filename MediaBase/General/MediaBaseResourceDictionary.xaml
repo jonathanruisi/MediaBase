@@ -32,13 +32,9 @@
         TrueValue="{StaticResource RedBrush}"
         FalseValue="{ThemeResource WhiteBrush}"/>
 
-    <toolkit_converters:BoolToVisibilityConverter x:Key="FalseToVisibleConverter">
-        <toolkit_converters:BoolToVisibilityConverter.TrueValue>
-            <xaml:Visibility>Collapsed</xaml:Visibility>
-        </toolkit_converters:BoolToVisibilityConverter.TrueValue>
-        <toolkit_converters:BoolToVisibilityConverter.FalseValue>
-            <xaml:Visibility>Visible</xaml:Visibility>
-        </toolkit_converters:BoolToVisibilityConverter.FalseValue>
-    </toolkit_converters:BoolToVisibilityConverter>
-    
+    <toolkit_converters:BoolToVisibilityConverter
+        x:Key="BoolToVisibilityConverter"/>
+
+    <local:GroupMaskToVisibilityConverter x:Key="GroupMaskToVisibilityConverter"/>
+
 </ResourceDictionary>

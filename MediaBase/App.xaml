@@ -11,7 +11,6 @@
                 <ResourceDictionary Source="General/MediaBaseResourceDictionary.xaml"/>
                 <ResourceDictionary Source="ms-appx:///Utility.WinUI/Controls/TransportElement.xaml"/>
                 <ResourceDictionary Source="ms-appx:///Utility.WinUI/Controls/MediaTimeline.xaml"/>
-                <ResourceDictionary Source="ms-appx:///Utility.WinUI/Controls/LogElement.xaml"/>
             </ResourceDictionary.MergedDictionaries>
             <!-- Other app resources here -->
         </ResourceDictionary>

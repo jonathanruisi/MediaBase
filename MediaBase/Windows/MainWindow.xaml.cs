@@ -16,6 +16,7 @@ using JLR.Utility.WinUI.Dialogs;
 using JLR.Utility.WinUI.ViewModel;
 
 using MediaBase.ViewModel;
+using MediaBase.Windows;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI;
@@ -126,7 +127,8 @@ namespace MediaBase
 
         private void HelpDebugLogWindowCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+            var logWindow = new LogWindow();
+            logWindow.Activate();
         }
 
         private void HelpAboutCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)

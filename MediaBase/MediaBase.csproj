@@ -20,6 +20,7 @@
     <None Remove="Controls\SystemBrowser.xaml" />
     <None Remove="Controls\WorkspaceBrowser.xaml" />
     <None Remove="General\MediaBaseResourceDictionary.xaml" />
+    <None Remove="Windows\LogWindow.xaml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -63,5 +64,10 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Remove="Controls\SystemBrowser.xaml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Windows\LogWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
 </Project>
