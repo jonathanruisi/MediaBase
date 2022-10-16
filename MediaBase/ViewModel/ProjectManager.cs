@@ -26,6 +26,7 @@ using Windows.Storage.Pickers;
 using WinRT.Interop;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection.PortableExecutable;
 
 namespace MediaBase.ViewModel
 {
@@ -66,16 +67,7 @@ namespace MediaBase.ViewModel
         public ViewModelNode ActiveNode
         {
             get => _activeNode;
-            set
-            {
-                if (_activeNode != null)
-                    _activeNode.IsSelected = false;
-
-                SetProperty(ref _activeNode, value);
-
-                if (_activeNode != null)
-                    _activeNode.IsSelected = true;
-            }
+            set => SetProperty(ref _activeNode, value);
         }
 
         /// <summary>
@@ -320,6 +312,9 @@ namespace MediaBase.ViewModel
                 Description = Projects[0].Name;
             else
                 Description = $"{Name}: {Projects.Count} Projects";
+
+            if (IsActive)
+                HasUnsavedChanges = true;
         }
         #endregion
 
@@ -390,12 +385,12 @@ namespace MediaBase.ViewModel
 
         private void WorkspaceRemoveItemCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = ActiveNode is not null;
+            args.CanExecute = ActiveNode is not null and not Project;
         }
 
         private void WorkspaceRemoveSelectedCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = Projects.Any(x => x.DepthFirstEnumerable().Any(y => y.IsSelected));
+            args.CanExecute = Projects.Any(x => x.DepthFirstEnumerable().Any(y => y.IsSelected && y is not Project));
         }
 
         private void WorkspaceRenameItemCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
@@ -430,9 +425,44 @@ namespace MediaBase.ViewModel
             }
         }
 
-        private void ProjectOpenCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        private async void ProjectOpenCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+            var picker = new FileOpenPicker
+            {
+                ViewMode = PickerViewMode.List,
+                SuggestedStartLocation = PickerLocationId.Desktop,
+                CommitButtonText = "Open Project",
+                FileTypeFilter = { ".mbp" }
+            };
+
+            InitializeWithWindow.Initialize(picker, App.WindowHandle);
+
+            var projectFile = await picker.PickSingleFileAsync();
+            if (projectFile == null || !projectFile.IsAvailable)
+                return;
+
+            var project = new Project
+            {
+                File = projectFile,
+                Path = projectFile.Path
+            };
+
+            foreach (var existingProject in Projects)
+            {
+                if (project.File.Path == existingProject.Path)
+                {
+                    App.ShowMessageBoxAsync("This project already exists in this workspace.", "Duplicate Project");
+                    return;
+                }
+            }
+
+            if (await OpenProject(project) == false)
+            {
+                App.ShowMessageBoxAsync($"Unable to read project file: {project.Path}", "Project File Error");
+                return;
+            }
+
+            Projects.Add(project);
         }
 
         private async void ProjectSaveCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
@@ -476,7 +506,9 @@ namespace MediaBase.ViewModel
                 return;
 
             project.IsActive = false;
+            CloseProject(project);
             Projects.Remove(project);
+            ActiveNode = null;
         }
 
         private async void WorkspaceOpenCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
@@ -509,6 +541,11 @@ namespace MediaBase.ViewModel
                 reader = await GetXmlReaderForFileAsync(workspaceFile);
                 ReadXml(reader);
             }
+            catch (Exception)
+            {
+                App.ShowMessageBoxAsync("Unable to read workspace file.", "Workspace File Error");
+                return;
+            }
             finally
             {
                 reader.Close();
@@ -518,46 +555,8 @@ namespace MediaBase.ViewModel
             // Open each project in the workspace
             foreach (var project in Projects)
             {
-                var projectFile = await StorageFile.GetFileFromPathAsync(project.Path);
-                if (projectFile == null || !projectFile.IsAvailable)
-                    continue;
-
-                try
-                {
-                    reader = await GetXmlReaderForFileAsync(projectFile);
-                    project.ReadXml(reader);
-                }
-                finally
-                {
-                    reader.Close();
-                }
-                project.File = projectFile;
-                project.IsActive = true;
-
-                // Add file references to MediaItemDatabase
-                foreach (var path in project.MediaFileDictionary.Keys)
-                {
-                    StorageFile mediaFile;
-                    try
-                    {
-                        mediaFile = await StorageFile.GetFileFromPathAsync(path);
-                    }
-                    catch (FileNotFoundException)
-                    {
-                        continue;
-                    }
-
-                    if (mediaFile.ContentType.ToLower().Contains("image"))
-                    {
-                        var imageFile = new ImageFile(mediaFile) { Id = project.MediaFileDictionary[path] };
-                        MediaItemDictionary.Add(imageFile.Id, imageFile);
-                    }
-                    else if (mediaFile.ContentType.ToLower().Contains("video"))
-                    {
-                        var videoFile = new VideoFile(mediaFile) { Id = project.MediaFileDictionary[path] };
-                        MediaItemDictionary.Add(videoFile.Id, videoFile);
-                    }
-                }
+                if (await OpenProject(project) == false)
+                    App.ShowMessageBoxAsync($"Unable to read project file: {project.Path}", "Project File Error");
             }
         }
 
@@ -578,9 +577,14 @@ namespace MediaBase.ViewModel
                 await SaveAsync();
         }
 
-        private void WorkspaceCloseCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        private async void WorkspaceCloseCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+            // Prompt user to save unsaved changes
+            if (await PromptSaveChanges() == false)
+                return;
+
+            IsActive = false;
+            IsActive = true;
         }
 
         private async void WorkspaceNewFolderCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
@@ -622,6 +626,9 @@ namespace MediaBase.ViewModel
                 else if (node.Content is StorageFile file)
                     fileList.Add(file);
             }
+
+            // Clear the SystemBrowser TreeView's SelectedNodes list
+            Messenger.Send(new GeneralActionMessage(), "ClearSelection");
 
             // Recursively import top-level folders
             foreach (var folder in folderList)
@@ -735,17 +742,40 @@ namespace MediaBase.ViewModel
 
         private void WorkspaceRemoveItemCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+            ActiveNode.Root.Remove(ActiveNode);
+            ActiveNode = null;
         }
 
         private void WorkspaceRemoveSelectedCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+            var nodesToRemove = Projects
+                .SelectMany(x => x.DepthFirstEnumerable()
+                .Where(y => y.IsSelected && (y.Parent == null || !y.Parent.IsSelected)))
+                .ToList();
+
+            foreach (var node in nodesToRemove)
+            {
+                node.Parent.Remove(node);
+            }
         }
 
-        private void WorkspaceRenameItemCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        private async void WorkspaceRenameItemCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+            var dlg = new TextPromptDialog
+            {
+                Title = "Rename Item",
+                PromptText = "Enter a different name for the item",
+                PrimaryButtonText = "OK",
+                CloseButtonText = "Cancel",
+                Text = ActiveNode.Name,
+                XamlRoot = App.Window.Content.XamlRoot
+            };
+
+            var result = await dlg.ShowAsync();
+            if (result == ContentDialogResult.Primary)
+            {
+                ActiveNode.Name = dlg.Text;
+            }
         }
         #endregion
 
@@ -871,10 +901,89 @@ namespace MediaBase.ViewModel
             TagDatabase.Clear();
             MediaItemDictionary.Clear();
             MediaItemDependencyDictionary.Clear();
+            Name = DefaultName;
+            HasUnsavedChanges = false;
         }
         #endregion
 
         #region Private Methods
+        private async Task<bool> OpenProject(Project project)
+        {
+            if (project.File == null || !project.File.IsAvailable)
+            {
+                if (string.IsNullOrEmpty(project.Path))
+                    return false;
+
+                project.File = await StorageFile.GetFileFromPathAsync(project.Path);
+            }
+
+            if (project.File == null || !project.File.IsAvailable)
+                return false;
+
+            XmlReader reader = null;
+            try
+            {
+                reader = await GetXmlReaderForFileAsync(project.File);
+                project.ReadXml(reader);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+            finally
+            {
+                reader.Close();
+            }
+            project.IsActive = true;
+
+            // Add file references to MediaItemDatabase
+            foreach (var path in project.MediaFileDictionary.Keys)
+            {
+                StorageFile mediaFile;
+                try
+                {
+                    mediaFile = await StorageFile.GetFileFromPathAsync(path);
+                }
+                catch (FileNotFoundException)
+                {
+                    continue;
+                }
+
+                if (mediaFile.ContentType.ToLower().Contains("image"))
+                {
+                    var imageFile = new ImageFile(mediaFile) { Id = project.MediaFileDictionary[path] };
+                    MediaItemDictionary.Add(imageFile.Id, imageFile);
+                }
+                else if (mediaFile.ContentType.ToLower().Contains("video"))
+                {
+                    var videoFile = new VideoFile(mediaFile) { Id = project.MediaFileDictionary[path] };
+                    MediaItemDictionary.Add(videoFile.Id, videoFile);
+                }
+            }
+
+            return true;
+        }
+
+        private void CloseProject(Project project)
+        {
+            foreach (var item in project.DepthFirstEnumerable().OfType<IMultimediaItem>())
+            {
+                if (item is MultimediaSource source)
+                {
+                    if (MediaItemDependencyDictionary.ContainsKey(source.SourceId))
+                    {
+                        MediaItemDependencyDictionary[source.SourceId].Remove(item.Id);
+
+                        if (MediaItemDependencyDictionary[source.SourceId].Count == 0)
+                            MediaItemDependencyDictionary.Remove(source.SourceId);
+                    }
+                }
+
+                if (MediaItemDictionary.ContainsKey(item.Id))
+                    MediaItemDictionary.Remove(item.Id);
+            }
+        }
+
         private void InitializeCommands()
         {
             // New Project

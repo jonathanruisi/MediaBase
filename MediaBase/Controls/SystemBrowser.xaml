@@ -29,7 +29,7 @@
                       x:DataType="TreeViewNode">
             <StackPanel Orientation="Horizontal">
                 <FontIcon x:Name="Symbol"
-                          Margin="0,0,10,0"
+                          Margin="0,0,6,0"
                           FontFamily="Segoe Fluent Icons"
                           Glyph="&#xEDA2;"/>
                 <TextBlock HorizontalAlignment="Left"
@@ -42,7 +42,7 @@
                       x:DataType="TreeViewNode">
             <StackPanel Orientation="Horizontal">
                 <FontIcon x:Name="Symbol"
-                          Margin="0,0,10,0"
+                          Margin="0,0,6,0"
                           FontFamily="Segoe Fluent Icons"
                           Glyph="&#xED41;"/>
                 <TextBlock HorizontalAlignment="Left"
@@ -55,7 +55,7 @@
                       x:DataType="TreeViewNode">
             <StackPanel Orientation="Horizontal">
                 <SymbolIcon x:Name="Symbol"
-                            Margin="0,0,10,0"
+                            Margin="0,0,6,0"
                             Symbol="Library"/>
                 <TextBlock HorizontalAlignment="Left"
                            VerticalAlignment="Center"
@@ -67,7 +67,7 @@
                       x:DataType="TreeViewNode">
             <StackPanel Orientation="Horizontal">
                 <FontIcon x:Name="Symbol"
-                          Margin="0,0,10,0"
+                          Margin="0,0,6,0"
                           FontFamily="Segoe Fluent Icons"
                           Glyph="&#xF156;"/>
                 <TextBlock HorizontalAlignment="Left"
@@ -80,7 +80,7 @@
                       x:DataType="TreeViewNode">
             <StackPanel Orientation="Horizontal">
                 <FontIcon x:Name="Symbol"
-                          Margin="0,0,10,0"
+                          Margin="0,0,6,0"
                           FontFamily="Segoe Fluent Icons"
                           Glyph="&#xEB9F;"/>
                 <TextBlock HorizontalAlignment="Left"
@@ -93,7 +93,7 @@
                       x:DataType="TreeViewNode">
             <StackPanel Orientation="Horizontal">
                 <FontIcon x:Name="Symbol"
-                          Margin="0,0,10,0"
+                          Margin="0,0,6,0"
                           FontFamily="Segoe Fluent Icons"
                           Glyph="&#xE8B2;"/>
                 <TextBlock HorizontalAlignment="Left"

@@ -10,17 +10,17 @@
     <SolidColorBrush x:Key="WhiteBrush" Color="White"/>
     
     <!-- Shapes -->
-    <Polygon x:Key="CategoryShape1"
+    <Polygon x:Key="GroupShape1"
              Fill="Gold" Stretch="Fill" StrokeThickness="0"
              Points="0,20,10,0,20,20"/>
 
-    <Rectangle x:Key="CategoryShape2"
+    <Rectangle x:Key="GroupShape2"
                Fill="CornflowerBlue" Stretch="Fill" StrokeThickness="0"/>
 
-    <Ellipse x:Key="CategoryShape3"
+    <Ellipse x:Key="GroupShape3"
              Fill="IndianRed" Stretch="Fill" StrokeThickness="0"/>
 
-    <Polygon x:Key="CategoryShape4"
+    <Polygon x:Key="GroupShape4"
              Fill="ForestGreen" Stretch="Fill" StrokeThickness="0"
              Points="0,10,10,0,20,10,10,20"/>
 

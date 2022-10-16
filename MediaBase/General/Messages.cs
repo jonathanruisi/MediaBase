@@ -12,6 +12,8 @@ using Microsoft.UI.Xaml.Controls;
 
 namespace MediaBase
 {
+    public class GeneralActionMessage { }
+
     public class SetInfoBarMessage
     {
         public string Title { get; set; }

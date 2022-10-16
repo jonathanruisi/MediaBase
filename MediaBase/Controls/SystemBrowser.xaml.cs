@@ -50,15 +50,20 @@ namespace MediaBase.Controls
 
             messenger.Register<RequestMessage<bool>>(this, (r, m) =>
             {
-                m.Reply(SystemBrowserTreeView.SelectedNodes.Any());
+                m.Reply(((SystemBrowser)r).SystemBrowserTreeView.SelectedNodes.Any());
             });
 
             messenger.Register<CollectionRequestMessage<TreeViewNode>>(this, (r, m) =>
             {
-                foreach (var node in SystemBrowserTreeView.SelectedNodes)
+                foreach (var node in ((SystemBrowser)r).SystemBrowserTreeView.SelectedNodes)
                 {
                     m.Reply(node);
                 }
+            });
+
+            messenger.Register<GeneralActionMessage, string>(this, "ClearSelection", (r, m) =>
+            {
+                ((SystemBrowser)r).SystemBrowserTreeView.SelectedNodes.Clear();
             });
         }
         #endregion
