@@ -73,7 +73,17 @@
                     </MenuBarItem>
                     
                     <MenuBarItem Title="Tools" Margin="0" VerticalAlignment="Bottom">
-                        
+                        <MenuFlyoutSubItem Text="Group">
+                            <MenuFlyoutItem Command="{x:Bind ViewModel.ToolsToggleGroup1Command}"
+                                            CommandParameter="1"/>
+                            <MenuFlyoutItem Command="{x:Bind ViewModel.ToolsToggleGroup2Command}"
+                                            CommandParameter="2"/>
+                            <MenuFlyoutItem Command="{x:Bind ViewModel.ToolsToggleGroup3Command}"
+                                            CommandParameter="3"/>
+                            <MenuFlyoutItem Command="{x:Bind ViewModel.ToolsToggleGroup4Command}"
+                                            CommandParameter="4"/>
+                        </MenuFlyoutSubItem>
+                        <MenuFlyoutItem Command="{x:Bind ViewModel.ToolsBatchActionCommand}"/>
                     </MenuBarItem>
                     
                     <MenuBarItem Title="View" Margin="0" VerticalAlignment="Bottom">
@@ -191,7 +201,9 @@
             </toolkit:Expander>
 
             <!-- Media Editor -->
-            
+            <controls:MediaEditor x:Name="Editor" Grid.Row="0" Grid.Column="4"
+                                  HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                  Source="{x:Bind ViewModel.ActiveMediaSource, Mode=OneWay}"/>
         </Grid>
 
         <!-- Info Bar -->

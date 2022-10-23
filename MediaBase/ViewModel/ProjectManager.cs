@@ -27,6 +27,7 @@ using WinRT.Interop;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection.PortableExecutable;
+using Windows.Foundation;
 
 namespace MediaBase.ViewModel
 {
@@ -44,7 +45,8 @@ namespace MediaBase.ViewModel
 
         #region Fields
         private StorageFile _file;
-        private ViewModelNode _activeNode;
+        private TreeViewNode _activeSystemBrowserNode;
+        private ViewModelNode _activeWorkspaceBrowserNode;
         private MultimediaSource _activeMediaSource;
         private string _description;
         private bool _hasUnsavedChanges;
@@ -62,12 +64,31 @@ namespace MediaBase.ViewModel
         }
 
         /// <summary>
-        /// Gets or sets a reference to the currently active workspace item.
+        /// Gets or sets a reference to the currently active system browser node.
         /// </summary>
-        public ViewModelNode ActiveNode
+        public TreeViewNode ActiveSystemBrowserNode
         {
-            get => _activeNode;
-            set => SetProperty(ref _activeNode, value);
+            get => _activeSystemBrowserNode;
+            set
+            {
+                SetProperty(ref _activeSystemBrowserNode, value);
+
+                GeneralPreviousCommand.NotifyCanExecuteChanged();
+                GeneralNextCommand.NotifyCanExecuteChanged();
+                ToolsToggleGroup1Command.NotifyCanExecuteChanged();
+                ToolsToggleGroup2Command.NotifyCanExecuteChanged();
+                ToolsToggleGroup3Command.NotifyCanExecuteChanged();
+                ToolsToggleGroup4Command.NotifyCanExecuteChanged();
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a reference to the currently active workspace browser node.
+        /// </summary>
+        public ViewModelNode ActiveWorkspaceBrowserNode
+        {
+            get => _activeWorkspaceBrowserNode;
+            set => SetProperty(ref _activeWorkspaceBrowserNode, value);
         }
 
         /// <summary>
@@ -85,6 +106,13 @@ namespace MediaBase.ViewModel
 
                 if (_activeMediaSource != null)
                     _activeMediaSource.IsSelected = true;
+
+                GeneralPreviousCommand.NotifyCanExecuteChanged();
+                GeneralNextCommand.NotifyCanExecuteChanged();
+                ToolsToggleGroup1Command.NotifyCanExecuteChanged();
+                ToolsToggleGroup2Command.NotifyCanExecuteChanged();
+                ToolsToggleGroup3Command.NotifyCanExecuteChanged();
+                ToolsToggleGroup4Command.NotifyCanExecuteChanged();
             }
         }
 
@@ -121,11 +149,19 @@ namespace MediaBase.ViewModel
         #endregion
 
         #region Commands
+        // General
+        public XamlUICommand GeneralPreviousCommand { get; private set; }
+        public XamlUICommand GeneralNextCommand { get; private set; }
+        public XamlUICommand GeneralDeleteMarkerCommand { get; private set; }
+
+        // Project
         public XamlUICommand ProjectNewCommand { get; private set; }
         public XamlUICommand ProjectOpenCommand { get; private set; }
         public XamlUICommand ProjectSaveCommand { get; private set; }
         public XamlUICommand ProjectSaveAsCommand { get; private set; }
         public XamlUICommand ProjectCloseCommand { get; private set; }
+
+        // Workspace
         public XamlUICommand WorkspaceOpenCommand { get; private set; }
         public XamlUICommand WorkspaceSaveCommand { get; private set; }
         public XamlUICommand WorkspaceSaveAsCommand { get; private set; }
@@ -136,6 +172,36 @@ namespace MediaBase.ViewModel
         public XamlUICommand WorkspaceRemoveSelectedCommand { get; private set; }
         public XamlUICommand WorkspaceRenameItemCommand { get; private set; }
         public XamlUICommand WorkspaceSelectMultipleCommand { get; private set; }
+
+        // Tools
+        public XamlUICommand ToolsToggleGroup1Command { get; private set; }
+        public XamlUICommand ToolsToggleGroup2Command { get; private set; }
+        public XamlUICommand ToolsToggleGroup3Command { get; private set; }
+        public XamlUICommand ToolsToggleGroup4Command { get; private set; }
+        public XamlUICommand ToolsBatchActionCommand { get; private set; }
+
+        // Editor
+        public XamlUICommand EditorPlayCommand { get; private set; }
+        public XamlUICommand EditorPauseCommand { get; private set; }
+        public XamlUICommand EditorToggleLoopingCommand { get; private set; }
+        public XamlUICommand EditorPreviousFrameCommand { get; private set; }
+        public XamlUICommand EditorNextFrameCommand { get; private set; }
+        public XamlUICommand EditorPreviousMarkerCommand { get; private set; }
+        public XamlUICommand EditorNextMarkerCommand { get; private set; }
+        public XamlUICommand EditorToggleActiveSelectionCommand { get; private set; }
+        public XamlUICommand EditorNewMarkerCommand { get; private set; }
+        public XamlUICommand EditorNewClipCommand { get; private set; }
+        public XamlUICommand EditorNewKeyframeCommand { get; private set; }
+        public XamlUICommand EditorCutSelectedCommand { get; private set; }
+        public XamlUICommand EditorPlaybackRateDecreaseCommand { get; private set; }
+        public XamlUICommand EditorPlaybackRateIncreaseCommand { get; private set; }
+        public XamlUICommand EditorPlaybackRateNormalCommand { get; private set; }
+        public XamlUICommand EditorTogglePanAndZoomLockCommand { get; private set; }
+        public XamlUICommand EditorCenterFrameCommand { get; private set; }
+        public XamlUICommand EditorFrameZoomFitCommand { get; private set; }
+        public XamlUICommand EditorFrameZoomFullCommand { get; private set; }
+        public XamlUICommand EditorTimelineZoomOutCommand { get; private set; }
+        public XamlUICommand EditorTimelineZoomInCommand { get; private set; }
         #endregion
 
         #region Constructor
@@ -143,7 +209,8 @@ namespace MediaBase.ViewModel
         {
             Name = DefaultName;
             _description = DefaultTitle;
-            _activeNode = null;
+            _activeSystemBrowserNode = null;
+            _activeWorkspaceBrowserNode = null;
             _activeMediaSource = null;
             _hasUnsavedChanges = false;
 
@@ -319,6 +386,27 @@ namespace MediaBase.ViewModel
         #endregion
 
         #region Event Handlers (Commands - CanExecuteRequested)
+        private void GeneralPreviousCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = (ActiveMediaSource != null &&
+                               ActiveMediaSource != ActiveMediaSource.Parent.Children.First()) ||
+                              (ActiveSystemBrowserNode != null &&
+                               ActiveSystemBrowserNode != ActiveSystemBrowserNode.Parent.Children.First());
+        }
+
+        private void GeneralNextCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = (ActiveMediaSource != null &&
+                               ActiveMediaSource != ActiveMediaSource.Parent.Children.Last()) ||
+                              (ActiveSystemBrowserNode != null &&
+                               ActiveSystemBrowserNode != ActiveSystemBrowserNode.Parent.Children.Last());
+        }
+
+        private void GeneralDeleteMarkerCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            // TODO: GeneralDeleteMarkerCommand_CanExecuteRequested
+        }
+
         private void ProjectNewCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
             args.CanExecute = IsActive;
@@ -331,18 +419,18 @@ namespace MediaBase.ViewModel
 
         private void ProjectSaveCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = (ActiveNode is Project project && project.HasUnsavedChanges) ||
+            args.CanExecute = (ActiveWorkspaceBrowserNode is Project project && project.HasUnsavedChanges) ||
                               (Projects.Count == 1 && Projects[0].HasUnsavedChanges);
         }
 
         private void ProjectSaveAsCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = ActiveNode is Project || Projects.Count == 1;
+            args.CanExecute = ActiveWorkspaceBrowserNode is Project || Projects.Count == 1;
         }
 
         private void ProjectCloseCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = ActiveNode is Project || Projects.Count == 1;
+            args.CanExecute = ActiveWorkspaceBrowserNode is Project || Projects.Count == 1;
         }
 
         private void WorkspaceOpenCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
@@ -367,12 +455,12 @@ namespace MediaBase.ViewModel
 
         private void WorkspaceNewFolderCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = ActiveNode is MediaFolder;
+            args.CanExecute = ActiveWorkspaceBrowserNode is MediaFolder;
         }
 
         private void WorkspaceImportCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            if (ActiveNode is MediaFolder)
+            if (ActiveWorkspaceBrowserNode is MediaFolder)
             {
                 var request = Messenger.Send<RequestMessage<bool>>();
                 args.CanExecute = request.HasReceivedResponse && request.Response;
@@ -385,7 +473,7 @@ namespace MediaBase.ViewModel
 
         private void WorkspaceRemoveItemCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = ActiveNode is not null and not Project;
+            args.CanExecute = ActiveWorkspaceBrowserNode is not null and not Project;
         }
 
         private void WorkspaceRemoveSelectedCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
@@ -395,11 +483,30 @@ namespace MediaBase.ViewModel
 
         private void WorkspaceRenameItemCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = ActiveNode is not null;
+            args.CanExecute = ActiveWorkspaceBrowserNode is not null;
         }
         #endregion
 
         #region Event Handlers (Commands - ExecuteRequested)
+        private void GeneralPreviousCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            // TODO: GeneralPreviousCommand_ExecuteRequested
+            //var index = ActiveMediaSource.Parent.Children.IndexOf(ActiveMediaSource);
+            //ActiveMediaSource = (MultimediaSource)ActiveMediaSource.Parent.Children[index - 1];
+        }
+
+        private void GeneralNextCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            // TODO: GeneralNextCommand_ExecuteRequested
+            //var index = ActiveMediaSource.Parent.Children.IndexOf(ActiveMediaSource);
+            //ActiveMediaSource = (MultimediaSource)ActiveMediaSource.Parent.Children[index + 1];
+        }
+
+        private void GeneralDeleteMarkerCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            // TODO: GeneralDeleteMarkerCommand_ExecuteRequested
+        }
+
         private async void ProjectNewCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
             var dlg = new TextPromptDialog
@@ -468,8 +575,8 @@ namespace MediaBase.ViewModel
         private async void ProjectSaveCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
             Project project = null;
-            if (ActiveNode is Project)
-                project = ActiveNode as Project;
+            if (ActiveWorkspaceBrowserNode is Project)
+                project = ActiveWorkspaceBrowserNode as Project;
             else if (Projects.Count == 1)
                 project = Projects[0];
 
@@ -485,8 +592,8 @@ namespace MediaBase.ViewModel
         private async void ProjectSaveAsCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
             Project project = null;
-            if (ActiveNode is Project)
-                project = ActiveNode as Project;
+            if (ActiveWorkspaceBrowserNode is Project)
+                project = ActiveWorkspaceBrowserNode as Project;
             else if (Projects.Count == 1)
                 project = Projects[0];
 
@@ -497,8 +604,8 @@ namespace MediaBase.ViewModel
         private async void ProjectCloseCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
             Project project = null;
-            if (ActiveNode is Project)
-                project = ActiveNode as Project;
+            if (ActiveWorkspaceBrowserNode is Project)
+                project = ActiveWorkspaceBrowserNode as Project;
             else if (Projects.Count == 1)
                 project = Projects[0];
 
@@ -508,7 +615,7 @@ namespace MediaBase.ViewModel
             project.IsActive = false;
             CloseProject(project);
             Projects.Remove(project);
-            ActiveNode = null;
+            ActiveWorkspaceBrowserNode = null;
         }
 
         private async void WorkspaceOpenCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
@@ -601,13 +708,13 @@ namespace MediaBase.ViewModel
             var result = await dlg.ShowAsync();
             if (result == ContentDialogResult.Primary)
             {
-                ActiveNode.Children.Add(new MediaFolder(dlg.Text));
+                ActiveWorkspaceBrowserNode.Children.Add(new MediaFolder(dlg.Text));
             }
         }
 
         private async void WorkspaceImportCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            if (((MediaFolder)ActiveNode).Root is not Project parentProject)
+            if (((MediaFolder)ActiveWorkspaceBrowserNode).Root is not Project parentProject)
                 throw new Exception("Unable to find target project");
 
             int fileCount = 0, folderCount = 0;
@@ -633,13 +740,13 @@ namespace MediaBase.ViewModel
             // Recursively import top-level folders
             foreach (var folder in folderList)
             {
-                await AddFolder(folder, (MediaFolder)ActiveNode);
+                await AddFolder(folder, (MediaFolder)ActiveWorkspaceBrowserNode);
             }
 
             // Import all top-level files
             foreach (var file in fileList)
             {
-                AddFile(file, (MediaFolder)ActiveNode);
+                AddFile(file, (MediaFolder)ActiveWorkspaceBrowserNode);
             }
 
             // Import complete - display results
@@ -742,8 +849,8 @@ namespace MediaBase.ViewModel
 
         private void WorkspaceRemoveItemCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            ActiveNode.Root.Remove(ActiveNode);
-            ActiveNode = null;
+            ActiveWorkspaceBrowserNode.Root.Remove(ActiveWorkspaceBrowserNode);
+            ActiveWorkspaceBrowserNode = null;
         }
 
         private void WorkspaceRemoveSelectedCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
@@ -767,14 +874,14 @@ namespace MediaBase.ViewModel
                 PromptText = "Enter a different name for the item",
                 PrimaryButtonText = "OK",
                 CloseButtonText = "Cancel",
-                Text = ActiveNode.Name,
+                Text = ActiveWorkspaceBrowserNode.Name,
                 XamlRoot = App.Window.Content.XamlRoot
             };
 
             var result = await dlg.ShowAsync();
             if (result == ContentDialogResult.Primary)
             {
-                ActiveNode.Name = dlg.Text;
+                ActiveWorkspaceBrowserNode.Name = dlg.Text;
             }
         }
         #endregion
@@ -986,7 +1093,49 @@ namespace MediaBase.ViewModel
 
         private void InitializeCommands()
         {
-            // New Project
+            // General: Previous
+            GeneralPreviousCommand = new XamlUICommand
+            {
+                Label = "Previous",
+                Description = "Previous",
+                IconSource = new SymbolIconSource { Symbol = (Symbol)0xF0B0 }
+            };
+
+            GeneralPreviousCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.Left,
+                IsEnabled = true
+            });
+
+            // General: Next
+            GeneralNextCommand = new XamlUICommand
+            {
+                Label = "Next",
+                Description = "Next",
+                IconSource = new SymbolIconSource { Symbol = (Symbol)0xF0AF }
+            };
+
+            GeneralNextCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.Right,
+                IsEnabled = true
+            });
+
+            // General: Delete Marker
+            GeneralDeleteMarkerCommand = new XamlUICommand
+            {
+                Label = "Delete Marker",
+                Description = "Delete currently selected marker",
+                IconSource = new SymbolIconSource { Symbol = Symbol.Delete }
+            };
+
+            GeneralDeleteMarkerCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.Delete,
+                IsEnabled = true
+            });
+
+            // Project: New
             ProjectNewCommand = new XamlUICommand
             {
                 Label = "New Project...",
@@ -994,7 +1143,7 @@ namespace MediaBase.ViewModel
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xE81E }
             };
 
-            // Open Project
+            // Project: Open
             ProjectOpenCommand = new XamlUICommand
             {
                 Label = "Open Project...",
@@ -1009,7 +1158,7 @@ namespace MediaBase.ViewModel
                 IsEnabled = true
             });
 
-            // Save Project
+            // Project: Save
             ProjectSaveCommand = new XamlUICommand
             {
                 Label = "Save Project",
@@ -1017,7 +1166,7 @@ namespace MediaBase.ViewModel
                 IconSource = new SymbolIconSource { Symbol = Symbol.SaveLocal }
             };
 
-            // Save Project As
+            // Project: Save As
             ProjectSaveAsCommand = new XamlUICommand
             {
                 Label = "Save Project As...",
@@ -1025,7 +1174,7 @@ namespace MediaBase.ViewModel
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xE792 }
             };
 
-            // Close Project
+            // Project: Close
             ProjectCloseCommand = new XamlUICommand
             {
                 Label = "Close Project",
@@ -1033,7 +1182,7 @@ namespace MediaBase.ViewModel
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xE8BB }
             };
 
-            // Open Workspace
+            // Workspace: Open
             WorkspaceOpenCommand = new XamlUICommand
             {
                 Label = "Open Workspace...",
@@ -1041,7 +1190,7 @@ namespace MediaBase.ViewModel
                 IconSource = new SymbolIconSource { Symbol = Symbol.Library }
             };
 
-            // Save Workspace
+            // Workspace: Save
             WorkspaceSaveCommand = new XamlUICommand
             {
                 Label = "Save Workspace",
@@ -1056,7 +1205,7 @@ namespace MediaBase.ViewModel
                 IsEnabled = true
             });
 
-            // Save Workspace As
+            // Workspace: Save As
             WorkspaceSaveAsCommand = new XamlUICommand
             {
                 Label = "Save Workspace As...",
@@ -1071,7 +1220,7 @@ namespace MediaBase.ViewModel
                 IsEnabled = true
             });
 
-            // Close Workspace
+            // Workspace: Close
             WorkspaceCloseCommand = new XamlUICommand
             {
                 Label = "Close Workspace",
@@ -1079,7 +1228,7 @@ namespace MediaBase.ViewModel
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xE8BB }
             };
 
-            // New Folder
+            // Workspace: New Folder
             WorkspaceNewFolderCommand = new XamlUICommand
             {
                 Label = "New Folder...",
@@ -1094,7 +1243,7 @@ namespace MediaBase.ViewModel
                 IsEnabled = true
             });
 
-            // Import Item(s)
+            // Workspace: Import Item(s)
             WorkspaceImportCommand = new XamlUICommand
             {
                 Label = "Import Selected",
@@ -1102,7 +1251,7 @@ namespace MediaBase.ViewModel
                 IconSource = new SymbolIconSource { Symbol = Symbol.Import }
             };
 
-            // Remove Item
+            // Workspace: Remove Item
             WorkspaceRemoveItemCommand = new XamlUICommand
             {
                 Label = "Remove Item",
@@ -1115,14 +1264,14 @@ namespace MediaBase.ViewModel
                 IsEnabled = true
             });
 
-            // Remove Selected
+            // Workspace: Remove Selected
             WorkspaceRemoveSelectedCommand = new XamlUICommand
             {
                 Label = "Remove Selected",
                 Description = "Remove selected (checked) items"
             };
 
-            // Rename Item
+            // Workspace: Rename Item
             WorkspaceRenameItemCommand = new XamlUICommand
             {
                 Label = "Rename...",
@@ -1130,7 +1279,7 @@ namespace MediaBase.ViewModel
                 IconSource = new SymbolIconSource { Symbol = Symbol.Rename }
             };
 
-            // Toggle Multiple Selection
+            // Workspace: Toggle Multiple Selection
             WorkspaceSelectMultipleCommand = new XamlUICommand
             {
                 Label = "Toggle Multi-Select",
@@ -1138,6 +1287,407 @@ namespace MediaBase.ViewModel
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xE762 }
             };
 
+            // Tools: Batch Action
+            ToolsBatchActionCommand = new XamlUICommand
+            {
+                Label = "Batch Action...",
+                Description = "Perform an action on grouped items",
+                IconSource = new SymbolIconSource { Symbol = (Symbol)0xE781 }
+            };
+
+            ToolsBatchActionCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.A,
+                Modifiers = VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift,
+                IsEnabled = true
+            });
+
+            // Tools: Toggle Group 1
+            ToolsToggleGroup1Command = new XamlUICommand
+            {
+                Label = "Group 1",
+                Description = "Toggle item mark for Group 1"
+            };
+
+            ToolsToggleGroup1Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.NumberPad1,
+                IsEnabled = true
+            });
+
+            ToolsToggleGroup1Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.NumberPad1,
+                Modifiers = VirtualKeyModifiers.Control,
+                IsEnabled = true
+            });
+
+            // Tools: Toggle Group 2
+            ToolsToggleGroup2Command = new XamlUICommand
+            {
+                Label = "Group 2",
+                Description = "Toggle item mark for Group 2"
+            };
+
+            ToolsToggleGroup2Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.NumberPad2,
+                IsEnabled = true
+            });
+
+            ToolsToggleGroup2Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.NumberPad2,
+                Modifiers = VirtualKeyModifiers.Control,
+                IsEnabled = true
+            });
+
+            // Tools: Toggle Group 3
+            ToolsToggleGroup3Command = new XamlUICommand
+            {
+                Label = "Group 3",
+                Description = "Toggle item mark for Group 3"
+            };
+
+            ToolsToggleGroup3Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.NumberPad3,
+                IsEnabled = true
+            });
+
+            ToolsToggleGroup3Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.NumberPad3,
+                Modifiers = VirtualKeyModifiers.Control,
+                IsEnabled = true
+            });
+
+            // Tools: Toggle Group 4
+            ToolsToggleGroup4Command = new XamlUICommand
+            {
+                Label = "Group 4",
+                Description = "Toggle item mark for Group 4"
+            };
+
+            ToolsToggleGroup4Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.NumberPad4,
+                IsEnabled = true
+            });
+
+            ToolsToggleGroup4Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.NumberPad4,
+                Modifiers = VirtualKeyModifiers.Control,
+                IsEnabled = true
+            });
+
+            // Editor: Play
+            EditorPlayCommand = new XamlUICommand
+            {
+                Label = "Play",
+                Description = "Begin playback",
+                IconSource = new SymbolIconSource { Symbol = Symbol.Play }
+            };
+
+            EditorPlayCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.Space,
+                IsEnabled = true
+            });
+
+            // Editor: Pause
+            EditorPauseCommand = new XamlUICommand
+            {
+                Label = "Pause",
+                Description = "Pause playback",
+                IconSource = new SymbolIconSource { Symbol = Symbol.Pause }
+            };
+
+            EditorPauseCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.Space,
+                IsEnabled = true
+            });
+
+            // Editor: Toggle Looping
+            EditorToggleLoopingCommand = new XamlUICommand
+            {
+                Label = "Loop Playback",
+                Description = "Toggle looping of current media",
+                IconSource = new SymbolIconSource { Symbol = Symbol.RepeatAll }
+            };
+
+            // Editor: Previous Frame
+            EditorPreviousFrameCommand = new XamlUICommand
+            {
+                Label = "Previous Frame",
+                Description = "Seek back one frame",
+                IconSource = new SymbolIconSource { Symbol = Symbol.Previous }
+            };
+
+            EditorPreviousFrameCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.Left,
+                IsEnabled = true
+            });
+
+            // Editor: Next Frame
+            EditorNextFrameCommand = new XamlUICommand
+            {
+                Label = "Next Frame",
+                Description = "Seek forward one frame",
+                IconSource = new SymbolIconSource { Symbol = Symbol.Next }
+            };
+
+            EditorNextFrameCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.Right,
+                IsEnabled = true
+            });
+
+            // Editor: Previous Marker
+            EditorPreviousMarkerCommand = new XamlUICommand
+            {
+                Label = "Previous Marker",
+                Description = "Seek to the previous marker",
+                IconSource = new SymbolIconSource { Symbol = (Symbol)0xE76B }
+            };
+
+            EditorPreviousMarkerCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.Left,
+                Modifiers = VirtualKeyModifiers.Control,
+                IsEnabled = true
+            });
+
+            // Editor: Next Marker
+            EditorNextMarkerCommand = new XamlUICommand
+            {
+                Label = "Next Marker",
+                Description = "Seek to the next marker",
+                IconSource = new SymbolIconSource { Symbol = (Symbol)0xE76C }
+            };
+
+            EditorNextMarkerCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.Right,
+                Modifiers = VirtualKeyModifiers.Control,
+                IsEnabled = true
+            });
+
+            // Editor: Toggle Active Selection
+            EditorToggleActiveSelectionCommand = new XamlUICommand
+            {
+                Label = "Toggle Active Selection",
+                Description = "Enable/disable timeline selection controls",
+                IconSource = new SymbolIconSource { Symbol = Symbol.Highlight }
+            };
+
+            EditorToggleActiveSelectionCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.S,
+                IsEnabled = true
+            });
+
+            // Editor: New Marker
+            EditorNewMarkerCommand = new XamlUICommand
+            {
+                Label = "New Marker",
+                Description = "Add new marker at current position",
+                IconSource = new SymbolIconSource { Symbol = (Symbol)0xE81B }
+            };
+
+            EditorNewMarkerCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.M,
+                Modifiers = VirtualKeyModifiers.Control,
+                IsEnabled = true
+            });
+
+            // Editor: New Clip
+            EditorNewClipCommand = new XamlUICommand
+            {
+                Label = "New Clip",
+                Description = "Create clip from current selection",
+                IconSource = new SymbolIconSource { Symbol = (Symbol)0xF406 }
+            };
+
+            EditorNewClipCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.M,
+                Modifiers = VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift,
+                IsEnabled = true
+            });
+
+            // Editor: New Keyframe
+            EditorNewKeyframeCommand = new XamlUICommand
+            {
+                Label = "New Keyframe",
+                Description = "Add new keyframe",
+                IconSource = new SymbolIconSource { Symbol = Symbol.Permissions }
+            };
+
+            EditorNewKeyframeCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.K,
+                IsEnabled = true
+            });
+
+            // Editor: Cut Selected
+            EditorCutSelectedCommand = new XamlUICommand
+            {
+                Label = "Cut Selected",
+                Description = "Add selection to cut list",
+                IconSource = new SymbolIconSource { Symbol = Symbol.Trim }
+            };
+
+            // Editor: Playback Rate -
+            EditorPlaybackRateDecreaseCommand = new XamlUICommand
+            {
+                Label = "Playback Rate -",
+                Description = "Decrease playback rate",
+                IconSource = new SymbolIconSource { Symbol = (Symbol)0xEC48 }
+            };
+
+            EditorPlaybackRateDecreaseCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.Down,
+                IsEnabled = true
+            });
+
+            // Editor: Playback Rate +
+            EditorPlaybackRateIncreaseCommand = new XamlUICommand
+            {
+                Label = "Playback Rate +",
+                Description = "Increase playback rate",
+                IconSource = new SymbolIconSource { Symbol = (Symbol)0xEC4A }
+            };
+
+            EditorPlaybackRateIncreaseCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.Up,
+                IsEnabled = true
+            });
+
+            // Editor: Normal Playback Rate
+            EditorPlaybackRateNormalCommand = new XamlUICommand
+            {
+                Label = "Normal Playback Rate",
+                Description = "Normal playback rate",
+                IconSource = new SymbolIconSource { Symbol = (Symbol)0xEC49 }
+            };
+
+            EditorPlaybackRateNormalCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.Home,
+                IsEnabled = true
+            });
+
+            // Editor: Lock Pan and Zoom
+            EditorTogglePanAndZoomLockCommand = new XamlUICommand
+            {
+                Label = "Lock Pan and Zoom",
+                Description = "Toggle pan and zoom lock",
+                IconSource = new SymbolIconSource { Symbol = (Symbol)0xE72E }
+            };
+
+            EditorTogglePanAndZoomLockCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.L,
+                Modifiers = VirtualKeyModifiers.Control,
+                IsEnabled = true
+            });
+
+            // Editor: Center Frame
+            EditorCenterFrameCommand = new XamlUICommand
+            {
+                Label = "Center Frame",
+                Description = "Center frame in window",
+                IconSource = new SymbolIconSource { Symbol = (Symbol)0xE799 }
+            };
+
+            EditorCenterFrameCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.C,
+                IsEnabled = true
+            });
+
+            // Editor: Zoom Fit
+            EditorFrameZoomFitCommand = new XamlUICommand
+            {
+                Label = "Zoom Fit",
+                Description = "Zoom to fit current view",
+                IconSource = new SymbolIconSource { Symbol = (Symbol)0xE9A6 }
+            };
+
+            EditorFrameZoomFitCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.Number0,
+                Modifiers = VirtualKeyModifiers.Control,
+                IsEnabled = true
+            });
+
+            // Editor: Zoom Full
+            EditorFrameZoomFullCommand = new XamlUICommand
+            {
+                Label = "Zoom Full",
+                Description = "Zoom to actual size",
+                IconSource = new SymbolIconSource { Symbol = Symbol.FullScreen }
+            };
+
+            EditorFrameZoomFullCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.Number1,
+                Modifiers = VirtualKeyModifiers.Control,
+                IsEnabled = true
+            });
+
+            // Editor: Zoom Out Timeline
+            EditorTimelineZoomOutCommand = new XamlUICommand
+            {
+                Label = "Zoom Out Timeline",
+                Description = "Increase the visible timeline range",
+                IconSource = new SymbolIconSource { Symbol = Symbol.ZoomOut }
+            };
+
+            EditorTimelineZoomOutCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.PageDown,
+                IsEnabled = true
+            });
+
+            // Editor: Zoom In Timeline
+            EditorTimelineZoomInCommand = new XamlUICommand
+            {
+                Label = "Zoom In Timeline",
+                Description = "Decrease the visible timeline range",
+                IconSource = new SymbolIconSource { Symbol = Symbol.ZoomIn }
+            };
+
+            EditorTimelineZoomInCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.PageUp,
+                IsEnabled = true
+            });
+
+            // General
+            GeneralPreviousCommand.CanExecuteRequested +=
+                GeneralPreviousCommand_CanExecuteRequested;
+            GeneralPreviousCommand.ExecuteRequested +=
+                GeneralPreviousCommand_ExecuteRequested;
+
+            GeneralNextCommand.CanExecuteRequested +=
+                GeneralNextCommand_CanExecuteRequested;
+            GeneralNextCommand.ExecuteRequested +=
+                GeneralNextCommand_ExecuteRequested;
+
+            GeneralDeleteMarkerCommand.CanExecuteRequested +=
+                GeneralDeleteMarkerCommand_CanExecuteRequested;
+            GeneralDeleteMarkerCommand.ExecuteRequested +=
+                GeneralDeleteMarkerCommand_ExecuteRequested;
+
+            // Project
             ProjectNewCommand.CanExecuteRequested +=
                 ProjectNewCommand_CanExecuteRequested;
             ProjectNewCommand.ExecuteRequested +=
@@ -1163,6 +1713,7 @@ namespace MediaBase.ViewModel
             ProjectCloseCommand.ExecuteRequested +=
                 ProjectCloseCommand_ExecuteRequested;
 
+            // Workspace
             WorkspaceOpenCommand.CanExecuteRequested +=
                 WorkspaceOpenCommand_CanExecuteRequested;
             WorkspaceOpenCommand.ExecuteRequested +=
@@ -1207,6 +1758,9 @@ namespace MediaBase.ViewModel
                 WorkspaceRenameItemCommand_CanExecuteRequested;
             WorkspaceRenameItemCommand.ExecuteRequested +=
                 WorkspaceRenameItemCommand_ExecuteRequested;
+
+            // Tools
+
         }
         #endregion
     }

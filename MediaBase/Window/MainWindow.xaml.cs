@@ -16,7 +16,7 @@ using JLR.Utility.WinUI.Dialogs;
 using JLR.Utility.WinUI.ViewModel;
 
 using MediaBase.ViewModel;
-using MediaBase.Windows;
+using MediaBase.Window;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI;
@@ -41,7 +41,7 @@ using WinRT.Interop;
 
 namespace MediaBase
 {
-    public sealed partial class MainWindow : Window
+    public sealed partial class MainWindow : Microsoft.UI.Xaml.Window
     {
         #region Fields
         private readonly AppWindow _appWindow;

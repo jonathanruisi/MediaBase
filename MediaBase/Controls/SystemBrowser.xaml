@@ -6,6 +6,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
     xmlns:mediabase="using:MediaBase"
+    xmlns:controls="using:MediaBase.Controls"
     xmlns:storage="using:Windows.Storage"
     Loaded="UserControl_Loaded">
 
@@ -77,29 +78,100 @@
         </DataTemplate>
 
         <DataTemplate x:Key="ImageFileDataTemplate"
-                      x:DataType="TreeViewNode">
-            <StackPanel Orientation="Horizontal">
+                      x:DataType="controls:GroupableTreeViewNode">
+            <Grid HorizontalAlignment="Stretch" VerticalAlignment="Center">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
                 <FontIcon x:Name="Symbol"
+                          Grid.Column="0"
                           Margin="0,0,6,0"
                           FontFamily="Segoe Fluent Icons"
                           Glyph="&#xEB9F;"/>
-                <TextBlock HorizontalAlignment="Left"
+                <TextBlock Grid.Column="1"
+                           HorizontalAlignment="Left"
                            VerticalAlignment="Center"
                            Text="{x:Bind ((storage:StorageFile)Content).Name}"/>
-            </StackPanel>
+
+                <Polygon Grid.Column="2"
+                         Fill="Gold" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
+                         Points="0,20,10,0,20,20" VerticalAlignment="Center" Margin="0,0,3,0"
+                         Visibility="{x:Bind GroupFlags,
+                                             Converter={StaticResource GroupMaskToVisibilityConverter},
+                                             ConverterParameter=1}"/>
+                <Rectangle Grid.Column="3"
+                           Fill="CornflowerBlue" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
+                           VerticalAlignment="Center" Margin="0,0,3,0"
+                           Visibility="{x:Bind GroupFlags,
+                                               Converter={StaticResource GroupMaskToVisibilityConverter},
+                                               ConverterParameter=2}"/>
+                <Ellipse Grid.Column="4"
+                         Fill="IndianRed" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
+                         VerticalAlignment="Center" Margin="0,0,3,0"
+                         Visibility="{x:Bind GroupFlags,
+                                             Converter={StaticResource GroupMaskToVisibilityConverter},
+                                             ConverterParameter=3}"/>
+                <Polygon Grid.Column="5"
+                         Fill="ForestGreen" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
+                         Points="0,10,10,0,20,10,10,20" VerticalAlignment="Center" Margin="0,0,3,0"
+                         Visibility="{x:Bind GroupFlags,
+                                             Converter={StaticResource GroupMaskToVisibilityConverter},
+                                             ConverterParameter=4}"/>
+            </Grid>
         </DataTemplate>
 
         <DataTemplate x:Key="VideoFileDataTemplate"
-                      x:DataType="TreeViewNode">
-            <StackPanel Orientation="Horizontal">
-                <FontIcon x:Name="Symbol"
+                      x:DataType="controls:GroupableTreeViewNode">
+            <Grid HorizontalAlignment="Stretch" VerticalAlignment="Center">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <FontIcon Grid.Column="0"
                           Margin="0,0,6,0"
                           FontFamily="Segoe Fluent Icons"
                           Glyph="&#xE8B2;"/>
-                <TextBlock HorizontalAlignment="Left"
+                <TextBlock Grid.Column="1"
+                           HorizontalAlignment="Left"
                            VerticalAlignment="Center"
                            Text="{x:Bind ((storage:StorageFile)Content).Name}"/>
-            </StackPanel>
+
+                <Polygon Grid.Column="2"
+                         Fill="Gold" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
+                         Points="0,20,10,0,20,20" VerticalAlignment="Center" Margin="0,0,3,0"
+                         Visibility="{x:Bind GroupFlags,
+                                             Converter={StaticResource GroupMaskToVisibilityConverter},
+                                             ConverterParameter=1}"/>
+                <Rectangle Grid.Column="3"
+                           Fill="CornflowerBlue" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
+                           VerticalAlignment="Center" Margin="0,0,3,0"
+                           Visibility="{x:Bind GroupFlags,
+                                               Converter={StaticResource GroupMaskToVisibilityConverter},
+                                               ConverterParameter=2}"/>
+                <Ellipse Grid.Column="4"
+                         Fill="IndianRed" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
+                         VerticalAlignment="Center" Margin="0,0,3,0"
+                         Visibility="{x:Bind GroupFlags,
+                                             Converter={StaticResource GroupMaskToVisibilityConverter},
+                                             ConverterParameter=3}"/>
+                <Polygon Grid.Column="5"
+                         Fill="ForestGreen" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
+                         Points="0,10,10,0,20,10,10,20" VerticalAlignment="Center" Margin="0,0,3,0"
+                         Visibility="{x:Bind GroupFlags,
+                                             Converter={StaticResource GroupMaskToVisibilityConverter},
+                                             ConverterParameter=4}"/>
+            </Grid>
         </DataTemplate>
 
         <mediabase:ExplorerItemTemplateSelector x:Key="ExplorerItemTemplateSelector"

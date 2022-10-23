@@ -43,7 +43,7 @@ namespace MediaBase
             if (group is < 0 or > 7)
                 throw new ArgumentOutOfRangeException(nameof(parameter));
 
-            return (byte)((byte)value & (1 << group)) != 0 ? Visibility.Visible : Visibility.Collapsed;
+            return ((int)value & (1 << group)) != 0 ? Visibility.Visible : Visibility.Collapsed;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, string language)

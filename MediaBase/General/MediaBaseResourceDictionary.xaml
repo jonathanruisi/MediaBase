@@ -8,21 +8,6 @@
     <!-- Brushes -->
     <SolidColorBrush x:Key="RedBrush" Color="Red"/>
     <SolidColorBrush x:Key="WhiteBrush" Color="White"/>
-    
-    <!-- Shapes -->
-    <Polygon x:Key="GroupShape1"
-             Fill="Gold" Stretch="Fill" StrokeThickness="0"
-             Points="0,20,10,0,20,20"/>
-
-    <Rectangle x:Key="GroupShape2"
-               Fill="CornflowerBlue" Stretch="Fill" StrokeThickness="0"/>
-
-    <Ellipse x:Key="GroupShape3"
-             Fill="IndianRed" Stretch="Fill" StrokeThickness="0"/>
-
-    <Polygon x:Key="GroupShape4"
-             Fill="ForestGreen" Stretch="Fill" StrokeThickness="0"
-             Points="0,10,10,0,20,10,10,20"/>
 
     <!-- Value Converters -->
     <local:RatingToSolidColorBrushConverter x:Key="RatingToBrushConverter"/>
@@ -37,4 +22,47 @@
 
     <local:GroupMaskToVisibilityConverter x:Key="GroupMaskToVisibilityConverter"/>
 
+    <!-- Icon Sources -->
+    <PathIconSource x:Key="Group1IconSource" Foreground="Gold">
+        <PathIconSource.Data>
+            <PathGeometry>
+                <PathGeometry.Figures>
+                    <PathFigure IsClosed="True" IsFilled="True" StartPoint="0,20">
+                        <PathFigure.Segments>
+                            <LineSegment Point="10,0"/>
+                            <LineSegment Point="20,20"/>
+                        </PathFigure.Segments>
+                    </PathFigure>
+                </PathGeometry.Figures>
+            </PathGeometry>
+        </PathIconSource.Data>
+    </PathIconSource>
+
+    <PathIconSource x:Key="Group2IconSource" Foreground="CornflowerBlue">
+        <PathIconSource.Data>
+            <RectangleGeometry Rect="0,0,20,20"/>
+        </PathIconSource.Data>
+    </PathIconSource>
+
+    <PathIconSource x:Key="Group3IconSource" Foreground="IndianRed">
+        <PathIconSource.Data>
+            <EllipseGeometry Center="10,10" RadiusX="10" RadiusY="10"/>
+        </PathIconSource.Data>
+    </PathIconSource>
+
+    <PathIconSource x:Key="Group4IconSource" Foreground="ForestGreen">
+        <PathIconSource.Data>
+            <PathGeometry>
+                <PathGeometry.Figures>
+                    <PathFigure IsClosed="True" IsFilled="True" StartPoint="0,10">
+                        <PathFigure.Segments>
+                            <LineSegment Point="10,0"/>
+                            <LineSegment Point="20,10"/>
+                            <LineSegment Point="10,20"/>
+                        </PathFigure.Segments>
+                    </PathFigure>
+                </PathGeometry.Figures>
+            </PathGeometry>
+        </PathIconSource.Data>
+    </PathIconSource>
 </ResourceDictionary>

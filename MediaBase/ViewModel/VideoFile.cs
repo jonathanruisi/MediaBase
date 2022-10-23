@@ -85,7 +85,10 @@ namespace MediaBase.ViewModel
         {
             // Load file from path
             if (await base.MakeReady() == false)
+            {
+                IsReady = false;
                 return false;
+            }
 
             // Read video file properties
             try

@@ -1,0 +1,175 @@
+﻿<UserControl
+    x:Class="MediaBase.Controls.MediaEditor"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    xmlns:local="using:MediaBase.Controls"
+    xmlns:controls="using:JLR.Utility.WinUI.Controls"
+    xmlns:win2d="using:Microsoft.Graphics.Canvas.UI.Xaml"
+    Loaded="UserControl_Loaded"
+    Unloaded="UserControl_Unloaded">
+
+    <Grid Background="{x:Bind Background}"
+          BorderBrush="{x:Bind BorderBrush}"
+          BorderThickness="{x:Bind BorderThickness}"
+          CornerRadius="{x:Bind CornerRadius}">
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Swap Chain -->
+        <Border x:Name="RenderAreaBorder" Grid.Row="0"
+                BorderBrush="Transparent" BorderThickness="0" CornerRadius="0"
+                PointerEntered="RenderAreaBorder_PointerEntered"
+                PointerExited="RenderAreaBorder_PointerExited"
+                PointerPressed="RenderAreaBorder_PointerPressed"
+                PointerReleased="RenderAreaBorder_PointerReleased"
+                PointerCaptureLost="RenderAreaBorder_PointerCaptureLost"
+                PointerCanceled="RenderAreaBorder_PointerCanceled"
+                PointerMoved="RenderAreaBorder_PointerMoved"
+                PointerWheelChanged="RenderAreaBorder_PointerWheelChanged">
+            <win2d:CanvasSwapChainPanel x:Name="SwapChainCanvas"
+                                        MinWidth="320" MinHeight="240"
+                                        SizeChanged="SwapChainCanvas_SizeChanged"/>
+        </Border>
+        
+        <!-- Timeline -->
+        <controls:MediaTimeline x:Name="Timeline" Grid.Row="1"
+                                MinHeight="75" Height="75"
+                                ZoomBarHeight="18" MarkerHeight="18"
+                                PositionElementRelativeHeight="1.0"
+                                SelectionInOutElementsRelativeHeight="1.0"
+                                MarkerBrush="DarkOrange"
+                                PositionFollowMode="Advance"
+                                Visibility="Collapsed"
+                                FramesPerSecond="{x:Bind RefreshRate, Mode=OneWay}"
+                                PositionChanged="Timeline_PositionChanged"
+                                SelectionChanged="Timeline_SelectionChanged"
+                                ZoomChanged="Timeline_ZoomChanged"
+                                TimelineValueDragStarted="Timeline_DragStarted"
+                                TimelineValueDragCompleted="Timeline_DragCompleted"
+                                TrackCountChanged="Timeline_TrackCountChanged"/>
+
+        <!-- Command Bar -->
+        <CommandBar x:Name="EditorCommandBar" Grid.Row="2"
+                    DefaultLabelPosition="Collapsed"
+                    IsDynamicOverflowEnabled="False"
+                    FlowDirection="RightToLeft"
+                    Visibility="Collapsed">
+            <CommandBar.PrimaryCommands>
+                <AppBarButton x:Name="BatchActionButton" Width="40"
+                              Command="{x:Bind ViewModel.ToolsBatchActionCommand}"/>
+                <AppBarToggleButton x:Name="Group4ToggleButton" Width="40"
+                                    Command="{x:Bind ViewModel.ToolsToggleGroup4Command}"
+                                    CommandParameter="4"
+                                    IsChecked="{x:Bind ViewModel.ActiveMediaSource.GroupFlags,
+                                                       Converter={StaticResource GroupMaskToVisibilityConverter},
+                                                       ConverterParameter=4,
+                                                       Mode=OneWay}"/>
+                <AppBarToggleButton x:Name="Group3ToggleButton" Width="40"
+                                    Command="{x:Bind ViewModel.ToolsToggleGroup3Command}"
+                                    CommandParameter="3"
+                                    IsChecked="{x:Bind ViewModel.ActiveMediaSource.GroupFlags,
+                                                       Converter={StaticResource GroupMaskToVisibilityConverter},
+                                                       ConverterParameter=3,
+                                                       Mode=OneWay}"/>
+                <AppBarToggleButton x:Name="Group2ToggleButton" Width="40"
+                                    Command="{x:Bind ViewModel.ToolsToggleGroup2Command}"
+                                    CommandParameter="2"
+                                    IsChecked="{x:Bind ViewModel.ActiveMediaSource.GroupFlags,
+                                                       Converter={StaticResource GroupMaskToVisibilityConverter},
+                                                       ConverterParameter=2,
+                                                       Mode=OneWay}"/>
+                <AppBarToggleButton x:Name="Group1ToggleButton" Width="40"
+                                    Command="{x:Bind ViewModel.ToolsToggleGroup1Command}"
+                                    CommandParameter="1"
+                                    IsChecked="{x:Bind ViewModel.ActiveMediaSource.GroupFlags,
+                                                       Converter={StaticResource GroupMaskToVisibilityConverter},
+                                                       ConverterParameter=1,
+                                                       Mode=OneWay}"/>
+                <AppBarSeparator/>
+                <AppBarToggleButton x:Name="PanAndZoomLockToggleButton" Width="40"
+                                    Command="{x:Bind ViewModel.EditorTogglePanAndZoomLockCommand}"
+                                    IsChecked="{x:Bind IsLockPanAndZoom, Mode=TwoWay}"
+                                    Visibility="{x:Bind IsPanAndZoomEnabled,
+                                                        Converter={StaticResource BoolToVisibilityConverter},
+                                                        ConverterParameter=False,
+                                                        Mode=OneWay}"/>
+                <AppBarButton x:Name="CenterFrameButton" Width="40"
+                              Command="{x:Bind ViewModel.EditorCenterFrameCommand}"
+                              Visibility="{x:Bind IsPanAndZoomEnabled,
+                                                  Converter={StaticResource BoolToVisibilityConverter},
+                                                  ConverterParameter=False,
+                                                  Mode=OneWay}"/>
+                <AppBarButton x:Name="FrameZoomFullButton" Width="40"
+                              Command="{x:Bind ViewModel.EditorFrameZoomFullCommand}"
+                              Visibility="{x:Bind IsPanAndZoomEnabled,
+                                                  Converter={StaticResource BoolToVisibilityConverter},
+                                                  ConverterParameter=False,
+                                                  Mode=OneWay}"/>
+                <AppBarButton x:Name="FrameZoomFitButton" Width="40"
+                              Command="{x:Bind ViewModel.EditorFrameZoomFitCommand}"
+                              Visibility="{x:Bind IsPanAndZoomEnabled,
+                                                  Converter={StaticResource BoolToVisibilityConverter},
+                                                  ConverterParameter=False,
+                                                  Mode=OneWay}"/>
+                <AppBarButton x:Name="TimelineZoomOutButton" Width="40"
+                              Command="{x:Bind ViewModel.EditorTimelineZoomOutCommand}"/>
+                <AppBarButton x:Name="TimelineZoomInButton" Width="40"
+                              Command="{x:Bind ViewModel.EditorTimelineZoomInCommand}"/>
+                <AppBarSeparator x:Name="ZoomAndPanButtonSeparator"/>
+                <AppBarElementContainer x:Name="PlaybackRateText" Width="40">
+                    <TextBlock HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                               HorizontalTextAlignment="Center" TextAlignment="Center"
+                               Text="{x:Bind PlaybackRate}"/>
+                </AppBarElementContainer>
+                <AppBarButton x:Name="PlaybackRateIncreaseButton" Width="40"
+                              Command="{x:Bind ViewModel.EditorPlaybackRateIncreaseCommand}"/>
+                <AppBarButton x:Name="PlaybackRateNormalButton" Width="40"
+                              Command="{x:Bind ViewModel.EditorPlaybackRateNormalCommand}"/>
+                <AppBarButton x:Name="PlaybackRateDecreaseButton" Width="40"
+                              Command="{x:Bind ViewModel.EditorPlaybackRateDecreaseCommand}"/>
+                <AppBarSeparator x:Name="PlaybackRateButtonSeparator"/>
+                <AppBarButton x:Name="DeleteMarkerButton" Width="40"
+                              Command="{x:Bind ViewModel.GeneralDeleteMarkerCommand}"/>
+                <AppBarButton x:Name="CutSelectedButton" Width="40"
+                              Command="{x:Bind ViewModel.EditorCutSelectedCommand}"/>
+                <AppBarButton x:Name="NewKeyframeButton" Width="40"
+                              Command="{x:Bind ViewModel.EditorNewKeyframeCommand}"/>
+                <AppBarButton x:Name="NewClipButton" Width="40"
+                              Command="{x:Bind ViewModel.EditorNewClipCommand}"/>
+                <AppBarButton x:Name="NewMarkerButton" Width="40"
+                              Command="{x:Bind ViewModel.EditorNewMarkerCommand}"/>
+                <AppBarToggleButton x:Name="ActiveSelectionToggleButton" Width="40"
+                                    Command="{x:Bind ViewModel.EditorToggleActiveSelectionCommand}"
+                                    IsChecked="{x:Bind Timeline.IsSelectionEnabled, Mode=TwoWay}"/>
+                <AppBarSeparator x:Name="TrimAndEditButtonSeparator"/>
+                <AppBarToggleButton x:Name="LoopingToggleButton" Width="40"
+                                    Command="{x:Bind ViewModel.EditorToggleLoopingCommand}"
+                                    IsChecked="{x:Bind IsLoopingEnabled, Mode=TwoWay}"/>
+                <AppBarButton x:Name="NextMarkerButton" Width="40"
+                              Command="{x:Bind ViewModel.EditorNextMarkerCommand}"/>
+                <AppBarButton x:Name="PreviousMarkerButton" Width="40"
+                              Command="{x:Bind ViewModel.EditorPreviousMarkerCommand}"/>
+                <AppBarButton x:Name="NextFrameButton" Width="40"
+                              Command="{x:Bind ViewModel.EditorNextFrameCommand}"/>
+                <AppBarButton x:Name="PreviousFrameButton" Width="40"
+                              Command="{x:Bind ViewModel.EditorPreviousFrameCommand}"/>
+                <AppBarButton x:Name="PauseButton" Width="75"
+                              Command="{x:Bind ViewModel.EditorPauseCommand}"/>
+                <AppBarButton x:Name="PlayButton" Width="75"
+                              Command="{x:Bind ViewModel.EditorPlayCommand}"/>
+                <AppBarSeparator x:Name="TransportButtonSeparator"/>
+                <AppBarButton x:Name="NextButton" Width="40"
+                              Command="{x:Bind ViewModel.GeneralNextCommand}"/>
+                <AppBarButton x:Name="PreviousButton" Width="40"
+                              Command="{x:Bind ViewModel.GeneralPreviousCommand}"/>
+            </CommandBar.PrimaryCommands>
+        </CommandBar>
+    </Grid>
+</UserControl>

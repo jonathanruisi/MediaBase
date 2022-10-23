@@ -17,10 +17,11 @@
   <ItemGroup>
     <None Remove="Assets\Logo_Package.scale-400.png" />
     <None Remove="Assets\Logo_Tile_Medium.scale-400.png" />
+    <None Remove="Controls\MediaEditor.xaml" />
     <None Remove="Controls\SystemBrowser.xaml" />
     <None Remove="Controls\WorkspaceBrowser.xaml" />
     <None Remove="General\MediaBaseResourceDictionary.xaml" />
-    <None Remove="Windows\LogWindow.xaml" />
+    <None Remove="Window\LogWindow.xaml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -64,6 +65,11 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Remove="Controls\SystemBrowser.xaml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Controls\MediaEditor.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Page Update="Windows\LogWindow.xaml">

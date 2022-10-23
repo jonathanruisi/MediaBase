@@ -83,12 +83,17 @@ namespace MediaBase.Controls
 
         private void SystemBrowserTreeView_ItemInvoked(TreeView sender, TreeViewItemInvokedEventArgs args)
         {
-            if (args.InvokedItem is not TreeViewNode node)
-                return;
-
-            if (node.Content is StorageFolder)
+            if (args.InvokedItem is TreeViewNode node)
             {
-                node.IsExpanded = !node.IsExpanded;
+                ViewModel.ActiveSystemBrowserNode = node;
+                if (node.Content is StorageFolder)
+                {
+                    node.IsExpanded = !node.IsExpanded;
+                }
+            }
+            else
+            {
+                ViewModel.ActiveSystemBrowserNode = null;
             }
         }
 
@@ -103,7 +108,7 @@ namespace MediaBase.Controls
         {
             // Add the user's desktop folder to the browser
             var desktopFolder = await StorageFolder.GetFolderFromPathAsync(Environment.GetFolderPath(Environment.SpecialFolder.Desktop));
-            var desktopNode = new TreeViewNode
+            var desktopNode = new GroupableTreeViewNode
             {
                 Content = desktopFolder,
                 IsExpanded = false,
@@ -113,7 +118,7 @@ namespace MediaBase.Controls
 
             // Add the user's personal folder to the browser
             var personalFolder = await StorageFolder.GetFolderFromPathAsync(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
-            var personalNode = new TreeViewNode
+            var personalNode = new GroupableTreeViewNode
             {
                 Content = personalFolder,
                 IsExpanded = false,
@@ -126,7 +131,7 @@ namespace MediaBase.Controls
             foreach (var drive in drives)
             {
                 var driveFolder = await StorageFolder.GetFolderFromPathAsync(drive);
-                var driveNode = new TreeViewNode
+                var driveNode = new GroupableTreeViewNode
                 {
                     Content = driveFolder,
                     IsExpanded = false,
@@ -148,7 +153,7 @@ namespace MediaBase.Controls
 
             foreach (var subFolder in items.OfType<StorageFolder>())
             {
-                var newNode = new TreeViewNode
+                var newNode = new GroupableTreeViewNode
                 {
                     Content = subFolder,
                     HasUnrealizedChildren = true
@@ -168,10 +173,32 @@ namespace MediaBase.Controls
                     !contentType.Contains("video"))
                     continue;
 
-                var newNode = new TreeViewNode { Content = file };
+                var newNode = new GroupableTreeViewNode { Content = file };
                 node.Children.Add(newNode);
             }
         }
         #endregion
+    }
+
+    public sealed class GroupableTreeViewNode : TreeViewNode
+    {
+        /// <summary>
+        /// Gets or sets a value where each bit represents a group.
+        /// </summary>
+        /// <remarks>
+        /// The meaning of "group" is arbitrary and has no effect on the
+        /// functionality of this object.
+        /// </remarks>
+        public int GroupFlags
+        {
+            get => (int)GetValue(GroupFlagsProperty);
+            set => SetValue(GroupFlagsProperty, value);
+        }
+
+        public static readonly DependencyProperty GroupFlagsProperty =
+            DependencyProperty.Register("GroupFlags",
+                                        typeof(int),
+                                        typeof(GroupableTreeViewNode),
+                                        new PropertyMetadata(0));
     }
 }

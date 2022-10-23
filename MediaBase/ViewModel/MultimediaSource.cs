@@ -38,7 +38,7 @@ namespace MediaBase.ViewModel
         private uint _widthInPixels, _heightInPixels;
         private double _framesPerSecond;
         private decimal _duration;
-        private byte _groupFlags;
+        private int _groupFlags;
         #endregion
 
         #region Properties
@@ -106,7 +106,7 @@ namespace MediaBase.ViewModel
         }
 
         [ViewModelProperty(nameof(GroupFlags), XmlNodeType.Element)]
-        public virtual byte GroupFlags
+        public virtual int GroupFlags
         {
             get => _groupFlags;
             set => SetProperty(ref _groupFlags, value);
@@ -160,7 +160,7 @@ namespace MediaBase.ViewModel
             if (group is < 0 or > 7)
                 throw new ArgumentOutOfRangeException(nameof(group));
 
-            return (byte)(GroupFlags & (1 << group)) == 1;
+            return (GroupFlags & (1 << group)) == 1;
         }
 
         public void ToggleGroupFlag(int group)
@@ -169,7 +169,7 @@ namespace MediaBase.ViewModel
             if (group is < 0 or > 7)
                 throw new ArgumentOutOfRangeException(nameof(group));
 
-            GroupFlags ^= (byte)(1 << group);
+            GroupFlags ^= (1 << group);
         }
         #endregion
 

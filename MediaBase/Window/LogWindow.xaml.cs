@@ -16,9 +16,9 @@ using Microsoft.UI.Windowing;
 using JLR.Utility.WinUI;
 using Windows.Graphics;
 
-namespace MediaBase.Windows
+namespace MediaBase.Window
 {
-    public sealed partial class LogWindow : Window
+    public sealed partial class LogWindow : Microsoft.UI.Xaml.Window
     {
         private readonly AppWindow _appWindow;
 

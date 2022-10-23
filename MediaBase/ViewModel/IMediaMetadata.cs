@@ -35,6 +35,6 @@ namespace MediaBase.ViewModel
         /// The meaning of "group" is arbitrary and has no effect on the
         /// functionality of this object.
         /// </remarks>
-        byte GroupFlags { get; set; }
+        int GroupFlags { get; set; }
     }
 }

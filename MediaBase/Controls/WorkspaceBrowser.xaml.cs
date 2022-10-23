@@ -67,9 +67,9 @@ namespace MediaBase.Controls
         private void WorkspaceBrowserTreeView_RightTapped(object sender, RightTappedRoutedEventArgs e)
         {
             if (sender is TreeViewItem item)
-                ViewModel.ActiveNode = item.DataContext as ViewModelNode;
+                ViewModel.ActiveWorkspaceBrowserNode = item.DataContext as ViewModelNode;
             else
-                ViewModel.ActiveNode = null;
+                ViewModel.ActiveWorkspaceBrowserNode = null;
 
             e.Handled = true;
         }
