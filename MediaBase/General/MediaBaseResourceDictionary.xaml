@@ -20,6 +20,7 @@
     <toolkit_converters:BoolToVisibilityConverter
         x:Key="BoolToVisibilityConverter"/>
 
+    <local:GroupMaskToBooleanConverter x:Key="GroupMaskToBooleanConverter"/>
     <local:GroupMaskToVisibilityConverter x:Key="GroupMaskToVisibilityConverter"/>
 
     <!-- Icon Sources -->

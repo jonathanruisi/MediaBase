@@ -203,6 +203,8 @@
             <!-- Media Editor -->
             <controls:MediaEditor x:Name="Editor" Grid.Row="0" Grid.Column="4"
                                   HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                  IsFastPositionUpdate="True"
+                                  FontFamily="Consolas" FontSize="32" FontWeight="Bold"
                                   Source="{x:Bind ViewModel.ActiveMediaSource, Mode=OneWay}"/>
         </Grid>
 

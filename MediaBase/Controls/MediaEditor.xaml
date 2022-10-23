@@ -68,28 +68,28 @@
                                     Command="{x:Bind ViewModel.ToolsToggleGroup4Command}"
                                     CommandParameter="4"
                                     IsChecked="{x:Bind ViewModel.ActiveMediaSource.GroupFlags,
-                                                       Converter={StaticResource GroupMaskToVisibilityConverter},
+                                                       Converter={StaticResource GroupMaskToBooleanConverter},
                                                        ConverterParameter=4,
                                                        Mode=OneWay}"/>
                 <AppBarToggleButton x:Name="Group3ToggleButton" Width="40"
                                     Command="{x:Bind ViewModel.ToolsToggleGroup3Command}"
                                     CommandParameter="3"
                                     IsChecked="{x:Bind ViewModel.ActiveMediaSource.GroupFlags,
-                                                       Converter={StaticResource GroupMaskToVisibilityConverter},
+                                                       Converter={StaticResource GroupMaskToBooleanConverter},
                                                        ConverterParameter=3,
                                                        Mode=OneWay}"/>
                 <AppBarToggleButton x:Name="Group2ToggleButton" Width="40"
                                     Command="{x:Bind ViewModel.ToolsToggleGroup2Command}"
                                     CommandParameter="2"
                                     IsChecked="{x:Bind ViewModel.ActiveMediaSource.GroupFlags,
-                                                       Converter={StaticResource GroupMaskToVisibilityConverter},
+                                                       Converter={StaticResource GroupMaskToBooleanConverter},
                                                        ConverterParameter=2,
                                                        Mode=OneWay}"/>
                 <AppBarToggleButton x:Name="Group1ToggleButton" Width="40"
                                     Command="{x:Bind ViewModel.ToolsToggleGroup1Command}"
                                     CommandParameter="1"
                                     IsChecked="{x:Bind ViewModel.ActiveMediaSource.GroupFlags,
-                                                       Converter={StaticResource GroupMaskToVisibilityConverter},
+                                                       Converter={StaticResource GroupMaskToBooleanConverter},
                                                        ConverterParameter=1,
                                                        Mode=OneWay}"/>
                 <AppBarSeparator/>
@@ -123,10 +123,14 @@
                 <AppBarButton x:Name="TimelineZoomInButton" Width="40"
                               Command="{x:Bind ViewModel.EditorTimelineZoomInCommand}"/>
                 <AppBarSeparator x:Name="ZoomAndPanButtonSeparator"/>
-                <AppBarElementContainer x:Name="PlaybackRateText" Width="40">
-                    <TextBlock HorizontalAlignment="Stretch" VerticalAlignment="Center"
-                               HorizontalTextAlignment="Center" TextAlignment="Center"
-                               Text="{x:Bind PlaybackRate}"/>
+                <AppBarElementContainer x:Name="PlaybackRateText" Width="40"
+                                        HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                        HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
+                    <TextBlock TextAlignment="Center"
+                               FontFamily="Segoe UI"
+                               FontSize="18"
+                               FontWeight="Bold"
+                               Text="{x:Bind PlaybackRate, Mode=OneWay}"/>
                 </AppBarElementContainer>
                 <AppBarButton x:Name="PlaybackRateIncreaseButton" Width="40"
                               Command="{x:Bind ViewModel.EditorPlaybackRateIncreaseCommand}"/>

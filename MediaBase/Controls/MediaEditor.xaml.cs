@@ -159,6 +159,19 @@ namespace MediaBase.Controls
                                         new PropertyMetadata(0,
                                             OnCurrentFrameChanged));
 
+        public bool IsFastPositionUpdate
+        {
+            get => (bool)GetValue(IsFastPositionUpdateProperty);
+            set => SetValue(IsFastPositionUpdateProperty, value);
+        }
+
+        public static readonly DependencyProperty IsFastPositionUpdateProperty =
+            DependencyProperty.Register("IsFastPositionUpdate",
+                                        typeof(bool),
+                                        typeof(MediaEditor),
+                                        new PropertyMetadata(false));
+
+
         public double FrameScale
         {
             get => (double)GetValue(FrameScaleProperty);
@@ -279,7 +292,7 @@ namespace MediaBase.Controls
             DependencyProperty.Register("TextOverlayOutlineThickness",
                                         typeof(float),
                                         typeof(MediaEditor),
-                                        new PropertyMetadata(1.0f));
+                                        new PropertyMetadata(0.5f));
 
         public InputSystemCursorShape PrimaryCursorShape
         {
@@ -364,8 +377,7 @@ namespace MediaBase.Controls
             if (d is not MediaEditor editor || editor._redrawTimer is null)
                 return;
 
-            editor._redrawTimer.Interval =
-                TimeSpan.FromTicks((int)(1.0 / editor.RefreshRate * 10000000));
+            editor.UpdateRedrawInterval();
 
             // Timeline's FPS value is set through data binding
         }
@@ -414,6 +426,8 @@ namespace MediaBase.Controls
         {
             if (d is not MediaEditor editor)
                 return;
+
+            editor.UpdateRedrawInterval();
 
             editor.ViewModel.EditorPlaybackRateDecreaseCommand.NotifyCanExecuteChanged();
             editor.ViewModel.EditorPlaybackRateNormalCommand.NotifyCanExecuteChanged();
@@ -594,7 +608,8 @@ namespace MediaBase.Controls
 
             DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, () =>
             {
-                CurrentPosition = sender.Position;
+                if (!IsFastPositionUpdate)
+                    CurrentPosition = sender.Position;
             });
         }
 
@@ -668,6 +683,8 @@ namespace MediaBase.Controls
             // Increment the frame count if we are playing an animated image
             if (isAnimatedImagePlaying)
                 CurrentFrame += (decimal)PlaybackRate;
+            else if (Source.ContentType == MediaContentType.Video && IsFastPositionUpdate)
+                CurrentPosition = _player.PlaybackSession.Position;
 
             // TODO: Adjust frame position and scale using keyframes (if enabled)
             ApplyFrameScaleAndPosition();
@@ -810,6 +827,8 @@ namespace MediaBase.Controls
                 ds.FillGeometry(positionTextGeometry, 5, 5, TextOverlayColor);
                 ds.DrawGeometry(positionTextGeometry, 5, 5, TextOverlayOutlineColor, TextOverlayOutlineThickness);
             }
+
+            SwapChainCanvas.SwapChain.Present();
 
             // Local function to draw category adornment border
             void DrawBorder(Color color, float thickness, float margin)
@@ -1406,7 +1425,10 @@ namespace MediaBase.Controls
             if (!Source.IsReady)
                 await Source.MakeReady();
 
-            RefreshRate = (int)Math.Ceiling(Source.FramesPerSecond);
+            RefreshRate = Source.FramesPerSecond > 0
+                ? (int)Math.Ceiling(Source.FramesPerSecond)
+                : App.RefreshRate;
+
             if (Source is ViewModel.ImageSource image)
             {
                 IsPanAndZoomEnabled = true;
@@ -1573,6 +1595,11 @@ namespace MediaBase.Controls
                     _sourceRect.Y = sourceHeight - _sourceRect.Height;
                 }
             }
+        }
+
+        private void UpdateRedrawInterval()
+        {
+            _redrawTimer.Interval = TimeSpan.FromTicks((int)(1.0 / RefreshRate * 10000000 / Math.Max(1.0, PlaybackRate)));
         }
 
         private void RegisterMessages()

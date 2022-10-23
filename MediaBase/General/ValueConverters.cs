@@ -32,6 +32,26 @@ namespace MediaBase
         }
     }
 
+    public class GroupMaskToBooleanConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, string language)
+        {
+            if (!int.TryParse(parameter as string, out int group))
+                throw new ArgumentNullException(nameof(parameter));
+
+            group--;
+            if (group is < 0 or > 7)
+                throw new ArgumentOutOfRangeException(nameof(parameter));
+
+            return ((int)value & (1 << group)) != 0;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, string language)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
     public class GroupMaskToVisibilityConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, string language)
