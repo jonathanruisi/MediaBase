@@ -28,6 +28,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection.PortableExecutable;
 using Windows.Foundation;
+using Windows.ApplicationModel.Activation;
 
 namespace MediaBase.ViewModel
 {
@@ -630,19 +631,27 @@ namespace MediaBase.ViewModel
 
         private async void ProjectOpenCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            var picker = new FileOpenPicker
+            StorageFile projectFile;
+            if (args.Parameter == null)
             {
-                ViewMode = PickerViewMode.List,
-                SuggestedStartLocation = PickerLocationId.Desktop,
-                CommitButtonText = "Open Project",
-                FileTypeFilter = { ".mbp" }
-            };
+                var picker = new FileOpenPicker
+                {
+                    ViewMode = PickerViewMode.List,
+                    SuggestedStartLocation = PickerLocationId.Desktop,
+                    CommitButtonText = "Open Project",
+                    FileTypeFilter = { ".mbp" }
+                };
 
-            InitializeWithWindow.Initialize(picker, App.WindowHandle);
+                InitializeWithWindow.Initialize(picker, App.WindowHandle);
 
-            var projectFile = await picker.PickSingleFileAsync();
-            if (projectFile == null || !projectFile.IsAvailable)
-                return;
+                projectFile = await picker.PickSingleFileAsync();
+                if (projectFile == null || !projectFile.IsAvailable)
+                    return;
+            }
+            else
+            {
+                projectFile = args.Parameter as StorageFile;
+            }
 
             var project = new Project
             {
@@ -716,23 +725,31 @@ namespace MediaBase.ViewModel
 
         private async void WorkspaceOpenCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            // Prompt user to save unsaved changes
-            if (await PromptSaveChanges() == false)
-                return;
-
-            var picker = new FileOpenPicker
+            StorageFile workspaceFile;
+            if (args.Parameter == null)
             {
-                ViewMode = PickerViewMode.List,
-                SuggestedStartLocation = PickerLocationId.Desktop,
-                CommitButtonText = "Open Workspace",
-                FileTypeFilter = { ".mbw" }
-            };
+                // Prompt user to save unsaved changes
+                if (await PromptSaveChanges() == false)
+                    return;
 
-            InitializeWithWindow.Initialize(picker, App.WindowHandle);
+                var picker = new FileOpenPicker
+                {
+                    ViewMode = PickerViewMode.List,
+                    SuggestedStartLocation = PickerLocationId.Desktop,
+                    CommitButtonText = "Open Workspace",
+                    FileTypeFilter = { ".mbw" }
+                };
 
-            var workspaceFile = await picker.PickSingleFileAsync();
-            if (workspaceFile == null || !workspaceFile.IsAvailable)
-                return;
+                InitializeWithWindow.Initialize(picker, App.WindowHandle);
+
+                workspaceFile = await picker.PickSingleFileAsync();
+                if (workspaceFile == null || !workspaceFile.IsAvailable)
+                    return;
+            }
+            else
+            {
+                workspaceFile = args.Parameter as StorageFile;
+            }
 
             // Reset singleton workspace and load from workspace file
             IsActive = false;

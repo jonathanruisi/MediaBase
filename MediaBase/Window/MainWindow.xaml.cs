@@ -29,6 +29,8 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 
+using Windows.ApplicationModel;
+using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Graphics;
@@ -146,7 +148,15 @@ namespace MediaBase
         #region Event Handlers (Window & Title Bar)
         private void MainWindow_Activated(object sender, WindowActivatedEventArgs args)
         {
-
+            var activationArgs = AppInstance.GetActivatedEventArgs();
+            if (activationArgs is FileActivatedEventArgs fileArgs && fileArgs.Kind == ActivationKind.File)
+            {
+                var ext = fileArgs.Files[0].Path.Split('.').Last();
+                if (ext == "mbw")
+                    ViewModel.WorkspaceOpenCommand.Execute(fileArgs.Files[0]);
+                if (ext == "mbp")
+                    ViewModel.ProjectOpenCommand.Execute(fileArgs.Files[0]);
+            }
         }
 
         private void MainWindow_Closed(object sender, WindowEventArgs args)
