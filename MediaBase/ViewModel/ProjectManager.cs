@@ -71,14 +71,15 @@ namespace MediaBase.ViewModel
             get => _activeSystemBrowserNode;
             set
             {
-                SetProperty(ref _activeSystemBrowserNode, value);
-
-                GeneralPreviousCommand.NotifyCanExecuteChanged();
-                GeneralNextCommand.NotifyCanExecuteChanged();
-                ToolsToggleGroup1Command.NotifyCanExecuteChanged();
-                ToolsToggleGroup2Command.NotifyCanExecuteChanged();
-                ToolsToggleGroup3Command.NotifyCanExecuteChanged();
-                ToolsToggleGroup4Command.NotifyCanExecuteChanged();
+                if (SetProperty(ref _activeSystemBrowserNode, value, true))
+                {
+                    GeneralPreviousCommand.NotifyCanExecuteChanged();
+                    GeneralNextCommand.NotifyCanExecuteChanged();
+                    ToolsToggleGroup1Command.NotifyCanExecuteChanged();
+                    ToolsToggleGroup2Command.NotifyCanExecuteChanged();
+                    ToolsToggleGroup3Command.NotifyCanExecuteChanged();
+                    ToolsToggleGroup4Command.NotifyCanExecuteChanged();
+                }
             }
         }
 
@@ -88,7 +89,18 @@ namespace MediaBase.ViewModel
         public ViewModelNode ActiveWorkspaceBrowserNode
         {
             get => _activeWorkspaceBrowserNode;
-            set => SetProperty(ref _activeWorkspaceBrowserNode, value);
+            set
+            {
+                if (SetProperty(ref _activeWorkspaceBrowserNode, value))
+                {
+                    GeneralPreviousCommand.NotifyCanExecuteChanged();
+                    GeneralNextCommand.NotifyCanExecuteChanged();
+                    ToolsToggleGroup1Command.NotifyCanExecuteChanged();
+                    ToolsToggleGroup2Command.NotifyCanExecuteChanged();
+                    ToolsToggleGroup3Command.NotifyCanExecuteChanged();
+                    ToolsToggleGroup4Command.NotifyCanExecuteChanged();
+                }
+            }
         }
 
         /// <summary>
@@ -100,12 +112,20 @@ namespace MediaBase.ViewModel
             set
             {
                 if (_activeMediaSource != null)
+                {
                     _activeMediaSource.IsSelected = false;
+                    if (_activeMediaSource == ActiveWorkspaceBrowserNode)
+                        ActiveWorkspaceBrowserNode = null;
+                }
 
                 SetProperty(ref _activeMediaSource, value);
 
                 if (_activeMediaSource != null)
+                {
                     _activeMediaSource.IsSelected = true;
+                    if (_activeMediaSource.Parent != null)
+                        ActiveWorkspaceBrowserNode = _activeMediaSource;
+                }
 
                 GeneralPreviousCommand.NotifyCanExecuteChanged();
                 GeneralNextCommand.NotifyCanExecuteChanged();
@@ -226,6 +246,25 @@ namespace MediaBase.ViewModel
         #endregion
 
         #region Public Methods
+        public void SetActiveMediaSourceFromNonProjectFile(StorageFile file)
+        {
+            if (file == null || !file.IsAvailable)
+                return;
+
+            if (file.ContentType.Contains("image"))
+            {
+                var imageFile = new ImageFile(file) { Id = Guid.Empty };
+                var imageSource = new ImageSource(imageFile);
+                ActiveMediaSource = imageSource;
+            }
+            else if (file.ContentType.Contains("video"))
+            {
+                var videoFile = new VideoFile(file) { Id = Guid.Empty };
+                var videoSource = new VideoSource(videoFile);
+                ActiveMediaSource = videoSource;
+            }
+        }
+
         /// <summary>
         /// Saves the XML representation of this <see cref="ProjectManager"/>
         /// to the <see cref="StorageFile"/> pointed to by <see cref="File"/>.
@@ -248,6 +287,7 @@ namespace MediaBase.ViewModel
             }
 
             // Save the workspace itself
+            Name = File.DisplayName;
             if (await SaveAsync(File))
             {
                 HasUnsavedChanges = false;
@@ -388,18 +428,54 @@ namespace MediaBase.ViewModel
         #region Event Handlers (Commands - CanExecuteRequested)
         private void GeneralPreviousCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = (ActiveMediaSource != null &&
-                               ActiveMediaSource != ActiveMediaSource.Parent.Children.First()) ||
-                              (ActiveSystemBrowserNode != null &&
-                               ActiveSystemBrowserNode != ActiveSystemBrowserNode.Parent.Children.First());
+            if (ActiveMediaSource == null)
+            {
+                args.CanExecute = false;
+                return;
+            }
+
+            if (ActiveMediaSource == ActiveWorkspaceBrowserNode)
+            {
+                // Active media source originates from the workspace browser
+                args.CanExecute = ActiveWorkspaceBrowserNode != ActiveWorkspaceBrowserNode.Parent?.Children.First();
+            }
+            else if (ActiveMediaSource.Parent == null &&
+                     ActiveMediaSource.Source is MediaFile file &&
+                     file.File == (StorageFile)ActiveSystemBrowserNode.Content)
+            {
+                // Active media source originates from the system browser
+                args.CanExecute = ActiveSystemBrowserNode != ActiveSystemBrowserNode.Parent?.Children.First();
+            }
+            else
+            {
+                args.CanExecute = false;
+            }
         }
 
         private void GeneralNextCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = (ActiveMediaSource != null &&
-                               ActiveMediaSource != ActiveMediaSource.Parent.Children.Last()) ||
-                              (ActiveSystemBrowserNode != null &&
-                               ActiveSystemBrowserNode != ActiveSystemBrowserNode.Parent.Children.Last());
+            if (ActiveMediaSource == null)
+            {
+                args.CanExecute = false;
+                return;
+            }
+
+            if (ActiveMediaSource == ActiveWorkspaceBrowserNode)
+            {
+                // Active media source originates from the workspace browser
+                args.CanExecute = ActiveWorkspaceBrowserNode != ActiveWorkspaceBrowserNode.Parent?.Children.Last();
+            }
+            else if (ActiveMediaSource.Parent == null &&
+                     ActiveMediaSource.Source is MediaFile file &&
+                     file.File == (StorageFile)ActiveSystemBrowserNode.Content)
+            {
+                // Active media source originates from the system browser
+                args.CanExecute = ActiveSystemBrowserNode != ActiveSystemBrowserNode.Parent?.Children.Last();
+            }
+            else
+            {
+                args.CanExecute = false;
+            }
         }
 
         private void GeneralDeleteMarkerCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
@@ -462,7 +538,7 @@ namespace MediaBase.ViewModel
         {
             if (ActiveWorkspaceBrowserNode is MediaFolder)
             {
-                var request = Messenger.Send<RequestMessage<bool>>();
+                var request = Messenger.Send<RequestMessage<bool>, string>("AreSystemBrowserNodesSelected");
                 args.CanExecute = request.HasReceivedResponse && request.Response;
             }
             else
@@ -490,16 +566,36 @@ namespace MediaBase.ViewModel
         #region Event Handlers (Commands - ExecuteRequested)
         private void GeneralPreviousCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            // TODO: GeneralPreviousCommand_ExecuteRequested
-            //var index = ActiveMediaSource.Parent.Children.IndexOf(ActiveMediaSource);
-            //ActiveMediaSource = (MultimediaSource)ActiveMediaSource.Parent.Children[index - 1];
+            if (ActiveMediaSource == ActiveWorkspaceBrowserNode)
+            {
+                var index = ActiveMediaSource.Parent.Children.IndexOf(ActiveMediaSource);
+                ActiveMediaSource = (MultimediaSource)ActiveMediaSource.Parent.Children[index - 1];
+            }
+            else if (ActiveMediaSource.Parent == null &&
+                     ActiveMediaSource.Source is MediaFile file &&
+                     file.File == (StorageFile)ActiveSystemBrowserNode.Content)
+            {
+                var index = ActiveSystemBrowserNode.Parent.Children.IndexOf(ActiveSystemBrowserNode);
+                ActiveSystemBrowserNode = ActiveSystemBrowserNode.Parent.Children[index - 1];
+                SetActiveMediaSourceFromNonProjectFile(ActiveSystemBrowserNode.Content as StorageFile);
+            }
         }
 
         private void GeneralNextCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            // TODO: GeneralNextCommand_ExecuteRequested
-            //var index = ActiveMediaSource.Parent.Children.IndexOf(ActiveMediaSource);
-            //ActiveMediaSource = (MultimediaSource)ActiveMediaSource.Parent.Children[index + 1];
+            if (ActiveMediaSource == ActiveWorkspaceBrowserNode)
+            {
+                var index = ActiveMediaSource.Parent.Children.IndexOf(ActiveMediaSource);
+                ActiveMediaSource = (MultimediaSource)ActiveMediaSource.Parent.Children[index + 1];
+            }
+            else if (ActiveMediaSource.Parent == null &&
+                     ActiveMediaSource.Source is MediaFile file &&
+                     file.File == (StorageFile)ActiveSystemBrowserNode.Content)
+            {
+                var index = ActiveSystemBrowserNode.Parent.Children.IndexOf(ActiveSystemBrowserNode);
+                ActiveSystemBrowserNode = ActiveSystemBrowserNode.Parent.Children[index + 1];
+                SetActiveMediaSourceFromNonProjectFile(ActiveSystemBrowserNode.Content as StorageFile);
+            }
         }
 
         private void GeneralDeleteMarkerCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
@@ -722,7 +818,7 @@ namespace MediaBase.ViewModel
             var fileList = new List<StorageFile>();
 
             // Get list of selected nodes in the System Browser
-            var request = Messenger.Send(new CollectionRequestMessage<TreeViewNode>());
+            var request = Messenger.Send<CollectionRequestMessage<TreeViewNode>, string>("GetSelectedSystemBrowserNodes");
             foreach (var node in request.Responses)
             {
                 if (HasSelectedAncestor(node))
@@ -735,7 +831,7 @@ namespace MediaBase.ViewModel
             }
 
             // Clear the SystemBrowser TreeView's SelectedNodes list
-            Messenger.Send(new GeneralActionMessage(), "ClearSelection");
+            Messenger.Send(new GeneralActionMessage(), "ClearSystemBrowserSelection");
 
             // Recursively import top-level folders
             foreach (var folder in folderList)

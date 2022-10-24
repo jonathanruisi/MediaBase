@@ -43,6 +43,30 @@
         </uap:DefaultTile >
         <uap:SplashScreen Image="Assets\Logo_SplashScreen.png"/>
       </uap:VisualElements>
+      <Extensions>
+        <uap:Extension Category="windows.fileTypeAssociation">
+          <uap:FileTypeAssociation Name="mediabase_workspace" DesiredView="default">
+            <uap:SupportedFileTypes>
+              <uap:FileType>.mbw</uap:FileType>
+            </uap:SupportedFileTypes>
+            <uap:Logo>Assets\Logo_44.png</uap:Logo>
+            <uap:DisplayName>MediaBase Workspace</uap:DisplayName>
+            <uap:EditFlags OpenIsSafe="true"/>
+            <uap:InfoTip>MediaBase Workspace</uap:InfoTip>
+          </uap:FileTypeAssociation>
+        </uap:Extension>
+        <uap:Extension Category="windows.fileTypeAssociation">
+          <uap:FileTypeAssociation Name="mediabase_project" DesiredView="default">
+            <uap:SupportedFileTypes>
+              <uap:FileType>.mbp</uap:FileType>
+            </uap:SupportedFileTypes>
+            <uap:DisplayName>MediaBase Project</uap:DisplayName>
+            <uap:Logo>Assets\Logo_44.png</uap:Logo>
+            <uap:InfoTip>MediaBase Project</uap:InfoTip>
+            <uap:EditFlags OpenIsSafe="true"/>
+          </uap:FileTypeAssociation>
+        </uap:Extension>
+      </Extensions>
     </Application>
   </Applications>
 

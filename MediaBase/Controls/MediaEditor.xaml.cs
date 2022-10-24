@@ -695,19 +695,19 @@ namespace MediaBase.Controls
             // Draw grouping adornment
             var groupOffset = 0;
             var numGroups = 0;
-            if (ViewModel.ActiveMediaSource.CheckGroupFlag(4))
+            if (Source.CheckGroupFlag(4))
                 numGroups++;
-            if (ViewModel.ActiveMediaSource.CheckGroupFlag(3))
+            if (Source.CheckGroupFlag(3))
                 numGroups++;
-            if (ViewModel.ActiveMediaSource.CheckGroupFlag(2))
+            if (Source.CheckGroupFlag(2))
                 numGroups++;
-            if (ViewModel.ActiveMediaSource.CheckGroupFlag(1))
+            if (Source.CheckGroupFlag(1))
                 numGroups++;
             float borderThickness = GroupAdornment_TotalBorderSize / numGroups;
 
             if (numGroups > 0)
             {
-                if (ViewModel.ActiveMediaSource.CheckGroupFlag(1))
+                if (Source.CheckGroupFlag(1))
                 {
                     DrawBorder(Colors.Gold, borderThickness, groupOffset * borderThickness);
 
@@ -730,7 +730,7 @@ namespace MediaBase.Controls
                     groupOffset++;
                 }
 
-                if (ViewModel.ActiveMediaSource.CheckGroupFlag(2))
+                if (Source.CheckGroupFlag(2))
                 {
                     DrawBorder(Colors.CornflowerBlue, borderThickness, groupOffset * borderThickness);
 
@@ -750,7 +750,7 @@ namespace MediaBase.Controls
                     groupOffset++;
                 }
 
-                if (ViewModel.ActiveMediaSource.CheckGroupFlag(3))
+                if (Source.CheckGroupFlag(3))
                 {
                     DrawBorder(Colors.IndianRed, borderThickness, groupOffset * borderThickness);
 
@@ -772,7 +772,7 @@ namespace MediaBase.Controls
                     groupOffset++;
                 }
 
-                if (ViewModel.ActiveMediaSource.CheckGroupFlag(4))
+                if (Source.CheckGroupFlag(4))
                 {
                     DrawBorder(Colors.ForestGreen, borderThickness, groupOffset * borderThickness);
 

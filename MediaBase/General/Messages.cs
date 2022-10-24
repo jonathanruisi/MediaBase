@@ -14,6 +14,16 @@ namespace MediaBase
 {
     public class GeneralActionMessage { }
 
+    public class GeneralInfoMessage<T>
+    {
+        public T Info { get; }
+
+        public GeneralInfoMessage(T info)
+        {
+            Info = info;
+        }
+    }
+
     public class SetInfoBarMessage
     {
         public string Title { get; set; }

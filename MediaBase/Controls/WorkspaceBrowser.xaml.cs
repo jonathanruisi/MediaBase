@@ -19,6 +19,8 @@ using Microsoft.UI.Xaml.Navigation;
 
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.Storage;
+using Windows.System;
 
 namespace MediaBase.Controls
 {
@@ -38,30 +40,18 @@ namespace MediaBase.Controls
         }
         #endregion
 
-        #region Event Handlers (Commands - CanExecuteRequested)
-        private void WorkspaceSelectMultipleCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
-        {
-            args.CanExecute = ViewModel != null && ViewModel.IsActive;
-        }
-        #endregion
-
-        #region Event Handlers (Commands - ExecuteRequested)
-        private void WorkspaceSelectMultipleCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
-        {
-            if (WorkspaceBrowserTreeView.SelectionMode == TreeViewSelectionMode.Single)
-                WorkspaceBrowserTreeView.SelectionMode = TreeViewSelectionMode.Multiple;
-            else
-                WorkspaceBrowserTreeView.SelectionMode = TreeViewSelectionMode.Single;
-        }
-        #endregion
-
         #region Event Handlers (TreeView)
         private void WorkspaceBrowserTreeView_ItemInvoked(TreeView sender, TreeViewItemInvokedEventArgs args)
         {
-            if (args.InvokedItem is not MultimediaSource mediaSource || mediaSource.IsReady == false)
+            if (args.InvokedItem is not ViewModelNode node)
+            {
+                ViewModel.ActiveWorkspaceBrowserNode = null;
                 return;
+            }
 
-            ViewModel.ActiveMediaSource = mediaSource;
+            ViewModel.ActiveWorkspaceBrowserNode = node;
+            if (node is MultimediaSource multimediaSource)
+                ViewModel.ActiveMediaSource = multimediaSource;
         }
 
         private void WorkspaceBrowserTreeView_RightTapped(object sender, RightTappedRoutedEventArgs e)
@@ -80,6 +70,23 @@ namespace MediaBase.Controls
                 return;
 
             await ProjectManager.MakeItemsReadyAsync(node);
+        }
+        #endregion
+
+        #region Event Handlers (Commands - CanExecuteRequested)
+        private void WorkspaceSelectMultipleCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = ViewModel != null && ViewModel.IsActive;
+        }
+        #endregion
+
+        #region Event Handlers (Commands - ExecuteRequested)
+        private void WorkspaceSelectMultipleCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            if (WorkspaceBrowserTreeView.SelectionMode == TreeViewSelectionMode.Single)
+                WorkspaceBrowserTreeView.SelectionMode = TreeViewSelectionMode.Multiple;
+            else
+                WorkspaceBrowserTreeView.SelectionMode = TreeViewSelectionMode.Single;
         }
         #endregion
 

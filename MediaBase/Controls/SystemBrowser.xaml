@@ -14,7 +14,8 @@
         <!-- Data Templates -->
         <DataTemplate x:Key="DefaultStorageItemDataTemplate"
                       x:DataType="TreeViewNode">
-            <StackPanel Orientation="Horizontal">
+            <StackPanel Orientation="Horizontal"
+                        DataContext="{x:Bind}">
                 <TextBlock HorizontalAlignment="Left"
                            VerticalAlignment="Center"
                            FontWeight="Bold"
@@ -28,7 +29,8 @@
 
         <DataTemplate x:Key="DriveDataTemplate"
                       x:DataType="TreeViewNode">
-            <StackPanel Orientation="Horizontal">
+            <StackPanel Orientation="Horizontal"
+                        DataContext="{x:Bind}">
                 <FontIcon x:Name="Symbol"
                           Margin="0,0,6,0"
                           FontFamily="Segoe Fluent Icons"
@@ -41,7 +43,8 @@
 
         <DataTemplate x:Key="FolderDataTemplate"
                       x:DataType="TreeViewNode">
-            <StackPanel Orientation="Horizontal">
+            <StackPanel Orientation="Horizontal"
+                        DataContext="{x:Bind}">
                 <FontIcon x:Name="Symbol"
                           Margin="0,0,6,0"
                           FontFamily="Segoe Fluent Icons"
@@ -54,7 +57,8 @@
 
         <DataTemplate x:Key="WorkspaceFileDataTemplate"
                       x:DataType="TreeViewNode">
-            <StackPanel Orientation="Horizontal">
+            <StackPanel Orientation="Horizontal"
+                        DataContext="{x:Bind}">
                 <SymbolIcon x:Name="Symbol"
                             Margin="0,0,6,0"
                             Symbol="Library"/>
@@ -66,7 +70,8 @@
         
         <DataTemplate x:Key="ProjectFileDataTemplate"
                       x:DataType="TreeViewNode">
-            <StackPanel Orientation="Horizontal">
+            <StackPanel Orientation="Horizontal"
+                        DataContext="{x:Bind}">
                 <FontIcon x:Name="Symbol"
                           Margin="0,0,6,0"
                           FontFamily="Segoe Fluent Icons"
@@ -79,7 +84,8 @@
 
         <DataTemplate x:Key="ImageFileDataTemplate"
                       x:DataType="controls:GroupableTreeViewNode">
-            <Grid HorizontalAlignment="Stretch" VerticalAlignment="Center">
+            <Grid HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                  DataContext="{x:Bind}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
@@ -128,7 +134,8 @@
 
         <DataTemplate x:Key="VideoFileDataTemplate"
                       x:DataType="controls:GroupableTreeViewNode">
-            <Grid HorizontalAlignment="Stretch" VerticalAlignment="Center">
+            <Grid HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                  DataContext="{x:Bind}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>

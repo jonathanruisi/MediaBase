@@ -24,6 +24,7 @@ using Microsoft.UI.Xaml.Navigation;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Storage;
+using Windows.System;
 
 namespace MediaBase.Controls
 {
@@ -48,12 +49,12 @@ namespace MediaBase.Controls
         {
             var messenger = App.Current.Services.GetService<IMessenger>();
 
-            messenger.Register<RequestMessage<bool>>(this, (r, m) =>
+            messenger.Register<RequestMessage<bool>, string>(this, "AreSystemBrowserNodesSelected", (r, m) =>
             {
                 m.Reply(((SystemBrowser)r).SystemBrowserTreeView.SelectedNodes.Any());
             });
 
-            messenger.Register<CollectionRequestMessage<TreeViewNode>>(this, (r, m) =>
+            messenger.Register<CollectionRequestMessage<TreeViewNode>, string>(this, "GetSelectedSystemBrowserNodes", (r, m) =>
             {
                 foreach (var node in ((SystemBrowser)r).SystemBrowserTreeView.SelectedNodes)
                 {
@@ -61,9 +62,38 @@ namespace MediaBase.Controls
                 }
             });
 
-            messenger.Register<GeneralActionMessage, string>(this, "ClearSelection", (r, m) =>
+            messenger.Register<GeneralInfoMessage<TreeViewNode>, string>(this, "SetSelectedSystemBrowserNode", (r, m) =>
+            {
+                if (m.Info != null)
+                    ((SystemBrowser)r).SystemBrowserTreeView.SelectedNode = m.Info;
+                else
+                {
+                    ((SystemBrowser)r).SystemBrowserTreeView.SelectedNode = null;
+                    ((SystemBrowser)r).SystemBrowserTreeView.SelectedNodes.Clear();
+                }
+            });
+
+            messenger.Register<GeneralActionMessage, string>(this, "ClearSystemBrowserSelection", (r, m) =>
             {
                 ((SystemBrowser)r).SystemBrowserTreeView.SelectedNodes.Clear();
+            });
+
+            // Project Manager's ActiveSystemBrowserNode property changed
+            messenger.Register<PropertyChangedMessage<TreeViewNode>>(this, (r, m) =>
+            {
+                if (m.Sender != ViewModel && m.PropertyName != nameof(ViewModel.ActiveSystemBrowserNode))
+                    return;
+
+                if (m.NewValue.Content is StorageFile file &&
+                    (file.ContentType.Contains("image") ||
+                     file.ContentType.Contains("video")))
+                {
+                    ((SystemBrowser)r).SystemBrowserTreeView.SelectedNode = m.NewValue;
+                }
+                else
+                {
+                    ((SystemBrowser)r).SystemBrowserTreeView.SelectedNode = null;
+                }
             });
         }
         #endregion
@@ -90,6 +120,10 @@ namespace MediaBase.Controls
                 {
                     node.IsExpanded = !node.IsExpanded;
                 }
+                else if (node.Content is StorageFile file)
+                {
+                    ViewModel.SetActiveMediaSourceFromNonProjectFile(file);
+                }
             }
             else
             {
@@ -99,7 +133,12 @@ namespace MediaBase.Controls
 
         private void SystemBrowserTreeView_RightTapped(object sender, RightTappedRoutedEventArgs e)
         {
+            if (e.OriginalSource is FrameworkElement element && element.DataContext is TreeViewNode node)
+                ViewModel.ActiveSystemBrowserNode = node;
+            else
+                ViewModel.ActiveSystemBrowserNode = null;
 
+            e.Handled = true;
         }
         #endregion
 
