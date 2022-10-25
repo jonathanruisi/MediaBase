@@ -38,10 +38,8 @@ namespace MediaBase.ViewModel
         #region Constants
         public static readonly string DefaultName = "Workspace";
         public static readonly string DefaultTitle = "MediaBASE";
-        public static readonly string[] MediaBaseFileExtensions = new[]
-        {
-            ".mbw", ".mbp"
-        };
+        public static readonly string WorkspaceFileExtension = "mbw";
+        public static readonly string ProjectFileExtension = "mbp";
         #endregion
 
         #region Fields
@@ -247,23 +245,83 @@ namespace MediaBase.ViewModel
         #endregion
 
         #region Public Methods
-        public void SetActiveMediaSourceFromNonProjectFile(StorageFile file)
+        /// <summary>
+        /// Creates a new project and adds it to the workspace
+        /// </summary>
+        /// <param name="name">The name of the new project.</param>
+        public void CreateNewProject(string name)
         {
-            if (file == null || !file.IsAvailable)
-                return;
+            var newProject = new Project
+            {
+                IsActive = false,
+                Name = name
+            };
+            newProject.IsActive = true;
 
-            if (file.ContentType.Contains("image"))
+            Projects.Add(newProject);
+        }
+
+        public async Task OpenWorkspaceFromFile(StorageFile file)
+        {
+            if (file.GetFileExtension() != WorkspaceFileExtension)
+                throw new ArgumentException("Incorrect file type", nameof(file));
+
+            // Reset singleton workspace and load from workspace file
+            IsActive = false;
+            File = file;
+
+            XmlReader reader = null;
+            try
             {
-                var imageFile = new ImageFile(file) { Id = Guid.Empty };
-                var imageSource = new ImageSource(imageFile);
-                ActiveMediaSource = imageSource;
+                reader = await GetXmlReaderForFileAsync(file);
+                ReadXml(reader);
             }
-            else if (file.ContentType.Contains("video"))
+            catch (Exception)
             {
-                var videoFile = new VideoFile(file) { Id = Guid.Empty };
-                var videoSource = new VideoSource(videoFile);
-                ActiveMediaSource = videoSource;
+                App.ShowMessageBoxAsync("Unable to read workspace file.", "Workspace File Error");
+                return;
             }
+            finally
+            {
+                reader.Close();
+            }
+            IsActive = true;
+
+            // Open each project in the workspace
+            foreach (var project in Projects)
+            {
+                if (await OpenProject(project) == false)
+                    App.ShowMessageBoxAsync($"Unable to read project file: {project.Path}", "Project File Error");
+            }
+        }
+
+        public async Task OpenProjectFromFile(StorageFile file)
+        {
+            if (file.GetFileExtension() != ProjectFileExtension)
+                throw new ArgumentException("Incorrect file type", nameof(file));
+
+            var project = new Project
+            {
+                File = file,
+                Path = file.Path
+            };
+
+            foreach (var existingProject in Projects)
+            {
+                if (project.File.Path == existingProject.Path)
+                {
+                    App.ShowMessageBoxAsync("This project already exists in this workspace.", "Duplicate Project");
+                    return;
+                }
+            }
+
+            if (await OpenProject(project) == false)
+            {
+                App.ShowMessageBoxAsync($"Unable to read project file: {project.Path}", "Project File Error");
+                return;
+            }
+
+            Projects.Add(project);
         }
 
         /// <summary>
@@ -409,6 +467,37 @@ namespace MediaBase.ViewModel
                 });
             }
         }
+
+        /// <summary>
+        /// Directly sets <see cref="ActiveMediaSource"/> to a specified file.
+        /// </summary>
+        /// <remarks>
+        /// The primary purpose of this method is to allow files to be
+        /// previewed in the editor without having to add them to the workspace.
+        /// The file will not be added to the workspace, and its <b><c>Id</c></b>
+        /// and <b><c>SourceId</c></b> will be set to <see cref="Guid.Empty"/>.
+        /// </remarks>
+        /// <param name="file">
+        /// The <see cref="StorageFile"/> to set as the active media source.
+        /// </param>
+        public void SetActiveMediaSourceFromNonProjectFile(StorageFile file)
+        {
+            if (file == null || !file.IsAvailable)
+                return;
+
+            if (file.ContentType.Contains("image"))
+            {
+                var imageFile = new ImageFile(file) { Id = Guid.Empty };
+                var imageSource = new ImageSource(imageFile);
+                ActiveMediaSource = imageSource;
+            }
+            else if (file.ContentType.Contains("video"))
+            {
+                var videoFile = new VideoFile(file) { Id = Guid.Empty };
+                var videoSource = new VideoSource(videoFile);
+                ActiveMediaSource = videoSource;
+            }
+        }
         #endregion
 
         #region Event Handlers (General)
@@ -429,11 +518,10 @@ namespace MediaBase.ViewModel
         #region Event Handlers (Commands - CanExecuteRequested)
         private void GeneralPreviousCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
+            args.CanExecute = false;
+
             if (ActiveMediaSource == null)
-            {
-                args.CanExecute = false;
                 return;
-            }
 
             if (ActiveMediaSource == ActiveWorkspaceBrowserNode)
             {
@@ -447,19 +535,13 @@ namespace MediaBase.ViewModel
                 // Active media source originates from the system browser
                 args.CanExecute = ActiveSystemBrowserNode != ActiveSystemBrowserNode.Parent?.Children.First();
             }
-            else
-            {
-                args.CanExecute = false;
-            }
         }
 
         private void GeneralNextCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
+            args.CanExecute = false;
             if (ActiveMediaSource == null)
-            {
-                args.CanExecute = false;
                 return;
-            }
 
             if (ActiveMediaSource == ActiveWorkspaceBrowserNode)
             {
@@ -472,10 +554,6 @@ namespace MediaBase.ViewModel
             {
                 // Active media source originates from the system browser
                 args.CanExecute = ActiveSystemBrowserNode != ActiveSystemBrowserNode.Parent?.Children.Last();
-            }
-            else
-            {
-                args.CanExecute = false;
             }
         }
 
@@ -618,14 +696,7 @@ namespace MediaBase.ViewModel
             var result = await dlg.ShowAsync();
             if (result == ContentDialogResult.Primary)
             {
-                var newProject = new Project
-                {
-                    IsActive = false,
-                    Name = dlg.Text
-                };
-                newProject.IsActive = true;
-
-                Projects.Add(newProject);
+                CreateNewProject(dlg.Text);
             }
         }
 
@@ -653,28 +724,7 @@ namespace MediaBase.ViewModel
                 projectFile = args.Parameter as StorageFile;
             }
 
-            var project = new Project
-            {
-                File = projectFile,
-                Path = projectFile.Path
-            };
-
-            foreach (var existingProject in Projects)
-            {
-                if (project.File.Path == existingProject.Path)
-                {
-                    App.ShowMessageBoxAsync("This project already exists in this workspace.", "Duplicate Project");
-                    return;
-                }
-            }
-
-            if (await OpenProject(project) == false)
-            {
-                App.ShowMessageBoxAsync($"Unable to read project file: {project.Path}", "Project File Error");
-                return;
-            }
-
-            Projects.Add(project);
+            await OpenProjectFromFile(projectFile);
         }
 
         private async void ProjectSaveCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
@@ -751,33 +801,7 @@ namespace MediaBase.ViewModel
                 workspaceFile = args.Parameter as StorageFile;
             }
 
-            // Reset singleton workspace and load from workspace file
-            IsActive = false;
-            File = workspaceFile;
-
-            XmlReader reader = null;
-            try
-            {
-                reader = await GetXmlReaderForFileAsync(workspaceFile);
-                ReadXml(reader);
-            }
-            catch (Exception)
-            {
-                App.ShowMessageBoxAsync("Unable to read workspace file.", "Workspace File Error");
-                return;
-            }
-            finally
-            {
-                reader.Close();
-            }
-            IsActive = true;
-
-            // Open each project in the workspace
-            foreach (var project in Projects)
-            {
-                if (await OpenProject(project) == false)
-                    App.ShowMessageBoxAsync($"Unable to read project file: {project.Path}", "Project File Error");
-            }
+            await OpenWorkspaceFromFile(workspaceFile);
         }
 
         private async void WorkspaceSaveCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)

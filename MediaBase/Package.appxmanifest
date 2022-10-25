@@ -49,7 +49,7 @@
             <uap:SupportedFileTypes>
               <uap:FileType>.mbw</uap:FileType>
             </uap:SupportedFileTypes>
-            <uap:Logo>Assets\Logo_44.png</uap:Logo>
+            <uap:Logo>Assets\Logo_256.png</uap:Logo>
             <uap:DisplayName>MediaBase Workspace</uap:DisplayName>
             <uap:EditFlags OpenIsSafe="true"/>
             <uap:InfoTip>MediaBase Workspace</uap:InfoTip>
@@ -61,7 +61,7 @@
               <uap:FileType>.mbp</uap:FileType>
             </uap:SupportedFileTypes>
             <uap:DisplayName>MediaBase Project</uap:DisplayName>
-            <uap:Logo>Assets\Logo_44.png</uap:Logo>
+            <uap:Logo>Assets\Logo_256.png</uap:Logo>
             <uap:InfoTip>MediaBase Project</uap:InfoTip>
             <uap:EditFlags OpenIsSafe="true"/>
           </uap:FileTypeAssociation>

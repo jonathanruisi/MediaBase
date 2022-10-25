@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using JLR.Utility.WinUI;
+
 using MediaBase.ViewModel;
 
 using Microsoft.UI.Xaml;
@@ -42,10 +44,10 @@ namespace MediaBase
                 if (file.ContentType.ToLower().Contains("video"))
                     return VideoFileTemplate;
 
-                var extension = file.Name.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Last().ToLower();
-                if (extension == "mbw")
+                var extension = file.GetFileExtension();
+                if (extension == ProjectManager.WorkspaceFileExtension)
                     return WorkspaceFileTemplate;
-                if (extension == "mbp")
+                if (extension == ProjectManager.ProjectFileExtension)
                     return ProjectFileTemplate;
             }
 

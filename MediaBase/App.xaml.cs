@@ -6,6 +6,8 @@ using System.Runtime.InteropServices.WindowsRuntime;
 
 using CommunityToolkit.Mvvm.Messaging;
 
+using JLR.Utility.WinUI;
+
 using MediaBase.ViewModel;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -62,6 +64,26 @@ namespace MediaBase
             Window = new MainWindow();
             WindowHandle = WindowNative.GetWindowHandle(Window);
             Window.Activate();
+
+            // Handle file-activated launch
+            var activationArgs = AppInstance.GetActivatedEventArgs();
+            if (activationArgs is FileActivatedEventArgs fileArgs && fileArgs.Kind == ActivationKind.File)
+            {
+                if (fileArgs.Files.Count > 1)
+                {
+                    ShowMessageBoxAsync("MediaBase was launched from multiple files.\n" +
+                                        "This is not supported.",
+                                        "File Launch Error");
+                }
+                else
+                {
+                    var ext = fileArgs.Files[0].GetFileExtension();
+                    if (ext == ProjectManager.WorkspaceFileExtension)
+                        Services.GetService<ProjectManager>().WorkspaceOpenCommand.Execute(fileArgs.Files[0]);
+                    if (ext == ProjectManager.ProjectFileExtension)
+                        Services.GetService<ProjectManager>().ProjectOpenCommand.Execute(fileArgs.Files[0]);
+                }
+            }
         }
 
         private void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
