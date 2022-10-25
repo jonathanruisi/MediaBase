@@ -41,10 +41,9 @@
         <!-- Timeline -->
         <controls:MediaTimeline x:Name="Timeline" Grid.Row="1"
                                 MinHeight="75" Height="75"
-                                ZoomBarHeight="18" MarkerHeight="18"
+                                ZoomBarHeight="18" MarkerBarHeight="18"
                                 PositionElementRelativeHeight="1.0"
                                 SelectionInOutElementsRelativeHeight="1.0"
-                                MarkerBrush="DarkOrange"
                                 PositionFollowMode="Advance"
                                 Visibility="Collapsed"
                                 FramesPerSecond="{x:Bind RefreshRate, Mode=OneWay}"
@@ -53,7 +52,15 @@
                                 ZoomChanged="Timeline_ZoomChanged"
                                 TimelineValueDragStarted="Timeline_DragStarted"
                                 TimelineValueDragCompleted="Timeline_DragCompleted"
-                                TrackCountChanged="Timeline_TrackCountChanged"/>
+                                TrackCountChanged="Timeline_TrackCountChanged">
+            <controls:MediaTimeline.MarkerStyleGroups>
+                <controls:MarkerStyleGroup x:Key="Default"
+                                           Style="{StaticResource MarkerStyle_Default}"
+                                           SelectedStyle="{StaticResource SelectedMarkerStyle_Default}"
+                                           TimespanMarkerStyle="{StaticResource TimespanMarkerStyle_Default}"
+                                           SelectedTimespanMarkerStyle="{StaticResource SelectedTimespanMarkerStyle_Default}"/>
+            </controls:MediaTimeline.MarkerStyleGroups>
+        </controls:MediaTimeline>
 
         <!-- Command Bar -->
         <CommandBar x:Name="EditorCommandBar" Grid.Row="2"
