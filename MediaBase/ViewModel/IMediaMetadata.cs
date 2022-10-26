@@ -12,7 +12,7 @@ namespace MediaBase.ViewModel
     /// <summary>
     /// Represents metadata used to further describe a multimedia object.
     /// </summary>
-    public interface IMediaMetadata
+    public interface IMediaMetadata : IGroupable
     {
         /// <inheritdoc cref="ViewModelElement.Name"/>
         string Name { get; set; }
@@ -27,14 +27,5 @@ namespace MediaBase.ViewModel
         /// Gets a collection of user-created tags used to describe the media.
         /// </summary>
         ObservableCollection<string> Tags { get; }
-
-        /// <summary>
-        /// Gets or sets a value where each bit represents a group.
-        /// </summary>
-        /// <remarks>
-        /// The meaning of "group" is arbitrary and has no effect on the
-        /// functionality of this object.
-        /// </remarks>
-        int GroupFlags { get; set; }
     }
 }

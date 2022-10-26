@@ -800,16 +800,13 @@ namespace MediaBase.Controls
             // Draw timecode / frame count
             if (IsPlaybackPossible && TimeDisplayMode != TimeDisplayFormat.None)
             {
-                var timeStr = TimeDisplayMode switch
-                {
-                    TimeDisplayFormat.FrameNumber
-                        => CurrentFrame.ToString("#"),
-                    TimeDisplayFormat.TimecodeWithFrame
-                        => CurrentPosition.TotalSeconds.ToTimecodeString(RefreshRate),
-                    TimeDisplayFormat.TimecodeWithMillis
-                        => CurrentPosition.TotalSeconds.ToTimecodeString(RefreshRate, true),
-                    _ => string.Empty
-                };
+                string timeStr;
+                if (TimeDisplayMode is TimeDisplayFormat.TimecodeWithFrame or TimeDisplayFormat.TimecodeWithMillis)
+                    timeStr = CurrentPosition.TotalSeconds.ToTimecodeString(RefreshRate, TimeDisplayMode);
+                else if (TimeDisplayMode == TimeDisplayFormat.FrameNumber)
+                    timeStr = $"Frame: {CurrentFrame:#}";
+                else
+                    timeStr = string.Empty;
 
                 using var positionTextFormat = new CanvasTextFormat
                 {
@@ -976,7 +973,7 @@ namespace MediaBase.Controls
 
             if (_destRect.Contains(point.Position) && IsPanAndZoomEnabled)
             {
-                var isCtrlPressed = TestKeyStates(Windows.System.VirtualKey.Control, CoreVirtualKeyStates.Down);
+                var isCtrlPressed = App.TestKeyStates(Windows.System.VirtualKey.Control, CoreVirtualKeyStates.Down);
 
                 if (point.Properties.IsLeftButtonPressed && !isCtrlPressed)
                 {
@@ -1051,7 +1048,7 @@ namespace MediaBase.Controls
             var point = e.GetCurrentPoint(RenderAreaBorder);
             var delta = point.Properties.MouseWheelDelta / 120;
 
-            if (TestKeyStates(Windows.System.VirtualKey.Control, CoreVirtualKeyStates.Down))
+            if (App.TestKeyStates(Windows.System.VirtualKey.Control, CoreVirtualKeyStates.Down))
             {// Scale
                 FrameScale += delta;
 
@@ -1072,7 +1069,7 @@ namespace MediaBase.Controls
                     FrameOffsetY += (heightDelta * (_mouseOffsetY / (_fullDestRect.Height / 2))) / 2;
                 }
             }
-            else if (TestKeyStates(Windows.System.VirtualKey.Shift, CoreVirtualKeyStates.Down))
+            else if (App.TestKeyStates(Windows.System.VirtualKey.Shift, CoreVirtualKeyStates.Down))
             {// Horizontal scroll
                 FrameOffsetX += delta * PanSpeedMultiplier;
             }
@@ -1364,7 +1361,7 @@ namespace MediaBase.Controls
         #region Private Methods
         private void ResetEditor()
         {
-            // Stop current playback and halt redraw timer
+            // Stop current playback
             if (PlaybackState is MediaPlaybackState.Opening or
                                  MediaPlaybackState.Buffering or
                                  MediaPlaybackState.Playing)
@@ -1372,7 +1369,18 @@ namespace MediaBase.Controls
                 _player.Pause();
             }
 
+            // Reset frame position and scale
+            if (!IsLockPanAndZoom)
+            {
+                FrameScale = 0;
+                FrameOffsetX = 0;
+                FrameOffsetY = 0;
+            }
+
+            // Halt redraw timer
             _redrawTimer.Stop();
+
+            // Reset various properties
             if (PlaybackState != MediaPlaybackState.None)
                 PlaybackState = MediaPlaybackState.None;
             CurrentFrame = 0;
@@ -1398,14 +1406,6 @@ namespace MediaBase.Controls
             {
                 _frameSizingBitmap.Dispose();
                 _frameSizingBitmap = null;
-            }
-
-            // Reset frame position and scale
-            if (!IsLockPanAndZoom)
-            {
-                FrameScale = 0;
-                FrameOffsetX = 0;
-                FrameOffsetY = 0;
             }
 
             // Reset timeline
@@ -1794,11 +1794,6 @@ namespace MediaBase.Controls
                 EditorTimelineZoomInCommand_CanExecuteRequested;
             ViewModel.EditorTimelineZoomInCommand.ExecuteRequested +=
                 EditorTimelineZoomInCommand_ExecuteRequested;
-        }
-
-        private static bool TestKeyStates(Windows.System.VirtualKey key, CoreVirtualKeyStates states)
-        {
-            return InputKeyboardSource.GetKeyStateForCurrentThread(key).HasFlag(states);
         }
         #endregion
     }

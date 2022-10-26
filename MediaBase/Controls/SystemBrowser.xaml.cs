@@ -219,7 +219,7 @@ namespace MediaBase.Controls
         #endregion
     }
 
-    public sealed class GroupableTreeViewNode : TreeViewNode
+    public sealed class GroupableTreeViewNode : TreeViewNode, IGroupable
     {
         /// <summary>
         /// Gets or sets a value where each bit represents a group.
@@ -239,5 +239,23 @@ namespace MediaBase.Controls
                                         typeof(int),
                                         typeof(GroupableTreeViewNode),
                                         new PropertyMetadata(0));
+
+        public bool CheckGroupFlag(int group)
+        {
+            group--;
+            if (group is < 0 or > 7)
+                throw new ArgumentOutOfRangeException(nameof(group));
+
+            return (GroupFlags & (1 << group)) != 0;
+        }
+
+        public void ToggleGroupFlag(int group)
+        {
+            group--;
+            if (group is < 0 or > 7)
+                throw new ArgumentOutOfRangeException(nameof(group));
+
+            GroupFlags ^= (1 << group);
+        }
     }
 }

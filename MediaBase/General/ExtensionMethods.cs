@@ -11,18 +11,21 @@ namespace MediaBase
         #region Timecode String Formatting
         public static string ToTimecodeString(this double value,
                                               int framesPerSecond = 30,
-                                              bool millisInsteadOfFrames = false)
+                                              TimeDisplayFormat format = TimeDisplayFormat.TimecodeWithFrame)
         {
-            return ToTimecodeString((decimal)value, framesPerSecond, millisInsteadOfFrames);
+            return ToTimecodeString((decimal)value, framesPerSecond, format);
         }
 
         public static string ToTimecodeString(this decimal value,
                                               int framesPerSecond = 30,
-                                              bool millisInsteadOfFrames = false)
+                                              TimeDisplayFormat format = TimeDisplayFormat.TimecodeWithFrame)
         {
-            if (framesPerSecond <= 0)
+            if (framesPerSecond < 0)
                 throw new ArgumentOutOfRangeException(nameof(framesPerSecond),
-                    "This value must be greater than or equal to 1");
+                    "This value must be greater than zero");
+
+            if (format == TimeDisplayFormat.FrameNumber)
+                return $"Frame {(int)(value * framesPerSecond)}";
 
             var hour = (int)(value / 3600);
             value -= hour * 3600;
@@ -36,7 +39,7 @@ namespace MediaBase
             if (hour > 0) builder.Append($"{hour:00}:");
             if (minute > 0) builder.Append($"{minute:00}:");
             builder.Append($"{second:00}");
-            if (millisInsteadOfFrames)
+            if (format == TimeDisplayFormat.TimecodeWithMillis)
                 builder.Append($".{value:000}");
             else if (framesPerSecond > 100)
                 builder.Append($";{frame:000}");

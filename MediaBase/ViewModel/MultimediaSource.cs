@@ -102,11 +102,11 @@ namespace MediaBase.ViewModel
         public virtual decimal Duration
         {
             get => _duration;
-            set => SetProperty(ref _duration, value);
+            protected set => SetProperty(ref _duration, value);
         }
 
         [ViewModelProperty(nameof(GroupFlags), XmlNodeType.Element)]
-        public virtual int GroupFlags
+        public int GroupFlags
         {
             get => _groupFlags;
             set => SetProperty(ref _groupFlags, value);
@@ -123,6 +123,14 @@ namespace MediaBase.ViewModel
 
         [ViewModelCollection(nameof(Tags), "Tag")]
         public ObservableCollection<string> Tags { get; }
+        
+        /// <summary>
+        /// Gets a collection of markers used to provide
+        /// information or trigger an action (keyframe markers)
+        /// at a specified time (or span of time) in the media.
+        /// </summary>
+        [ViewModelCollection(nameof(Markers), "Marker")]
+        public ObservableCollection<Marker> Markers { get; }
         #endregion
 
         #region Constructors
@@ -150,22 +158,25 @@ namespace MediaBase.ViewModel
 
             Tags = new ObservableCollection<string>();
             Tags.CollectionChanged += Tags_CollectionChanged;
+
+            Markers = new ObservableCollection<Marker>();
+            Markers.CollectionChanged += Markers_CollectionChanged;
         }
         #endregion
 
-        #region Public Methods
+        #region Interface Implementation (IGroupable)
         public bool CheckGroupFlag(int group)
         {
             group--;
             if (group is < 0 or > 7)
                 throw new ArgumentOutOfRangeException(nameof(group));
 
-            return (GroupFlags & (1 << group)) == 1;
+            return (GroupFlags & (1 << group)) != 0;
         }
 
         public void ToggleGroupFlag(int group)
         {
-
+            group--;
             if (group is < 0 or > 7)
                 throw new ArgumentOutOfRangeException(nameof(group));
 
@@ -196,6 +207,30 @@ namespace MediaBase.ViewModel
 
             Messenger.Send(tagMessage, nameof(Tags));
             NotifySerializedCollectionChanged(nameof(Tags));
+        }
+
+        private void Markers_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            var markerMessage = new CollectionChangedMessage<Marker>(this, nameof(Markers), e.Action)
+            {
+                OldStartingIndex = e.OldStartingIndex,
+                NewStartingIndex = e.NewStartingIndex
+            };
+
+            if (e.OldItems != null)
+            {
+                foreach (Marker oldMarker in e.OldItems)
+                    markerMessage.OldValue.Add(oldMarker);
+            }
+
+            if (e.NewItems != null)
+            {
+                foreach (Marker newMarker in e.NewItems)
+                    markerMessage.NewValue.Add(newMarker);
+            }
+
+            Messenger.Send(markerMessage, nameof(Markers));
+            NotifySerializedCollectionChanged(nameof(Markers));
         }
         #endregion
 

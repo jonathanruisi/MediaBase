@@ -11,6 +11,7 @@ using JLR.Utility.WinUI;
 using MediaBase.ViewModel;
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -24,6 +25,8 @@ using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.System;
+using Windows.UI.Core;
 using Windows.UI.Popups;
 
 using WinRT.Interop;
@@ -55,6 +58,11 @@ namespace MediaBase
             var messageDialog = new MessageDialog(content, title);
             InitializeWithWindow.Initialize(messageDialog, WindowHandle);
             await messageDialog.ShowAsync();
+        }
+
+        public static bool TestKeyStates(VirtualKey key, CoreVirtualKeyStates states)
+        {
+            return InputKeyboardSource.GetKeyStateForCurrentThread(key).HasFlag(states);
         }
         #endregion
 

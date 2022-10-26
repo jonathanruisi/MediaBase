@@ -29,6 +29,9 @@ using System.IO;
 using System.Reflection.PortableExecutable;
 using Windows.Foundation;
 using Windows.ApplicationModel.Activation;
+using MediaBase.Controls;
+using Microsoft.UI.Input;
+using Windows.UI.Core;
 
 namespace MediaBase.ViewModel
 {
@@ -524,17 +527,9 @@ namespace MediaBase.ViewModel
                 return;
 
             if (ActiveMediaSource == ActiveWorkspaceBrowserNode)
-            {
-                // Active media source originates from the workspace browser
                 args.CanExecute = ActiveWorkspaceBrowserNode != ActiveWorkspaceBrowserNode.Parent?.Children.First();
-            }
-            else if (ActiveMediaSource.Parent == null &&
-                     ActiveMediaSource.Source is MediaFile file &&
-                     file.File == (StorageFile)ActiveSystemBrowserNode.Content)
-            {
-                // Active media source originates from the system browser
+            else if (IsActiveMediaSourceFromSystemBrowser)
                 args.CanExecute = ActiveSystemBrowserNode != ActiveSystemBrowserNode.Parent?.Children.First();
-            }
         }
 
         private void GeneralNextCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
@@ -544,17 +539,9 @@ namespace MediaBase.ViewModel
                 return;
 
             if (ActiveMediaSource == ActiveWorkspaceBrowserNode)
-            {
-                // Active media source originates from the workspace browser
                 args.CanExecute = ActiveWorkspaceBrowserNode != ActiveWorkspaceBrowserNode.Parent?.Children.Last();
-            }
-            else if (ActiveMediaSource.Parent == null &&
-                     ActiveMediaSource.Source is MediaFile file &&
-                     file.File == (StorageFile)ActiveSystemBrowserNode.Content)
-            {
-                // Active media source originates from the system browser
+            else if (IsActiveMediaSourceFromSystemBrowser)
                 args.CanExecute = ActiveSystemBrowserNode != ActiveSystemBrowserNode.Parent?.Children.Last();
-            }
         }
 
         private void GeneralDeleteMarkerCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
@@ -640,6 +627,11 @@ namespace MediaBase.ViewModel
         {
             args.CanExecute = ActiveWorkspaceBrowserNode is not null;
         }
+
+        private void ToolsToggleGroupCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = ActiveMediaSource != null;
+        }
         #endregion
 
         #region Event Handlers (Commands - ExecuteRequested)
@@ -650,12 +642,10 @@ namespace MediaBase.ViewModel
                 var index = ActiveMediaSource.Parent.Children.IndexOf(ActiveMediaSource);
                 ActiveMediaSource = (MultimediaSource)ActiveMediaSource.Parent.Children[index - 1];
             }
-            else if (ActiveMediaSource.Parent == null &&
-                     ActiveMediaSource.Source is MediaFile file &&
-                     file.File == (StorageFile)ActiveSystemBrowserNode.Content)
+            else if (IsActiveMediaSourceFromSystemBrowser)
             {
                 var index = ActiveSystemBrowserNode.Parent.Children.IndexOf(ActiveSystemBrowserNode);
-                ActiveSystemBrowserNode = ActiveSystemBrowserNode.Parent.Children[index - 1];
+                ActiveSystemBrowserNode = (GroupableTreeViewNode)ActiveSystemBrowserNode.Parent.Children[index - 1];
                 SetActiveMediaSourceFromNonProjectFile(ActiveSystemBrowserNode.Content as StorageFile);
             }
         }
@@ -667,12 +657,10 @@ namespace MediaBase.ViewModel
                 var index = ActiveMediaSource.Parent.Children.IndexOf(ActiveMediaSource);
                 ActiveMediaSource = (MultimediaSource)ActiveMediaSource.Parent.Children[index + 1];
             }
-            else if (ActiveMediaSource.Parent == null &&
-                     ActiveMediaSource.Source is MediaFile file &&
-                     file.File == (StorageFile)ActiveSystemBrowserNode.Content)
+            else if (IsActiveMediaSourceFromSystemBrowser)
             {
                 var index = ActiveSystemBrowserNode.Parent.Children.IndexOf(ActiveSystemBrowserNode);
-                ActiveSystemBrowserNode = ActiveSystemBrowserNode.Parent.Children[index + 1];
+                ActiveSystemBrowserNode = (GroupableTreeViewNode)ActiveSystemBrowserNode.Parent.Children[index + 1];
                 SetActiveMediaSourceFromNonProjectFile(ActiveSystemBrowserNode.Content as StorageFile);
             }
         }
@@ -767,6 +755,9 @@ namespace MediaBase.ViewModel
             if (await project.PromptSaveChanges() == false)
                 return;
 
+            if (ActiveMediaSource != null && ActiveMediaSource.Root == project)
+                ActiveMediaSource = null;
+
             project.IsActive = false;
             CloseProject(project);
             Projects.Remove(project);
@@ -826,6 +817,9 @@ namespace MediaBase.ViewModel
             // Prompt user to save unsaved changes
             if (await PromptSaveChanges() == false)
                 return;
+
+            if (ActiveMediaSource != null && ActiveMediaSource.Root != null)
+                ActiveMediaSource = null;
 
             IsActive = false;
             IsActive = true;
@@ -1021,6 +1015,45 @@ namespace MediaBase.ViewModel
                 ActiveWorkspaceBrowserNode.Name = dlg.Text;
             }
         }
+
+        private void ToolsToggleGroupCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            if (!int.TryParse((string)args.Parameter, out int group))
+                return;
+
+            if (ActiveMediaSource == ActiveWorkspaceBrowserNode)
+            {
+                ActiveMediaSource.ToggleGroupFlag(group);
+                if (App.TestKeyStates(VirtualKey.Shift, CoreVirtualKeyStates.Down))
+                {
+                    for (var i = ActiveMediaSource.Parent.Children.IndexOf(ActiveMediaSource) - 1; i >= 0; i--)
+                    {
+                        if (((MultimediaSource)ActiveMediaSource.Parent.Children[i]).CheckGroupFlag(group) != ActiveMediaSource.CheckGroupFlag(group))
+                            ((MultimediaSource)ActiveMediaSource.Parent.Children[i]).ToggleGroupFlag(group);
+                        else
+                            break;
+                    }
+                }
+            }
+            else if (IsActiveMediaSourceFromSystemBrowser)
+            {
+                var activeSystemBrowserNode = ActiveSystemBrowserNode as GroupableTreeViewNode;
+                activeSystemBrowserNode.ToggleGroupFlag(group);
+                ActiveMediaSource.ToggleGroupFlag(group);   // For visual indication in the editor
+                var newFlagValue = activeSystemBrowserNode.CheckGroupFlag(group);
+
+                if (App.TestKeyStates(VirtualKey.Shift, CoreVirtualKeyStates.Down))
+                {
+                    for (var i = activeSystemBrowserNode.Parent.Children.IndexOf(activeSystemBrowserNode) - 1; i >= 0; i--)
+                    {
+                        if (((IGroupable)ActiveSystemBrowserNode.Parent.Children[i]).CheckGroupFlag(group) != newFlagValue)
+                            ((IGroupable)ActiveSystemBrowserNode.Parent.Children[i]).ToggleGroupFlag(group);
+                        else
+                            break;
+                    }
+                }
+            }
+        }
         #endregion
 
         #region Method Overrides (ViewModelElement)
@@ -1148,6 +1181,13 @@ namespace MediaBase.ViewModel
             Name = DefaultName;
             HasUnsavedChanges = false;
         }
+        #endregion
+
+        #region Private Properties
+        private bool IsActiveMediaSourceFromSystemBrowser =>
+            ActiveMediaSource.Parent == null &&
+            ActiveMediaSource.Source is MediaFile file &&
+            file.File == (StorageFile)ActiveSystemBrowserNode.Content;
         #endregion
 
         #region Private Methods
@@ -1897,7 +1937,25 @@ namespace MediaBase.ViewModel
                 WorkspaceRenameItemCommand_ExecuteRequested;
 
             // Tools
+            ToolsToggleGroup1Command.CanExecuteRequested +=
+                ToolsToggleGroupCommand_CanExecuteRequested;
+            ToolsToggleGroup1Command.ExecuteRequested +=
+                ToolsToggleGroupCommand_ExecuteRequested;
 
+            ToolsToggleGroup2Command.CanExecuteRequested +=
+                ToolsToggleGroupCommand_CanExecuteRequested;
+            ToolsToggleGroup2Command.ExecuteRequested +=
+                ToolsToggleGroupCommand_ExecuteRequested;
+
+            ToolsToggleGroup3Command.CanExecuteRequested +=
+                ToolsToggleGroupCommand_CanExecuteRequested;
+            ToolsToggleGroup3Command.ExecuteRequested +=
+                ToolsToggleGroupCommand_ExecuteRequested;
+
+            ToolsToggleGroup4Command.CanExecuteRequested +=
+                ToolsToggleGroupCommand_CanExecuteRequested;
+            ToolsToggleGroup4Command.ExecuteRequested +=
+                ToolsToggleGroupCommand_ExecuteRequested;
         }
         #endregion
     }

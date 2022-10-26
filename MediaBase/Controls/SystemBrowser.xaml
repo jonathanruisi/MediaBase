@@ -110,25 +110,29 @@
                          Points="0,20,10,0,20,20" VerticalAlignment="Center" Margin="0,0,3,0"
                          Visibility="{x:Bind GroupFlags,
                                              Converter={StaticResource GroupMaskToVisibilityConverter},
-                                             ConverterParameter=1}"/>
+                                             ConverterParameter=1,
+                                             Mode=OneWay}"/>
                 <Rectangle Grid.Column="3"
                            Fill="CornflowerBlue" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
                            VerticalAlignment="Center" Margin="0,0,3,0"
                            Visibility="{x:Bind GroupFlags,
                                                Converter={StaticResource GroupMaskToVisibilityConverter},
-                                               ConverterParameter=2}"/>
+                                               ConverterParameter=2,
+                                               Mode=OneWay}"/>
                 <Ellipse Grid.Column="4"
                          Fill="IndianRed" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
                          VerticalAlignment="Center" Margin="0,0,3,0"
                          Visibility="{x:Bind GroupFlags,
                                              Converter={StaticResource GroupMaskToVisibilityConverter},
-                                             ConverterParameter=3}"/>
+                                             ConverterParameter=3,
+                                             Mode=OneWay}"/>
                 <Polygon Grid.Column="5"
                          Fill="ForestGreen" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
                          Points="0,10,10,0,20,10,10,20" VerticalAlignment="Center" Margin="0,0,3,0"
                          Visibility="{x:Bind GroupFlags,
                                              Converter={StaticResource GroupMaskToVisibilityConverter},
-                                             ConverterParameter=4}"/>
+                                             ConverterParameter=4,
+                                             Mode=OneWay}"/>
             </Grid>
         </DataTemplate>
 
@@ -159,25 +163,29 @@
                          Points="0,20,10,0,20,20" VerticalAlignment="Center" Margin="0,0,3,0"
                          Visibility="{x:Bind GroupFlags,
                                              Converter={StaticResource GroupMaskToVisibilityConverter},
-                                             ConverterParameter=1}"/>
+                                             ConverterParameter=1,
+                                             Mode=OneWay}"/>
                 <Rectangle Grid.Column="3"
                            Fill="CornflowerBlue" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
                            VerticalAlignment="Center" Margin="0,0,3,0"
                            Visibility="{x:Bind GroupFlags,
                                                Converter={StaticResource GroupMaskToVisibilityConverter},
-                                               ConverterParameter=2}"/>
+                                               ConverterParameter=2,
+                                               Mode=OneWay}"/>
                 <Ellipse Grid.Column="4"
                          Fill="IndianRed" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
                          VerticalAlignment="Center" Margin="0,0,3,0"
                          Visibility="{x:Bind GroupFlags,
                                              Converter={StaticResource GroupMaskToVisibilityConverter},
-                                             ConverterParameter=3}"/>
+                                             ConverterParameter=3,
+                                             Mode=OneWay}"/>
                 <Polygon Grid.Column="5"
                          Fill="ForestGreen" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
                          Points="0,10,10,0,20,10,10,20" VerticalAlignment="Center" Margin="0,0,3,0"
                          Visibility="{x:Bind GroupFlags,
                                              Converter={StaticResource GroupMaskToVisibilityConverter},
-                                             ConverterParameter=4}"/>
+                                             ConverterParameter=4,
+                                             Mode=OneWay}"/>
             </Grid>
         </DataTemplate>
 
