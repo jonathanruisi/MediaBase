@@ -122,7 +122,9 @@ namespace MediaBase.Controls
                 }
                 else if (node.Content is StorageFile file)
                 {
-                    ViewModel.SetActiveMediaSourceFromNonProjectFile(file);
+                    var mediaSource = ProjectManager.CreateMediaSourceFromFile(file);
+                    mediaSource.GroupFlags = (node as IGroupable).GroupFlags;
+                    ViewModel.ActiveMediaSource = mediaSource;
                 }
             }
             else

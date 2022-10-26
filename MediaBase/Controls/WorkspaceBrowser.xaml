@@ -164,33 +164,33 @@
                                    HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Left"
                                    Text="{x:Bind Name, Mode=OneWay}"/>
 
-                        <Polygon Grid.Column="3"
-                                 Fill="Gold" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
-                                 Points="0,20,10,0,20,20" VerticalAlignment="Center" Margin="0,0,3,0"
+                        <Ellipse Grid.Column="3"
+                                 Fill="Gold" Width="10" Height="10" Stretch="Fill" StrokeThickness="0"
+                                 VerticalAlignment="Center" Margin="0,0,2,0"
                                  Visibility="{x:Bind GroupFlags,
                                                      Converter={StaticResource GroupMaskToVisibilityConverter},
                                                      ConverterParameter=1,
                                                      Mode=OneWay}"/>
-                        
-                        <Rectangle Grid.Column="4"
-                                   Fill="CornflowerBlue" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
-                                   VerticalAlignment="Center" Margin="0,0,3,0"
-                                   Visibility="{x:Bind GroupFlags,
-                                                       Converter={StaticResource GroupMaskToVisibilityConverter},
-                                                       ConverterParameter=2,
-                                                       Mode=OneWay}"/>
-                        
+
+                        <Ellipse Grid.Column="4"
+                                 Fill="CornflowerBlue" Width="10" Height="10" Stretch="Fill" StrokeThickness="0"
+                                 VerticalAlignment="Center" Margin="0,0,2,0"
+                                 Visibility="{x:Bind GroupFlags,
+                                                     Converter={StaticResource GroupMaskToVisibilityConverter},
+                                                     ConverterParameter=2,
+                                                     Mode=OneWay}"/>
+
                         <Ellipse Grid.Column="5"
-                                 Fill="IndianRed" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
-                                 VerticalAlignment="Center" Margin="0,0,3,0"
+                                 Fill="IndianRed" Width="10" Height="10" Stretch="Fill" StrokeThickness="0"
+                                 VerticalAlignment="Center" Margin="0,0,2,0"
                                  Visibility="{x:Bind GroupFlags,
                                                      Converter={StaticResource GroupMaskToVisibilityConverter},
                                                      ConverterParameter=3,
                                                      Mode=OneWay}"/>
 
-                        <Polygon Grid.Column="6"
-                                 Fill="ForestGreen" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
-                                 Points="0,10,10,0,20,10,10,20" VerticalAlignment="Center" Margin="0,0,3,0"
+                        <Ellipse Grid.Column="6"
+                                 Fill="ForestGreen" Width="10" Height="10" Stretch="Fill" StrokeThickness="0"
+                                 VerticalAlignment="Center" Margin="0,0,2,0"
                                  Visibility="{x:Bind GroupFlags,
                                                      Converter={StaticResource GroupMaskToVisibilityConverter},
                                                      ConverterParameter=4,
@@ -249,33 +249,33 @@
                                    HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Left"
                                    Text="{x:Bind Name, Mode=OneWay}"/>
 
-                        <Polygon Grid.Column="3"
-                                 Fill="Gold" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
-                                 Points="0,20,10,0,20,20" VerticalAlignment="Center" Margin="0,0,3,0"
+                        <Ellipse Grid.Column="3"
+                                 Fill="Gold" Width="10" Height="10" Stretch="Fill" StrokeThickness="0"
+                                 VerticalAlignment="Center" Margin="0,0,2,0"
                                  Visibility="{x:Bind GroupFlags,
                                                      Converter={StaticResource GroupMaskToVisibilityConverter},
                                                      ConverterParameter=1,
                                                      Mode=OneWay}"/>
 
-                        <Rectangle Grid.Column="4"
-                                   Fill="CornflowerBlue" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
-                                   VerticalAlignment="Center" Margin="0,0,3,0"
-                                   Visibility="{x:Bind GroupFlags,
-                                                       Converter={StaticResource GroupMaskToVisibilityConverter},
-                                                       ConverterParameter=2,
-                                                       Mode=OneWay}"/>
+                        <Ellipse Grid.Column="4"
+                                 Fill="CornflowerBlue" Width="10" Height="10" Stretch="Fill" StrokeThickness="0"
+                                 VerticalAlignment="Center" Margin="0,0,2,0"
+                                 Visibility="{x:Bind GroupFlags,
+                                                     Converter={StaticResource GroupMaskToVisibilityConverter},
+                                                     ConverterParameter=2,
+                                                     Mode=OneWay}"/>
 
                         <Ellipse Grid.Column="5"
-                                 Fill="IndianRed" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
-                                 VerticalAlignment="Center" Margin="0,0,3,0"
+                                 Fill="IndianRed" Width="10" Height="10" Stretch="Fill" StrokeThickness="0"
+                                 VerticalAlignment="Center" Margin="0,0,2,0"
                                  Visibility="{x:Bind GroupFlags,
                                                      Converter={StaticResource GroupMaskToVisibilityConverter},
                                                      ConverterParameter=3,
                                                      Mode=OneWay}"/>
 
-                        <Polygon Grid.Column="6"
-                                 Fill="ForestGreen" Width="15" Height="15" Stretch="Fill" StrokeThickness="0"
-                                 Points="0,10,10,0,20,10,10,20" VerticalAlignment="Center" Margin="0,0,3,0"
+                        <Ellipse Grid.Column="6"
+                                 Fill="ForestGreen" Width="10" Height="10" Stretch="Fill" StrokeThickness="0"
+                                 VerticalAlignment="Center" Margin="0,0,2,0"
                                  Visibility="{x:Bind GroupFlags,
                                                      Converter={StaticResource GroupMaskToVisibilityConverter},
                                                      ConverterParameter=4,

@@ -69,6 +69,8 @@ namespace MediaBase.Controls
         private FollowMode _prevFollowMode;
         private ValueDragType _scrubType;
         private int _trackCount;
+        private DateTime _sourceChangedTimestamp;
+        private double _textFadeOpacity, _textFadeOpacityIncrement;
         #endregion
 
         #region Properties
@@ -257,6 +259,30 @@ namespace MediaBase.Controls
                                         typeof(TimeDisplayFormat),
                                         typeof(MediaEditor),
                                         new PropertyMetadata(TimeDisplayFormat.None));
+
+        public double TitleTextDisplayDuration
+        {
+            get => (double)GetValue(TitleTextDisplayDurationProperty);
+            set => SetValue(TitleTextDisplayDurationProperty, value);
+        }
+
+        public static readonly DependencyProperty TitleTextDisplayDurationProperty =
+            DependencyProperty.Register("TitleTextDisplayDuration",
+                                        typeof(double),
+                                        typeof(MediaEditor),
+                                        new PropertyMetadata(2.0));
+
+        public double TitleTextFadeDuration
+        {
+            get => (double)GetValue(TitleTextFadeDurationProperty);
+            set => SetValue(TitleTextFadeDurationProperty, value);
+        }
+
+        public static readonly DependencyProperty TitleTextFadeDurationProperty =
+            DependencyProperty.Register("TitleTextFadeDuration",
+                                        typeof(double),
+                                        typeof(MediaEditor),
+                                        new PropertyMetadata(0.5));
 
         public Color TextOverlayColor
         {
@@ -692,7 +718,7 @@ namespace MediaBase.Controls
             // Draw the image
             ds.DrawImage(_frameBitmap, _destRect, _sourceRect);
 
-            // Draw grouping adornment
+            // Determine the number of groups
             var groupOffset = 0;
             var numGroups = 0;
             if (Source.CheckGroupFlag(4))
@@ -703,112 +729,82 @@ namespace MediaBase.Controls
                 numGroups++;
             if (Source.CheckGroupFlag(1))
                 numGroups++;
-            float borderThickness = GroupAdornment_TotalBorderSize / numGroups;
 
-            if (numGroups > 0)
+            // Create custom dash pattern based on the number of groups
+            var dashStyle = new CanvasStrokeStyle
             {
-                if (Source.CheckGroupFlag(1))
+                DashOffset = 0,
+                DashStyle = CanvasDashStyle.Solid,
+                DashCap = CanvasCapStyle.Flat,
+                CustomDashStyle = new float[]
                 {
-                    DrawBorder(Colors.Gold, borderThickness, groupOffset * borderThickness);
-
-                    var xOffset = (float)_destRect.Left +
-                                  GroupAdornment_TotalBorderSize +
-                                  GroupAdornment_IconSpacing;
-                    var yOffset = (float)_destRect.Top +
-                                  GroupAdornment_TotalBorderSize +
-                                  GroupAdornment_IconSpacing;
-
-                    using var path = new CanvasPathBuilder(ds);
-                    path.BeginFigure(0, GroupAdornment_IconSize);
-                    path.AddLine(GroupAdornment_IconSize / 2, 0);
-                    path.AddLine(GroupAdornment_IconSize, GroupAdornment_IconSize);
-                    path.EndFigure(CanvasFigureLoop.Closed);
-
-                    using var groupIconGeometry = CanvasGeometry.CreatePath(path);
-                    ds.FillGeometry(groupIconGeometry, xOffset, yOffset, Colors.Gold);
-
-                    groupOffset++;
+                    GroupAdornment_TotalBorderSize / numGroups,
+                    GroupAdornment_TotalBorderSize - (GroupAdornment_TotalBorderSize / numGroups)
                 }
+            };
 
-                if (Source.CheckGroupFlag(2))
+            // Draw grouping adornment
+            for (var i = 1; i <= 4; i++)
+            {
+                if (Source.CheckGroupFlag(i) == false)
+                    continue;
+
+                var color = i switch
                 {
-                    DrawBorder(Colors.CornflowerBlue, borderThickness, groupOffset * borderThickness);
+                    1 => Colors.Gold,
+                    2 => Colors.CornflowerBlue,
+                    3 => Colors.IndianRed,
+                    4 => Colors.ForestGreen,
+                    _ => throw new NotImplementedException()
+                };
 
-                    var xOffset = (float)_destRect.Left +
-                                  GroupAdornment_TotalBorderSize +
-                                  GroupAdornment_IconSpacing +
-                                  (GroupAdornment_IconSpacing * groupOffset) +
-                                  (groupOffset * GroupAdornment_IconSize);
-                    var yOffset = (float)_destRect.Top +
-                                  GroupAdornment_TotalBorderSize +
-                                  GroupAdornment_IconSpacing;
+                dashStyle.DashOffset = groupOffset * (GroupAdornment_TotalBorderSize / numGroups);
+                ds.DrawRectangle(new Rect(_destRect.Left + (GroupAdornment_TotalBorderSize / 2),
+                                          _destRect.Top + (GroupAdornment_TotalBorderSize / 2),
+                                          _destRect.Width - GroupAdornment_TotalBorderSize,
+                                          _destRect.Height - GroupAdornment_TotalBorderSize),
+                                 color, GroupAdornment_TotalBorderSize, dashStyle);
 
-                    ds.FillRectangle(xOffset, yOffset,
-                                     GroupAdornment_IconSize, GroupAdornment_IconSize,
-                                     Colors.CornflowerBlue);
+                var xOffset = (float)_destRect.Left +
+                              GroupAdornment_TotalBorderSize +
+                              GroupAdornment_IconSpacing +
+                              (GroupAdornment_IconSpacing * groupOffset) +
+                              (groupOffset * GroupAdornment_IconSize);
+                var yOffset = (float)_destRect.Top +
+                              GroupAdornment_TotalBorderSize +
+                              GroupAdornment_IconSpacing;
 
-                    groupOffset++;
-                }
+                ds.FillEllipse(xOffset + (GroupAdornment_IconSize / 2),
+                               yOffset + (GroupAdornment_IconSize / 2),
+                               GroupAdornment_IconSize / 2,
+                               GroupAdornment_IconSize / 2,
+                               color);
 
-                if (Source.CheckGroupFlag(3))
-                {
-                    DrawBorder(Colors.IndianRed, borderThickness, groupOffset * borderThickness);
-
-                    var xOffset = (float)_destRect.Left +
-                                  GroupAdornment_TotalBorderSize +
-                                  GroupAdornment_IconSpacing +
-                                  (GroupAdornment_IconSpacing * groupOffset) +
-                                  (groupOffset * GroupAdornment_IconSize);
-                    var yOffset = (float)_destRect.Top +
-                                  GroupAdornment_TotalBorderSize +
-                                  GroupAdornment_IconSpacing;
-
-                    ds.FillEllipse(xOffset + (GroupAdornment_IconSize / 2),
-                                   yOffset + (GroupAdornment_IconSize / 2),
-                                   GroupAdornment_IconSize / 2,
-                                   GroupAdornment_IconSize / 2,
-                                   Colors.IndianRed);
-
-                    groupOffset++;
-                }
-
-                if (Source.CheckGroupFlag(4))
-                {
-                    DrawBorder(Colors.ForestGreen, borderThickness, groupOffset * borderThickness);
-
-                    var xOffset = (float)_destRect.Left +
-                                  GroupAdornment_TotalBorderSize +
-                                  GroupAdornment_IconSpacing +
-                                  (GroupAdornment_IconSpacing * groupOffset) +
-                                  (groupOffset * GroupAdornment_IconSize);
-                    var yOffset = (float)_destRect.Top +
-                                  GroupAdornment_TotalBorderSize +
-                                  GroupAdornment_IconSpacing;
-
-                    using var path = new CanvasPathBuilder(ds);
-                    path.BeginFigure(0, GroupAdornment_IconSize / 2);
-                    path.AddLine(GroupAdornment_IconSize / 2, 0);
-                    path.AddLine(GroupAdornment_IconSize, GroupAdornment_IconSize / 2);
-                    path.AddLine(GroupAdornment_IconSize / 2, GroupAdornment_IconSize);
-                    path.EndFigure(CanvasFigureLoop.Closed);
-
-                    using var groupIconGeometry = CanvasGeometry.CreatePath(path);
-                    ds.FillGeometry(groupIconGeometry, xOffset, yOffset, Colors.ForestGreen);
-                }
+                groupOffset++;
             }
 
             // Draw timecode / frame count
             if (IsPlaybackPossible && TimeDisplayMode != TimeDisplayFormat.None)
             {
-                string timeStr;
-                if (TimeDisplayMode is TimeDisplayFormat.TimecodeWithFrame or TimeDisplayFormat.TimecodeWithMillis)
-                    timeStr = CurrentPosition.TotalSeconds.ToTimecodeString(RefreshRate, TimeDisplayMode);
-                else if (TimeDisplayMode == TimeDisplayFormat.FrameNumber)
-                    timeStr = $"Frame: {CurrentFrame:#}";
-                else
-                    timeStr = string.Empty;
+                var timeStr = TimeDisplayMode == TimeDisplayFormat.FrameNumber
+                    ? $"Frame: {CurrentFrame:#}"
+                    : CurrentPosition.TotalSeconds.ToTimecodeString(RefreshRate, TimeDisplayMode);
+
+                var timeRemainStr = TimeDisplayMode == TimeDisplayFormat.FrameNumber
+                    ? $"Frame: {Source.TotalFrames - CurrentFrame:#}"
+                    : (decimal.ToDouble(Source.Duration) - CurrentPosition.TotalSeconds).ToTimecodeString(RefreshRate, TimeDisplayMode);
 
                 using var positionTextFormat = new CanvasTextFormat
+                {
+                    FontFamily = FontFamily.Source,
+                    FontSize = (float)FontSize,
+                    FontStretch = FontStretch,
+                    FontStyle = FontStyle,
+                    FontWeight = FontWeight,
+                    HorizontalAlignment = CanvasHorizontalAlignment.Left
+                };
+
+                using var timeRemainTextFormat = new CanvasTextFormat
                 {
                     FontFamily = FontFamily.Source,
                     FontSize = (float)FontSize,
@@ -821,21 +817,78 @@ namespace MediaBase.Controls
                 using var positionTextLayout = new CanvasTextLayout(ds, timeStr, positionTextFormat,
                     (float)SwapChainCanvas.ActualWidth, (float)SwapChainCanvas.ActualHeight);
                 using var positionTextGeometry = CanvasGeometry.CreateText(positionTextLayout);
-                ds.FillGeometry(positionTextGeometry, 5, 5, TextOverlayColor);
-                ds.DrawGeometry(positionTextGeometry, 5, 5, TextOverlayOutlineColor, TextOverlayOutlineThickness);
+
+                using var timeRemainTextLayout = new CanvasTextLayout(ds, timeStr, timeRemainTextFormat,
+                    (float)SwapChainCanvas.ActualWidth, (float)SwapChainCanvas.ActualHeight);
+                using var timeRemainTextGeometry = CanvasGeometry.CreateText(timeRemainTextLayout);
+
+                ds.FillGeometry(positionTextGeometry, 15, 15, TextOverlayColor);
+                ds.DrawGeometry(positionTextGeometry, 15, 15, TextOverlayOutlineColor, TextOverlayOutlineThickness);
+
+                ds.FillGeometry(timeRemainTextGeometry, -15, 15, TextOverlayColor);
+                ds.DrawGeometry(timeRemainTextGeometry, -15, 15, TextOverlayOutlineColor, TextOverlayOutlineThickness);
+            }
+
+            // Determine title text opacity (during title text fade)
+            if (DateTime.Now - _sourceChangedTimestamp <= TimeSpan.FromSeconds(TitleTextDisplayDuration))
+            {
+                _textFadeOpacity = 1.0;
+                _textFadeOpacityIncrement = 0;
+            }
+            else if (_textFadeOpacity == 1.0 && _textFadeOpacityIncrement == 0)
+            {
+                _textFadeOpacityIncrement = 1.0 / (TitleTextFadeDuration * RefreshRate);
+            }
+            else if (_textFadeOpacity > 0 && _textFadeOpacityIncrement > 0)
+            {
+                _textFadeOpacity -= _textFadeOpacityIncrement;
+            }
+
+            // Display title text (during title text display and fade-out)
+            if (_textFadeOpacity > 0)
+            {
+                using var titleTextFormat = new CanvasTextFormat
+                {
+                    FontFamily = FontFamily.Source,
+                    FontSize = (float)FontSize,
+                    FontStretch = FontStretch,
+                    FontStyle = FontStyle,
+                    FontWeight = FontWeight,
+                    HorizontalAlignment = CanvasHorizontalAlignment.Left
+                };
+
+                // Current source number out of total in folder
+                var (sourceIndex, parentTotal) = ViewModel.GetActiveMediaSourceIndexAndParentTotal();
+                using var sourceNumberTextLayout = new CanvasTextLayout(ds,
+                    $"{sourceIndex}/{parentTotal}", titleTextFormat,
+                    (float)SwapChainCanvas.ActualWidth, (float)SwapChainCanvas.ActualHeight);
+                using var sourceNumberTextGeometry = CanvasGeometry.CreateText(sourceNumberTextLayout);
+
+                var x = (float)((SwapChainCanvas.ActualWidth / 2.0) - (sourceNumberTextLayout.DrawBounds.Width / 2.0));
+                var y = 5.0f;
+
+                ds.FillGeometry(sourceNumberTextGeometry, x, y, Color.FromArgb((byte)(_textFadeOpacity * 255),
+                    TextOverlayColor.R, TextOverlayColor.G, TextOverlayColor.B));
+                ds.DrawGeometry(sourceNumberTextGeometry, x, y, Color.FromArgb((byte)(_textFadeOpacity * 255),
+                    TextOverlayOutlineColor.R, TextOverlayOutlineColor.G, TextOverlayOutlineColor.B),
+                    (float)TextOverlayOutlineThickness);
+
+                // Source title
+                using var titleTextLayout = new CanvasTextLayout(ds, Source.Name, titleTextFormat,
+                    (float)SwapChainCanvas.ActualWidth, (float)SwapChainCanvas.ActualHeight);
+                using var titleTextGeometry = CanvasGeometry.CreateText(titleTextLayout);
+
+                x = (float)((SwapChainCanvas.ActualWidth / 2.0) - (titleTextLayout.DrawBounds.Width / 2.0));
+                y = (float)(SwapChainCanvas.ActualHeight - titleTextLayout.DrawBounds.Height - 15);
+
+                ds.FillGeometry(titleTextGeometry, x, y, Color.FromArgb((byte)(_textFadeOpacity * 255),
+                    TextOverlayColor.R, TextOverlayColor.G, TextOverlayColor.B));
+                ds.DrawGeometry(titleTextGeometry, x, y, Color.FromArgb((byte)(_textFadeOpacity * 255),
+                    TextOverlayOutlineColor.R, TextOverlayOutlineColor.G, TextOverlayOutlineColor.B),
+                    (float)TextOverlayOutlineThickness);
             }
 
             SwapChainCanvas.SwapChain.Present();
-
-            // Local function to draw category adornment border
-            void DrawBorder(Color color, float thickness, float margin)
-            {
-                ds.DrawRectangle(new Rect(_destRect.Left + margin + (thickness / 2),
-                                          _destRect.Top + margin + (thickness / 2),
-                                          _destRect.Width - thickness - margin * 2,
-                                          _destRect.Height - thickness - margin * 2),
-                                 color, thickness);
-            }
         }
         #endregion
 
@@ -1479,6 +1532,8 @@ namespace MediaBase.Controls
             }
 
             // TODO: Add keyframes to timeline
+
+            _sourceChangedTimestamp = DateTime.Now;
         }
 
         private void ScaleFrameToFit(uint widthInPixels, uint heightInPixels)

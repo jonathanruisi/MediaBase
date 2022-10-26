@@ -105,7 +105,7 @@ namespace MediaBase
         {
             var services = new ServiceCollection();
             services.AddSingleton<IMessenger>(StrongReferenceMessenger.Default);
-            services.AddSingleton(new ProjectManager());
+            services.AddSingleton<ProjectManager>();
             return services.BuildServiceProvider();
         }
         #endregion

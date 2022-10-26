@@ -32,6 +32,9 @@ using Windows.ApplicationModel.Activation;
 using MediaBase.Controls;
 using Microsoft.UI.Input;
 using Windows.UI.Core;
+using Microsoft.UI.Text;
+using CommunityToolkit.WinUI.UI;
+using Microsoft.UI;
 
 namespace MediaBase.ViewModel
 {
@@ -471,35 +474,34 @@ namespace MediaBase.ViewModel
             }
         }
 
-        /// <summary>
-        /// Directly sets <see cref="ActiveMediaSource"/> to a specified file.
-        /// </summary>
-        /// <remarks>
-        /// The primary purpose of this method is to allow files to be
-        /// previewed in the editor without having to add them to the workspace.
-        /// The file will not be added to the workspace, and its <b><c>Id</c></b>
-        /// and <b><c>SourceId</c></b> will be set to <see cref="Guid.Empty"/>.
-        /// </remarks>
-        /// <param name="file">
-        /// The <see cref="StorageFile"/> to set as the active media source.
-        /// </param>
-        public void SetActiveMediaSourceFromNonProjectFile(StorageFile file)
+        public (int index, int total) GetActiveMediaSourceIndexAndParentTotal()
         {
-            if (file == null || !file.IsAvailable)
-                return;
+            if (IsActiveMediaSourceFromSystemBrowser)
+            {
+                return (ActiveSystemBrowserNode.Parent.Children.IndexOf(ActiveSystemBrowserNode),
+                        ActiveSystemBrowserNode.Parent.Children.Count);
+            }
 
-            if (file.ContentType.Contains("image"))
+            return (ActiveMediaSource.Parent.Children.IndexOf(ActiveMediaSource),
+                    ActiveMediaSource.Parent.Children.Count);
+        }
+
+        public static MultimediaSource CreateMediaSourceFromFile(StorageFile file)
+        {
+            if (file?.ContentType.Contains("image") == true)
             {
                 var imageFile = new ImageFile(file) { Id = Guid.Empty };
                 var imageSource = new ImageSource(imageFile);
-                ActiveMediaSource = imageSource;
+                return imageSource;
             }
-            else if (file.ContentType.Contains("video"))
+            else if (file?.ContentType.Contains("video") == true)
             {
                 var videoFile = new VideoFile(file) { Id = Guid.Empty };
                 var videoSource = new VideoSource(videoFile);
-                ActiveMediaSource = videoSource;
+                return videoSource;
             }
+
+            return null;
         }
         #endregion
 
@@ -646,7 +648,9 @@ namespace MediaBase.ViewModel
             {
                 var index = ActiveSystemBrowserNode.Parent.Children.IndexOf(ActiveSystemBrowserNode);
                 ActiveSystemBrowserNode = (GroupableTreeViewNode)ActiveSystemBrowserNode.Parent.Children[index - 1];
-                SetActiveMediaSourceFromNonProjectFile(ActiveSystemBrowserNode.Content as StorageFile);
+                var mediaSource = CreateMediaSourceFromFile(ActiveSystemBrowserNode.Content as StorageFile);
+                mediaSource.GroupFlags = (ActiveSystemBrowserNode as IGroupable).GroupFlags;
+                ActiveMediaSource = mediaSource;
             }
         }
 
@@ -661,7 +665,9 @@ namespace MediaBase.ViewModel
             {
                 var index = ActiveSystemBrowserNode.Parent.Children.IndexOf(ActiveSystemBrowserNode);
                 ActiveSystemBrowserNode = (GroupableTreeViewNode)ActiveSystemBrowserNode.Parent.Children[index + 1];
-                SetActiveMediaSourceFromNonProjectFile(ActiveSystemBrowserNode.Content as StorageFile);
+                var mediaSource = CreateMediaSourceFromFile(ActiveSystemBrowserNode.Content as StorageFile);
+                mediaSource.GroupFlags = (ActiveSystemBrowserNode as IGroupable).GroupFlags;
+                ActiveMediaSource = mediaSource;
             }
         }
 
@@ -1024,7 +1030,7 @@ namespace MediaBase.ViewModel
             if (ActiveMediaSource == ActiveWorkspaceBrowserNode)
             {
                 ActiveMediaSource.ToggleGroupFlag(group);
-                if (App.TestKeyStates(VirtualKey.Shift, CoreVirtualKeyStates.Down))
+                if (App.TestKeyStates(VirtualKey.Control, CoreVirtualKeyStates.Down))
                 {
                     for (var i = ActiveMediaSource.Parent.Children.IndexOf(ActiveMediaSource) - 1; i >= 0; i--)
                     {
@@ -1042,7 +1048,7 @@ namespace MediaBase.ViewModel
                 ActiveMediaSource.ToggleGroupFlag(group);   // For visual indication in the editor
                 var newFlagValue = activeSystemBrowserNode.CheckGroupFlag(group);
 
-                if (App.TestKeyStates(VirtualKey.Shift, CoreVirtualKeyStates.Down))
+                if (App.TestKeyStates(VirtualKey.Control, CoreVirtualKeyStates.Down))
                 {
                     for (var i = activeSystemBrowserNode.Parent.Children.IndexOf(activeSystemBrowserNode) - 1; i >= 0; i--)
                     {
@@ -1483,7 +1489,13 @@ namespace MediaBase.ViewModel
             ToolsToggleGroup1Command = new XamlUICommand
             {
                 Label = "Group 1",
-                Description = "Toggle item mark for Group 1"
+                Description = "Toggle item mark for Group 1",
+                IconSource = new FontIconSource
+                {
+                    Glyph = "❶",
+                    Foreground = new SolidColorBrush(Colors.Gold),
+                    FontFamily = new FontFamily("Segoe UI")
+                }
             };
 
             ToolsToggleGroup1Command.KeyboardAccelerators.Add(new KeyboardAccelerator
@@ -1503,7 +1515,13 @@ namespace MediaBase.ViewModel
             ToolsToggleGroup2Command = new XamlUICommand
             {
                 Label = "Group 2",
-                Description = "Toggle item mark for Group 2"
+                Description = "Toggle item mark for Group 2",
+                IconSource = new FontIconSource
+                {
+                    Glyph = "❷",
+                    Foreground = new SolidColorBrush(Colors.CornflowerBlue),
+                    FontFamily = new FontFamily("Segoe UI")
+                }
             };
 
             ToolsToggleGroup2Command.KeyboardAccelerators.Add(new KeyboardAccelerator
@@ -1523,7 +1541,13 @@ namespace MediaBase.ViewModel
             ToolsToggleGroup3Command = new XamlUICommand
             {
                 Label = "Group 3",
-                Description = "Toggle item mark for Group 3"
+                Description = "Toggle item mark for Group 3",
+                IconSource = new FontIconSource
+                {
+                    Glyph = "❸",
+                    Foreground = new SolidColorBrush(Colors.IndianRed),
+                    FontFamily = new FontFamily("Segoe UI")
+                }
             };
 
             ToolsToggleGroup3Command.KeyboardAccelerators.Add(new KeyboardAccelerator
@@ -1543,7 +1567,13 @@ namespace MediaBase.ViewModel
             ToolsToggleGroup4Command = new XamlUICommand
             {
                 Label = "Group 4",
-                Description = "Toggle item mark for Group 4"
+                Description = "Toggle item mark for Group 4",
+                IconSource = new FontIconSource
+                {
+                    Glyph = "❹",
+                    Foreground = new SolidColorBrush(Colors.ForestGreen),
+                    FontFamily = new FontFamily("Segoe UI")
+                }
             };
 
             ToolsToggleGroup4Command.KeyboardAccelerators.Add(new KeyboardAccelerator
