@@ -41,12 +41,12 @@
         <!-- Timeline -->
         <controls:MediaTimeline x:Name="Timeline" Grid.Row="1"
                                 MinHeight="75" Height="75"
-                                ZoomBarHeight="18" MarkerBarHeight="18"
                                 PositionElementRelativeHeight="1.0"
                                 SelectionInOutElementsRelativeHeight="1.0"
                                 PositionFollowMode="Advance"
                                 Visibility="Collapsed"
                                 FramesPerSecond="{x:Bind RefreshRate, Mode=OneWay}"
+                                SelectedMarker="{x:Bind ViewModel.SelectedMarker, Mode=TwoWay}"
                                 PositionChanged="Timeline_PositionChanged"
                                 SelectionChanged="Timeline_SelectionChanged"
                                 ZoomChanged="Timeline_ZoomChanged"
@@ -54,7 +54,7 @@
                                 TimelineValueDragCompleted="Timeline_DragCompleted"
                                 TrackCountChanged="Timeline_TrackCountChanged">
             <controls:MediaTimeline.MarkerStyleGroups>
-                <controls:MarkerStyleGroup x:Key="Default"
+                <controls:MarkerStyleGroup x:Key="MarkerDefault"
                                            Style="{StaticResource MarkerStyle_Default}"
                                            SelectedStyle="{StaticResource SelectedMarkerStyle_Default}"
                                            TimespanMarkerStyle="{StaticResource TimespanMarkerStyle_Default}"

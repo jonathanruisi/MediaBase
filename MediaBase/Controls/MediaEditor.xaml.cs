@@ -6,9 +6,11 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
 
 using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging.Messages;
 
 using JLR.Utility.WinUI;
 using JLR.Utility.WinUI.Controls;
+using JLR.Utility.WinUI.Dialogs;
 using JLR.Utility.WinUI.Messaging;
 
 using MediaBase.ViewModel;
@@ -712,7 +714,8 @@ namespace MediaBase.Controls
             else if (Source.ContentType == MediaContentType.Video && IsFastPositionUpdate)
                 CurrentPosition = _player.PlaybackSession.Position;
 
-            // TODO: Adjust frame position and scale using keyframes (if enabled)
+            // Make adjustments based on any applicable keyframes
+            ApplyKeyframeAdjustments();
             ApplyFrameScaleAndPosition();
 
             // Draw the image
@@ -791,7 +794,7 @@ namespace MediaBase.Controls
                     : CurrentPosition.TotalSeconds.ToTimecodeString(RefreshRate, TimeDisplayMode);
 
                 var timeRemainStr = TimeDisplayMode == TimeDisplayFormat.FrameNumber
-                    ? $"Frame: {Source.TotalFrames - CurrentFrame:#}"
+                    ? $"Remaining Frames: {Source.TotalFrames - CurrentFrame:#}"
                     : (decimal.ToDouble(Source.Duration) - CurrentPosition.TotalSeconds).ToTimecodeString(RefreshRate, TimeDisplayMode);
 
                 using var positionTextFormat = new CanvasTextFormat
@@ -811,14 +814,14 @@ namespace MediaBase.Controls
                     FontStretch = FontStretch,
                     FontStyle = FontStyle,
                     FontWeight = FontWeight,
-                    HorizontalAlignment = CanvasHorizontalAlignment.Left
+                    HorizontalAlignment = CanvasHorizontalAlignment.Right
                 };
 
                 using var positionTextLayout = new CanvasTextLayout(ds, timeStr, positionTextFormat,
                     (float)SwapChainCanvas.ActualWidth, (float)SwapChainCanvas.ActualHeight);
                 using var positionTextGeometry = CanvasGeometry.CreateText(positionTextLayout);
 
-                using var timeRemainTextLayout = new CanvasTextLayout(ds, timeStr, timeRemainTextFormat,
+                using var timeRemainTextLayout = new CanvasTextLayout(ds, timeRemainStr, timeRemainTextFormat,
                     (float)SwapChainCanvas.ActualWidth, (float)SwapChainCanvas.ActualHeight);
                 using var timeRemainTextGeometry = CanvasGeometry.CreateText(timeRemainTextLayout);
 
@@ -987,7 +990,32 @@ namespace MediaBase.Controls
                 }
             }
 
-            // TODO: If a marker is selected and the current selection changed, update the marker
+            // If a marker is selected and the current selection changed, update the marker
+            if ((e == ValueDragType.SelectionStart ||
+                 e == ValueDragType.SelectionEnd ||
+                 e == ValueDragType.Selection) &&
+                ViewModel.SelectedMarker != null &&
+                ViewModel.SelectedMarker.Duration > 0)
+            {
+                var index = Source.Markers.IndexOf(ViewModel.SelectedMarker);
+
+                if (index >= 0)
+                {
+                    ViewModel.SelectedMarker = null;
+
+                    var adjustedMarker = new Marker
+                    {
+                        Name = Source.Markers[index].Name,
+                        Position = Timeline.SelectionStart,
+                        Duration = Timeline.SelectionEnd - Timeline.SelectionStart,
+                        Group = Source.Markers[index].Group
+                    };
+
+                    Source.Markers.RemoveAt(index);
+                    Source.Markers.Insert(index, adjustedMarker);
+                    ViewModel.SelectedMarker = Source.Markers[index];
+                }
+            }
 
             Timeline.PositionFollowMode = _prevFollowMode;
             _scrubType = ValueDragType.None;
@@ -1163,14 +1191,14 @@ namespace MediaBase.Controls
 
         private void EditorPreviousMarkerCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            // TODO: EditorPreviousMarkerCommand_CanExecuteRequested
-            args.CanExecute = false;
+            args.CanExecute = IsPlaybackPossible &&
+                              Timeline.GetClosestMarkerBeforeCurrentPosition<Marker>(0.5M) != null;
         }
 
         private void EditorNextMarkerCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            // TODO: EditorNextMarkerCommand_CanExecuteRequested
-            args.CanExecute = false;
+            args.CanExecute = IsPlaybackPossible &&
+                              Timeline.GetClosestMarkerAfterCurrentPosition<Marker>(0.5M) != null;
         }
 
         private void EditorToggleActiveSelectionCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
@@ -1295,12 +1323,12 @@ namespace MediaBase.Controls
 
         private void EditorPreviousMarkerCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+            SeekToMarker(Timeline.GetClosestMarkerBeforeCurrentPosition<Marker>(0.5M));
         }
 
         private void EditorNextMarkerCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+            SeekToMarker(Timeline.GetClosestMarkerAfterCurrentPosition<Marker>(0.5M));
         }
 
         private void EditorToggleActiveSelectionCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
@@ -1314,14 +1342,69 @@ namespace MediaBase.Controls
             Timeline.SelectionEnd = Timeline.ZoomEnd - ((Timeline.ZoomEnd - Timeline.ZoomStart) / 3);
         }
 
-        private void EditorNewMarkerCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        private async void EditorNewMarkerCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+            // Record current position here so that the new marker reflects
+            // the time at which the command was invoked, as opposed to the time
+            // at which the user completes the process of adding the marker.
+            var pos = CurrentPosition;
+
+            var dlg = new TextPromptDialog
+            {
+                Title = "New Marker",
+                PromptText = "Enter a name for the marker",
+                PrimaryButtonText = "OK",
+                CloseButtonText = "Cancel",
+                XamlRoot = Content.XamlRoot
+            };
+
+            var result = await dlg.ShowAsync();
+            if (result != ContentDialogResult.Primary)
+                return;
+
+            var marker = new Marker
+            {
+                Name = dlg.Text,
+                Position = (decimal)pos.TotalSeconds,
+                Duration = 0,
+                Group = 0   // TODO: This should be selectable in the UI
+            };
+
+            var index = 0;
+            while (index < Source.Markers.Count && Source.Markers[index].Position <= marker.Position)
+                index++;
+
+            Source.Markers.Insert(index, marker);
         }
 
-        private void EditorNewClipCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        private async void EditorNewClipCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+            var dlg = new TextPromptDialog
+            {
+                Title = "New Clip",
+                PromptText = "Enter a name for the clip",
+                PrimaryButtonText = "OK",
+                CloseButtonText = "Cancel",
+                XamlRoot = Content.XamlRoot
+            };
+
+            var result = await dlg.ShowAsync();
+            if (result != ContentDialogResult.Primary)
+                return;
+
+            var marker = new Marker
+            {
+                Name = dlg.Text,
+                Position = Timeline.SelectionStart,
+                Duration = Timeline.SelectionEnd - Timeline.SelectionStart,
+                Group = 1   // TODO: This should be selectable in the UI
+            };
+
+            var index = 0;
+            while (index < Source.Markers.Count && Source.Markers[index].Position <= marker.Position)
+                index++;
+
+            Source.Markers.Insert(index, marker);
         }
 
         private void EditorNewKeyframeCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
@@ -1441,7 +1524,7 @@ namespace MediaBase.Controls
             TimeDisplayMode = TimeDisplayFormat.None;
 
             // De-select all markers
-            // TODO: ViewModel.SelectedMarker = null;
+            ViewModel.SelectedMarker = null;
 
             if (_player.Source is IDisposable oldSource && oldSource != null)
             {
@@ -1519,8 +1602,6 @@ namespace MediaBase.Controls
 
                 _player.Source = await video.BuildMediaSourceAsync();
 
-                // TODO: Add markers to timeline
-
                 // Add cuts to timeline as selections
                 if (!video.AreCutsApplied)
                 {
@@ -1531,9 +1612,30 @@ namespace MediaBase.Controls
                 }
             }
 
-            // TODO: Add keyframes to timeline
+            foreach (var marker in Source.Markers)
+            {
+                Timeline.Markers.Add(marker);
+            }
 
             _sourceChangedTimestamp = DateTime.Now;
+        }
+
+        private void SeekToMarker(ITimelineMarker marker)
+        {
+            if (marker == null)
+                return;
+
+            if (Source.ContentType == MediaContentType.Image)
+                CurrentFrame = decimal.ToInt32(decimal.Round(marker.Position * RefreshRate));
+            else if (Source.ContentType == MediaContentType.Video)
+                _player.PlaybackSession.Position =
+                    TimeSpan.FromSeconds(decimal.ToDouble(marker.Position));
+        }
+
+        private void ApplyKeyframeAdjustments()
+        {
+            var keyframes = Source.Markers.OfType<Keyframe>().OrderBy(x => x.Position);
+            var currentPos = (decimal)CurrentPosition.TotalSeconds;
         }
 
         private void ScaleFrameToFit(uint widthInPixels, uint heightInPixels)
@@ -1661,6 +1763,19 @@ namespace MediaBase.Controls
         {
             var messenger = App.Current.Services.GetService<IMessenger>();
 
+            // MultimediaSource.Markers collection changed
+            messenger.Register<CollectionChangedMessage<Marker>, string>(this, nameof(MultimediaSource.Markers), (r, m) =>
+            {
+                if (m.Sender != Source || m.PropertyName != nameof(MultimediaSource.Markers))
+                    return;
+
+                foreach (var marker in m.OldValue)
+                    ((MediaEditor)r).Timeline.Markers.Remove(marker);
+
+                foreach (var marker in m.NewValue)
+                    ((MediaEditor)r).Timeline.Markers.Add(marker);
+            });
+
             // VideoSource.Cuts collection changed
             messenger.Register<CollectionChangedMessage<(decimal start, decimal end)>, string>(this, nameof(VideoSource.Cuts), (r, m) =>
             {
@@ -1672,6 +1787,28 @@ namespace MediaBase.Controls
 
                 foreach (var (start, end) in m.NewValue)
                     ((MediaEditor)r).Timeline.AddSelection(start, end);
+            });
+
+            // ViewModel.SelectedMarker changed
+            messenger.Register<PropertyChangedMessage<Marker>>(this, (r, m) =>
+            {
+                if (m.Sender != ViewModel ||
+                    m.PropertyName != nameof(ViewModel.SelectedMarker) ||
+                    m.NewValue == null)
+                    return;
+
+                SeekToMarker(m.NewValue);
+
+                if (m.NewValue.Duration > 0)
+                {
+                    Timeline.SetSelectionFromMarker(m.NewValue);
+                    Timeline.IsSelectionEnabled = true;
+                    Timeline.IsSelectionAdjustmentEnabled = true;
+                }
+                else
+                {
+                    Timeline.IsSelectionEnabled = false;
+                }
             });
         }
 

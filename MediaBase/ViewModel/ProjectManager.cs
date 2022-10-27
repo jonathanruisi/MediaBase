@@ -53,6 +53,7 @@ namespace MediaBase.ViewModel
         private TreeViewNode _activeSystemBrowserNode;
         private ViewModelNode _activeWorkspaceBrowserNode;
         private MultimediaSource _activeMediaSource;
+        private Marker _selectedMarker;
         private string _description;
         private bool _hasUnsavedChanges;
         #endregion
@@ -138,6 +139,26 @@ namespace MediaBase.ViewModel
                 ToolsToggleGroup2Command.NotifyCanExecuteChanged();
                 ToolsToggleGroup3Command.NotifyCanExecuteChanged();
                 ToolsToggleGroup4Command.NotifyCanExecuteChanged();
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a reference to the currently selected marker.
+        /// </summary>
+        public Marker SelectedMarker
+        {
+            get => _selectedMarker;
+            set
+            {
+                if (_selectedMarker != null)
+                    _selectedMarker.IsSelected = false;
+
+                SetProperty(ref _selectedMarker, value, true);
+
+                if (_selectedMarker != null)
+                    _selectedMarker.IsSelected = true;
+
+                GeneralDeleteMarkerCommand.NotifyCanExecuteChanged();
             }
         }
 
@@ -237,6 +258,7 @@ namespace MediaBase.ViewModel
             _activeSystemBrowserNode = null;
             _activeWorkspaceBrowserNode = null;
             _activeMediaSource = null;
+            _selectedMarker = null;
             _hasUnsavedChanges = false;
 
             Projects = new ObservableCollection<Project>();
@@ -548,7 +570,7 @@ namespace MediaBase.ViewModel
 
         private void GeneralDeleteMarkerCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            // TODO: GeneralDeleteMarkerCommand_CanExecuteRequested
+            args.CanExecute = SelectedMarker != null;
         }
 
         private void ProjectNewCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
@@ -673,7 +695,8 @@ namespace MediaBase.ViewModel
 
         private void GeneralDeleteMarkerCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            // TODO: GeneralDeleteMarkerCommand_ExecuteRequested
+            if (ActiveMediaSource.Markers.Contains(SelectedMarker))
+                ActiveMediaSource.Markers.Remove(SelectedMarker);
         }
 
         private async void ProjectNewCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
