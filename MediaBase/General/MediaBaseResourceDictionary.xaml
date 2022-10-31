@@ -22,4 +22,7 @@
 
     <local:GroupMaskToBooleanConverter x:Key="GroupMaskToBooleanConverter"/>
     <local:GroupMaskToVisibilityConverter x:Key="GroupMaskToVisibilityConverter"/>
+
+    <toolkit_converters:DoubleToVisibilityConverter x:Key="NonzeroToVisibleConverter"
+                                                    GreaterThan="0"/>
 </ResourceDictionary>

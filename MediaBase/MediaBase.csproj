@@ -20,6 +20,8 @@
     <None Remove="Controls\MediaEditor.xaml" />
     <None Remove="Controls\SystemBrowser.xaml" />
     <None Remove="Controls\WorkspaceBrowser.xaml" />
+    <None Remove="Dialogs\GroupActionDialog.xaml" />
+    <None Remove="Dialogs\MarkerDialog.xaml" />
     <None Remove="General\MediaBaseResourceDictionary.xaml" />
     <None Remove="Window\LogWindow.xaml" />
   </ItemGroup>
@@ -58,13 +60,20 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Dialogs\" />
-  </ItemGroup>
-  <ItemGroup>
     <CustomAdditionalCompileInputs Remove="Controls\SystemBrowser.xaml" />
   </ItemGroup>
   <ItemGroup>
     <Resource Remove="Controls\SystemBrowser.xaml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Dialogs\MarkerDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Dialogs\GroupActionDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Page Update="Controls\MediaEditor.xaml">

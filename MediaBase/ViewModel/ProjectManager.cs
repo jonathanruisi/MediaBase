@@ -35,6 +35,7 @@ using Windows.UI.Core;
 using Microsoft.UI.Text;
 using CommunityToolkit.WinUI.UI;
 using Microsoft.UI;
+using MediaBase.Dialogs;
 
 namespace MediaBase.ViewModel
 {
@@ -50,7 +51,7 @@ namespace MediaBase.ViewModel
 
         #region Fields
         private StorageFile _file;
-        private TreeViewNode _activeSystemBrowserNode;
+        private GroupableTreeViewNode _activeSystemBrowserNode;
         private ViewModelNode _activeWorkspaceBrowserNode;
         private MultimediaSource _activeMediaSource;
         private Marker _selectedMarker;
@@ -72,7 +73,7 @@ namespace MediaBase.ViewModel
         /// <summary>
         /// Gets or sets a reference to the currently active system browser node.
         /// </summary>
-        public TreeViewNode ActiveSystemBrowserNode
+        public GroupableTreeViewNode ActiveSystemBrowserNode
         {
             get => _activeSystemBrowserNode;
             set
@@ -656,6 +657,11 @@ namespace MediaBase.ViewModel
         {
             args.CanExecute = ActiveMediaSource != null;
         }
+
+        private void ToolsBatchActionCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = ActiveSystemBrowserNode != null;
+        }
         #endregion
 
         #region Event Handlers (Commands - ExecuteRequested)
@@ -1081,6 +1087,122 @@ namespace MediaBase.ViewModel
                             break;
                     }
                 }
+            }
+        }
+
+        private async void ToolsBatchActionCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            ActiveMediaSource = null;
+
+            var dlg = new GroupActionDialog
+            {
+                Title = "Perform Batch Action",
+                PrimaryButtonText = "Execute",
+                CloseButtonText = "Cancel",
+                XamlRoot = App.Window.Content.XamlRoot
+            };
+
+            var result = await dlg.ShowAsync();
+            if (result != ContentDialogResult.Primary)
+                return;
+
+            var expandedParents = new HashSet<GroupableTreeViewNode>();
+            var itemsToProcess = new List<GroupableTreeViewNode>();
+
+            if (dlg.ActOnGroup1 && dlg.Group1Count > 0)
+            {
+                itemsToProcess.AddRange(ActiveSystemBrowserNode.DepthFirstEnumerable()
+                                                               .Where(x => x.CheckGroupFlag(1)));
+            }
+
+            if (dlg.ActOnGroup2 && dlg.Group2Count > 0)
+            {
+                itemsToProcess.AddRange(ActiveSystemBrowserNode.DepthFirstEnumerable()
+                                                               .Where(x => x.CheckGroupFlag(2)));
+            }
+
+            if (dlg.ActOnGroup3 && dlg.Group3Count > 0)
+            {
+                itemsToProcess.AddRange(ActiveSystemBrowserNode.DepthFirstEnumerable()
+                                                               .Where(x => x.CheckGroupFlag(3)));
+            }
+
+            if (dlg.ActOnGroup4 && dlg.Group4Count > 0)
+            {
+                itemsToProcess.AddRange(ActiveSystemBrowserNode.DepthFirstEnumerable()
+                                                               .Where(x => x.CheckGroupFlag(4)));
+            }
+
+            // Find and collapse all SystemBrowser nodes
+            foreach (var node in ActiveSystemBrowserNode.DepthFirstEnumerable()
+                                                        .Where(x => x.IsExpanded)
+                                                        .OrderByDescending(x => x.Depth))
+            {
+                node.IsExpanded = false;
+            }
+
+            // Process the batch action
+            var currentItem = 1;
+            switch (dlg.Action)
+            {
+                case BatchAction.Delete:
+                    foreach (var item in itemsToProcess)
+                    {
+                        var message1 = $"Moving {((StorageFile)item.Content).DisplayName} to the Recycle Bin (file {currentItem} of {itemsToProcess.Count})";
+                        Messenger.Send(new SetInfoBarMessage
+                        {
+                            Title = "Batch Operation Running",
+                            Message = message1.ToString(),
+                            Severity = InfoBarSeverity.Informational,
+                            IsCloseable = false
+                        });
+                        await ((StorageFile)item.Content).DeleteAsync();
+                        currentItem++;
+                    }
+                    break;
+
+                case BatchAction.Copy:
+                    foreach (var item in itemsToProcess)
+                    {
+                        var message2 = $"Copying {((StorageFile)item.Content).DisplayName} to {dlg.TargetFolder.Path} (file {currentItem} of {itemsToProcess.Count})";
+                        Messenger.Send(new SetInfoBarMessage
+                        {
+                            Title = "Batch Operation Running",
+                            Message = message2.ToString(),
+                            Severity = InfoBarSeverity.Informational,
+                            IsCloseable = false
+                        });
+                        await ((StorageFile)item.Content).CopyAsync(dlg.TargetFolder);
+                        currentItem++;
+                    }
+                    break;
+
+                case BatchAction.Move:
+                    foreach (var item in itemsToProcess)
+                    {
+                        var message3 = $"Moving {((StorageFile)item.Content).DisplayName} to {dlg.TargetFolder.Path} (file {currentItem} of {itemsToProcess.Count})";
+                        Messenger.Send(new SetInfoBarMessage
+                        {
+                            Title = "Batch Operation Running",
+                            Message = message3.ToString(),
+                            Severity = InfoBarSeverity.Informational,
+                            IsCloseable = false
+                        });
+                        await ((StorageFile)item.Content).MoveAsync(dlg.TargetFolder);
+                        currentItem++;
+                    }
+                    break;
+
+                default:
+                    var messageFail = $"Something went wrong during batch processing";
+                    Messenger.Send(new SetInfoBarMessage
+                    {
+                        Title = "Batch Operation Failed",
+                        Message = messageFail.ToString(),
+                        Severity = InfoBarSeverity.Error,
+                        IsCloseable = true
+                    });
+                    return;
             }
         }
         #endregion
@@ -2009,6 +2131,11 @@ namespace MediaBase.ViewModel
                 ToolsToggleGroupCommand_CanExecuteRequested;
             ToolsToggleGroup4Command.ExecuteRequested +=
                 ToolsToggleGroupCommand_ExecuteRequested;
+
+            ToolsBatchActionCommand.CanExecuteRequested +=
+                ToolsBatchActionCommand_CanExecuteRequested;
+            ToolsBatchActionCommand.ExecuteRequested +=
+                ToolsBatchActionCommand_ExecuteRequested;
         }
         #endregion
     }

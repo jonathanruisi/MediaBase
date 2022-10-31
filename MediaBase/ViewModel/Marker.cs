@@ -16,8 +16,7 @@ namespace MediaBase.ViewModel
         #region Fields
         private const string DefaultStyleString = "MarkerDefault";
         private decimal _position, _duration;
-        private int _group;
-        private string _style;
+        private string _group, _style;
         #endregion
 
         #region Properties
@@ -36,7 +35,7 @@ namespace MediaBase.ViewModel
         }
 
         [ViewModelProperty(nameof(Group), XmlNodeType.Attribute)]
-        public int Group
+        public string Group
         {
             get => _group;
             set => SetProperty(ref _group, value);
@@ -53,7 +52,7 @@ namespace MediaBase.ViewModel
         #region Constructors
         public Marker() : this(0) { }
 
-        public Marker(decimal position, decimal duration = 0, int group = 0, string style = DefaultStyleString)
+        public Marker(decimal position, decimal duration = 0, string group = null, string style = DefaultStyleString)
         {
             _position = position;
             _duration = duration;

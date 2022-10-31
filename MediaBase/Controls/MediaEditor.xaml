@@ -51,8 +51,7 @@
                                 SelectionChanged="Timeline_SelectionChanged"
                                 ZoomChanged="Timeline_ZoomChanged"
                                 TimelineValueDragStarted="Timeline_DragStarted"
-                                TimelineValueDragCompleted="Timeline_DragCompleted"
-                                TrackCountChanged="Timeline_TrackCountChanged">
+                                TimelineValueDragCompleted="Timeline_DragCompleted">
             <controls:MediaTimeline.MarkerStyleGroups>
                 <controls:MarkerStyleGroup x:Key="MarkerDefault"
                                            Style="{StaticResource MarkerStyle_Default}"
@@ -100,30 +99,26 @@
                                                        ConverterParameter=1,
                                                        Mode=OneWay}"/>
                 <AppBarSeparator/>
-                <AppBarToggleButton x:Name="PanAndZoomLockToggleButton" Width="40"
+                <AppBarToggleButton x:Name="LockScaleToFitToggleButton" Width="40"
                                     Command="{x:Bind ViewModel.EditorTogglePanAndZoomLockCommand}"
-                                    IsChecked="{x:Bind IsLockPanAndZoom, Mode=TwoWay}"
-                                    Visibility="{x:Bind IsPanAndZoomEnabled,
-                                                        Converter={StaticResource BoolToVisibilityConverter},
-                                                        ConverterParameter=False,
-                                                        Mode=OneWay}"/>
+                                    IsChecked="{x:Bind IsLockScaleToFit, Mode=TwoWay}"/>
                 <AppBarButton x:Name="CenterFrameButton" Width="40"
                               Command="{x:Bind ViewModel.EditorCenterFrameCommand}"
-                              Visibility="{x:Bind IsPanAndZoomEnabled,
+                              Visibility="{x:Bind IsLockScaleToFit,
                                                   Converter={StaticResource BoolToVisibilityConverter},
-                                                  ConverterParameter=False,
+                                                  ConverterParameter=True,
                                                   Mode=OneWay}"/>
                 <AppBarButton x:Name="FrameZoomFullButton" Width="40"
                               Command="{x:Bind ViewModel.EditorFrameZoomFullCommand}"
-                              Visibility="{x:Bind IsPanAndZoomEnabled,
+                              Visibility="{x:Bind IsLockScaleToFit,
                                                   Converter={StaticResource BoolToVisibilityConverter},
-                                                  ConverterParameter=False,
+                                                  ConverterParameter=True,
                                                   Mode=OneWay}"/>
                 <AppBarButton x:Name="FrameZoomFitButton" Width="40"
                               Command="{x:Bind ViewModel.EditorFrameZoomFitCommand}"
-                              Visibility="{x:Bind IsPanAndZoomEnabled,
+                              Visibility="{x:Bind IsLockScaleToFit,
                                                   Converter={StaticResource BoolToVisibilityConverter},
-                                                  ConverterParameter=False,
+                                                  ConverterParameter=True,
                                                   Mode=OneWay}"/>
                 <AppBarButton x:Name="TimelineZoomOutButton" Width="40"
                               Command="{x:Bind ViewModel.EditorTimelineZoomOutCommand}"/>

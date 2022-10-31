@@ -25,6 +25,7 @@ using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Storage;
 using Windows.System;
+using JLR.Utility.WinUI.ViewModel;
 
 namespace MediaBase.Controls
 {
@@ -113,7 +114,7 @@ namespace MediaBase.Controls
 
         private void SystemBrowserTreeView_ItemInvoked(TreeView sender, TreeViewItemInvokedEventArgs args)
         {
-            if (args.InvokedItem is TreeViewNode node)
+            if (args.InvokedItem is GroupableTreeViewNode node)
             {
                 ViewModel.ActiveSystemBrowserNode = node;
                 if (node.Content is StorageFolder)
@@ -135,7 +136,7 @@ namespace MediaBase.Controls
 
         private void SystemBrowserTreeView_RightTapped(object sender, RightTappedRoutedEventArgs e)
         {
-            if (e.OriginalSource is FrameworkElement element && element.DataContext is TreeViewNode node)
+            if (e.OriginalSource is FrameworkElement element && element.DataContext is GroupableTreeViewNode node)
                 ViewModel.ActiveSystemBrowserNode = node;
             else
                 ViewModel.ActiveSystemBrowserNode = null;
@@ -258,6 +259,28 @@ namespace MediaBase.Controls
                 throw new ArgumentOutOfRangeException(nameof(group));
 
             GroupFlags ^= (1 << group);
+        }
+
+        public IEnumerator<GroupableTreeViewNode> GetEnumerator()
+        {
+            return DepthFirstEnumerable().GetEnumerator();
+        }
+
+        public IEnumerable<GroupableTreeViewNode> DepthFirstEnumerable()
+        {
+            yield return this;
+
+            if (HasChildren)
+            {
+                foreach (var child in Children)
+                {
+                    var childEnumerator = (child as GroupableTreeViewNode).DepthFirstEnumerable().GetEnumerator();
+                    while (childEnumerator.MoveNext())
+                    {
+                        yield return childEnumerator.Current;
+                    }
+                }
+            }
         }
     }
 }

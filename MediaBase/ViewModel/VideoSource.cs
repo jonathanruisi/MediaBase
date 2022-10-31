@@ -22,7 +22,7 @@ namespace MediaBase.ViewModel
         #region Fields
         private bool _isReady, _areCutsApplied;
         private decimal _trimmedDuration;
-        private List<(decimal start, decimal end)> _playableRanges;
+        private readonly List<(decimal start, decimal end)> _playableRanges;
         #endregion
 
         #region Properties

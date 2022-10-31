@@ -131,6 +131,9 @@ namespace MediaBase.ViewModel
         /// </summary>
         [ViewModelCollection(nameof(Markers), "Marker")]
         public ObservableCollection<Marker> Markers { get; }
+
+        [ViewModelCollection(nameof(Tracks), "Track")]
+        public ObservableCollection<string> Tracks { get; }
         #endregion
 
         #region Constructors
@@ -161,6 +164,9 @@ namespace MediaBase.ViewModel
 
             Markers = new ObservableCollection<Marker>();
             Markers.CollectionChanged += Markers_CollectionChanged;
+
+            Tracks = new ObservableCollection<string>();
+            Tracks.CollectionChanged += Tracks_CollectionChanged;
         }
         #endregion
 
@@ -231,6 +237,30 @@ namespace MediaBase.ViewModel
 
             Messenger.Send(markerMessage, nameof(Markers));
             NotifySerializedCollectionChanged(nameof(Markers));
+        }
+
+        private void Tracks_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            var trackMessage = new CollectionChangedMessage<string>(this, nameof(Tracks), e.Action)
+            {
+                OldStartingIndex = e.OldStartingIndex,
+                NewStartingIndex = e.NewStartingIndex
+            };
+
+            if (e.OldItems != null)
+            {
+                foreach (string oldTrack in e.OldItems)
+                    trackMessage.OldValue.Add(oldTrack);
+            }
+
+            if (e.NewItems != null)
+            {
+                foreach (string newTrack in e.NewItems)
+                    trackMessage.NewValue.Add(newTrack);
+            }
+
+            Messenger.Send(trackMessage, nameof(Tracks));
+            NotifySerializedCollectionChanged(nameof(Tracks));
         }
         #endregion
 

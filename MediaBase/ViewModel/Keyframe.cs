@@ -14,14 +14,7 @@ namespace MediaBase.ViewModel
     public enum KeyframeAdjustment
     {
         #region Parameterless adjustments
-        /// <summary>
-        /// Media is scaled to fit in its current window.
-        /// <para>
-        /// Value type: N/A<br/>
-        /// Value range: N/A
-        /// </para>
-        /// </summary>
-        ScaleToFit,
+
         #endregion
 
         #region Adjustments with one or more parameter
@@ -29,7 +22,7 @@ namespace MediaBase.ViewModel
         /// Media is scaled relative to its original size.
         /// <para>
         /// Value type: Floating-point<br/>
-        /// Value range: -∞ to +∞
+        /// Value range: -∞ to +∞, or Fit
         /// </para>
         /// </summary>
         /// <remarks>
@@ -78,20 +71,46 @@ namespace MediaBase.ViewModel
         #endregion
     }
 
+    public enum PositionRelativeToKeyframe
+    {
+        None,
+        BeforeFirst,
+        AtOrAfterLast,
+        Between
+    }
+
     [ViewModelType(nameof(Keyframe))]
     public sealed class Keyframe : Marker
     {
         private const string DefaultStyleString = "KeyframeDefault";
 
         [ViewModelCollection(nameof(Adjustments), "Adjustment")]
-        private Dictionary<KeyframeAdjustment, string> Adjustments { get; }
+        public Dictionary<KeyframeAdjustment, string> Adjustments { get; }
 
         public Keyframe() : this(0) { }
 
-        public Keyframe(decimal position, int group = 0, string style = DefaultStyleString) : base(position, 0, group, style)
+        public Keyframe(decimal position, string group = null, string style = DefaultStyleString) : base(position, 0, group, style)
         {
             Name = nameof(Keyframe);
             Adjustments = new Dictionary<KeyframeAdjustment, string>();
+        }
+    }
+
+    public sealed class KeyframeStatus
+    {
+        public List<Keyframe> ScaleKeyframes { get; set; }
+        public List<Keyframe> OffsetXKeyframes { get; set; }
+        public List<Keyframe> OffsetYKeyframes { get; set; }
+        public List<Keyframe> OpacityKeyframes { get; set; }
+        public List<Keyframe> PlaybackRateKeyframes { get; set; }
+
+        public KeyframeStatus()
+        {
+            ScaleKeyframes = new List<Keyframe>();
+            OffsetXKeyframes = new List<Keyframe>();
+            OffsetYKeyframes = new List<Keyframe>();
+            OpacityKeyframes = new List<Keyframe>();
+            PlaybackRateKeyframes = new List<Keyframe>();
         }
     }
 }

@@ -1,0 +1,40 @@
+﻿<ContentDialog
+    x:Class="MediaBase.Dialogs.MarkerDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Loaded="ContentDialog_Loaded">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <TextBox Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,0,0,10"
+                 HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Header="Marker Name"
+                 Text="{x:Bind MarkerName, Mode=TwoWay}"/>
+        <TextBox Grid.Row="1" Grid.Column="0" Margin="0,0,10,10" IsReadOnly="True"
+                 HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Header="Position"
+                 Text="{x:Bind  GetPositionString(), Mode=OneWay}"/>
+        <TextBox Grid.Row="1" Grid.Column="1" Margin="0,0,0,10" IsReadOnly="True"
+                 HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Header="Duration"
+                 Text="{x:Bind  GetDurationString(), Mode=OneWay}"
+                 Visibility="{x:Bind Duration, Converter={StaticResource NonzeroToVisibleConverter}, Mode=OneWay}"/>
+        <ComboBox x:Name="GroupComboBox" Grid.Row="2" Grid.Column="0" Margin="0,0,10,0"
+                  HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Header="Track"
+                  ItemsSource="{x:Bind ViewModel.ActiveMediaSource.Tracks}"
+                  SelectedItem="{x:Bind Group, Mode=TwoWay}"/>
+        <ComboBox x:Name="StyleComboBox" Grid.Row="2" Grid.Column="1"
+                  HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Header="Style"
+                  ItemsSource="{x:Bind GetMarkerStyleGroups()}"
+                  SelectedItem="{x:Bind MarkerStyle, Mode=TwoWay}"/>
+    </Grid>
+</ContentDialog>
