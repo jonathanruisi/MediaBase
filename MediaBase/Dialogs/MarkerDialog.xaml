@@ -28,13 +28,13 @@
                  HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Header="Duration"
                  Text="{x:Bind  GetDurationString(), Mode=OneWay}"
                  Visibility="{x:Bind Duration, Converter={StaticResource NonzeroToVisibleConverter}, Mode=OneWay}"/>
-        <ComboBox x:Name="GroupComboBox" Grid.Row="2" Grid.Column="0" Margin="0,0,10,0"
+        <ListView x:Name="TrackList" Grid.Row="2" Grid.Column="0" Margin="0,0,10,0" Width="100" Height="150"
                   HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Header="Track"
-                  ItemsSource="{x:Bind ViewModel.ActiveMediaSource.Tracks}"
-                  SelectedItem="{x:Bind Group, Mode=TwoWay}"/>
-        <ComboBox x:Name="StyleComboBox" Grid.Row="2" Grid.Column="1"
+                  ItemsSource="{x:Bind ViewModel.ActiveMediaSource.Tracks, Mode=OneWay}"
+                  SelectedItem="{x:Bind Track, Mode=TwoWay}"/>
+        <ListView x:Name="StyleList" Grid.Row="2" Grid.Column="1" Width="100" Height="150"
                   HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Header="Style"
-                  ItemsSource="{x:Bind GetMarkerStyleGroups()}"
+                  ItemsSource="{x:Bind MarkerStyles, Mode=OneWay}"
                   SelectedItem="{x:Bind MarkerStyle, Mode=TwoWay}"/>
     </Grid>
 </ContentDialog>

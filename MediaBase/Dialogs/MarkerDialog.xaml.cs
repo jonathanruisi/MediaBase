@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -30,6 +31,7 @@ namespace MediaBase.Dialogs
     {
         #region Properties
         public ProjectManager ViewModel => (ProjectManager)DataContext;
+        public ObservableCollection<string> MarkerStyles { get; }
 
         public string MarkerName
         {
@@ -67,13 +69,13 @@ namespace MediaBase.Dialogs
                                         typeof(MarkerDialog),
                                         new PropertyMetadata(0));
 
-        public string Group
+        public string Track
         {
-            get => (string)GetValue(GroupProperty);
-            set => SetValue(GroupProperty, value);
+            get => (string)GetValue(TrackProperty);
+            set => SetValue(TrackProperty, value);
         }
 
-        public static readonly DependencyProperty GroupProperty =
+        public static readonly DependencyProperty TrackProperty =
             DependencyProperty.Register("Group",
                                         typeof(string),
                                         typeof(MarkerDialog),
@@ -121,13 +123,18 @@ namespace MediaBase.Dialogs
         {
             InitializeComponent();
             DataContext = App.Current.Services.GetService<ProjectManager>();
+
+            MarkerStyles = new ObservableCollection<string>();
         }
         #endregion
 
-        #region Event Handlers (ContentDialog)
+        #region Event Handlers
         private void ContentDialog_Loaded(object sender, RoutedEventArgs e)
         {
-            
+            TrackList.SelectedIndex = Duration == 0 ? -1 : 0;
+
+            if (StyleList.Items.Count > 0)
+                StyleList.SelectedIndex = 0;
         }
         #endregion
 
@@ -140,13 +147,6 @@ namespace MediaBase.Dialogs
         private string GetDurationString()
         {
             return Duration.ToTimecodeString(FramesPerSecond, TimeDisplayMode);
-        }
-
-        private IReadOnlyCollection<string> GetMarkerStyleGroups()
-        {
-            var messenger = App.Current.Services.GetService<IMessenger>();
-            var request = messenger.Send<CollectionRequestMessage<string>, string>(nameof(MediaTimeline.MarkerStyleGroups));
-            return request.Responses;
         }
         #endregion
     }

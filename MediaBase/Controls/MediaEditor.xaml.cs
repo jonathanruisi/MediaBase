@@ -945,7 +945,7 @@ namespace MediaBase.Controls
 
         private void Timeline_SelectionChanged(object sender, (decimal start, decimal end, bool isEnabled) e)
         {
-            ViewModel.EditorNewClipCommand.NotifyCanExecuteChanged();
+            ViewModel.EditorNewMarkerCommand.NotifyCanExecuteChanged();
             ViewModel.EditorCutSelectedCommand.NotifyCanExecuteChanged();
         }
 
@@ -1032,8 +1032,16 @@ namespace MediaBase.Controls
                         Group = Source.Markers[index].Group
                     };
 
+                    // Track order will change if the last marker on a track is removed
+                    // and another modified track put back in its place if
+                    // AutoRemoveEmptyTracks = true.
+                    var prevAutoRemoveSetting = Timeline.AutoRemoveEmptyTracks;
+                    Timeline.AutoRemoveEmptyTracks = false;
+
                     Source.Markers.RemoveAt(index);
                     Source.Markers.Insert(index, adjustedMarker);
+
+                    Timeline.AutoRemoveEmptyTracks = prevAutoRemoveSetting;
                     ViewModel.SelectedMarker = Source.Markers[index];
                 }
             }
@@ -1220,17 +1228,14 @@ namespace MediaBase.Controls
             args.CanExecute = IsPlaybackPossible && Source.ContentType == MediaContentType.Video;
         }
 
-        private void EditorNewMarkerCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        private void EditorAddTrackCommmand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
             args.CanExecute = IsPlaybackPossible && Source.ContentType == MediaContentType.Video;
         }
 
-        private void EditorNewClipCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        private void EditorNewMarkerCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = IsPlaybackPossible &&
-                              Source.ContentType == MediaContentType.Video &&
-                              Timeline.IsSelectionEnabled &&
-                              Timeline.SelectionStart != Timeline.SelectionEnd;
+            args.CanExecute = IsPlaybackPossible && Source.ContentType == MediaContentType.Video;
         }
 
         private void EditorNewKeyframeCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
@@ -1356,12 +1361,35 @@ namespace MediaBase.Controls
             Timeline.SelectionEnd = Timeline.ZoomEnd - ((Timeline.ZoomEnd - Timeline.ZoomStart) / 3);
         }
 
+        private async void EditorAddTrackCommmand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            var dlg = new TextPromptDialog
+            {
+                Title = "New Track",
+                PromptText = "Enter a name for the track",
+                PrimaryButtonText = "OK",
+                CloseButtonText = "Cancel",
+                XamlRoot = Content.XamlRoot
+            };
+
+            var result = await dlg.ShowAsync();
+            if (result != ContentDialogResult.Primary)
+                return;
+
+            if (Source.Tracks.Contains(dlg.Text))
+                App.ShowMessageBoxAsync("Track already exists in this media", "Duplicate Track");
+            else
+                Source.Tracks.Add(dlg.Text);
+        }
+
         private async void EditorNewMarkerCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
             // Record current position here so that the new marker reflects
             // the time at which the command was invoked, as opposed to the time
             // at which the user completes the process of adding the marker.
             var pos = CurrentPosition;
+            var isClip = Timeline.IsSelectionEnabled &&
+                         Timeline.SelectionStart != Timeline.SelectionEnd;
 
             var dlg = new MarkerDialog
             {
@@ -1370,10 +1398,16 @@ namespace MediaBase.Controls
                 CloseButtonText = "Cancel",
                 IsSecondaryButtonEnabled = false,
                 TimeDisplayMode = TimeDisplayFormat.TimecodeWithFrame,
-                Position = (decimal)pos.TotalSeconds,
-                Duration = 0,
+                Position = isClip ? Timeline.SelectionStart : (decimal)pos.TotalSeconds,
+                Duration = isClip ? Timeline.SelectionEnd - Timeline.SelectionStart : 0,
+                FramesPerSecond = RefreshRate,
                 XamlRoot = XamlRoot
             };
+
+            foreach (var style in Timeline.MarkerStyleGroups)
+            {
+                dlg.MarkerStyles.Add(style.Key);
+            }
 
             var result = await dlg.ShowAsync();
             if (result != ContentDialogResult.Primary)
@@ -1384,39 +1418,16 @@ namespace MediaBase.Controls
                 Name = dlg.MarkerName,
                 Position = dlg.Position,
                 Duration = dlg.Duration,
-                Group = dlg.Group,
+                Group = dlg.Track,
                 Style = dlg.MarkerStyle
             };
 
-            var index = 0;
-            while (index < Source.Markers.Count && Source.Markers[index].Position <= marker.Position)
-                index++;
-
-            Source.Markers.Insert(index, marker);
-        }
-
-        private async void EditorNewClipCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
-        {
-            var dlg = new TextPromptDialog
+            if (marker.Duration > 0 && string.IsNullOrEmpty(marker.Group))
             {
-                Title = "New Clip",
-                PromptText = "Enter a name for the clip",
-                PrimaryButtonText = "OK",
-                CloseButtonText = "Cancel",
-                XamlRoot = Content.XamlRoot
-            };
-
-            var result = await dlg.ShowAsync();
-            if (result != ContentDialogResult.Primary)
-                return;
-
-            var marker = new Marker
-            {
-                Name = dlg.Text,
-                Position = Timeline.SelectionStart,
-                Duration = Timeline.SelectionEnd - Timeline.SelectionStart,
-                Group = null   // TODO: This should be selectable in the UI
-            };
+                var newTrack = $"Track {Source.Tracks.Count + 1}";
+                Source.Tracks.Add(newTrack);
+                marker.Group = newTrack;
+            }
 
             var index = 0;
             while (index < Source.Markers.Count && Source.Markers[index].Position <= marker.Position)
@@ -2013,6 +2024,19 @@ namespace MediaBase.Controls
                     ((MediaEditor)r).Timeline.Markers.Add(marker);
             });
 
+            // MultimediaSource.Tracks collection changed
+            messenger.Register<CollectionChangedMessage<string>, string>(this, nameof(MultimediaSource.Tracks), (r, m) =>
+            {
+                if (m.Sender != Source || m.PropertyName != nameof(MultimediaSource.Tracks))
+                    return;
+
+                foreach (var track in m.OldValue)
+                    ((MediaEditor)r).Timeline.Tracks.Remove(track);
+
+                foreach (var track in m.NewValue)
+                    ((MediaEditor)r).Timeline.Tracks.Add(track);
+            });
+
             // VideoSource.Cuts collection changed
             messenger.Register<CollectionChangedMessage<(decimal start, decimal end)>, string>(this, nameof(VideoSource.Cuts), (r, m) =>
             {
@@ -2051,9 +2075,9 @@ namespace MediaBase.Controls
             // MediaTimeline.MarkerStyleGroups request
             messenger.Register<CollectionRequestMessage<string>, string>(this, nameof(MediaTimeline.MarkerStyleGroups), (r, m) =>
             {
-                foreach (var node in ((MediaEditor)r).Timeline.MarkerStyleGroups)
+                foreach (var group in ((MediaEditor)r).Timeline.MarkerStyleGroups)
                 {
-                    m.Reply(node.Key);
+                    m.Reply(group.Key);
                 }
             });
         }
@@ -2085,9 +2109,9 @@ namespace MediaBase.Controls
             TrimAndEditButtonSeparator.Visibility = vis;
             ActiveSelectionToggleButton.Visibility = Source.ContentType == MediaContentType.Image
                 ? Visibility.Collapsed : vis;
-            NewMarkerButton.Visibility = Source.ContentType == MediaContentType.Image
+            NewTrackButton.Visibility = Source.ContentType == MediaContentType.Image
                 ? Visibility.Collapsed : vis;
-            NewClipButton.Visibility = Source.ContentType == MediaContentType.Image
+            NewMarkerButton.Visibility = Source.ContentType == MediaContentType.Image
                 ? Visibility.Collapsed : vis;
             NewKeyframeButton.Visibility = vis;
             CutSelectedButton.Visibility = Source.ContentType == MediaContentType.Image
@@ -2115,8 +2139,8 @@ namespace MediaBase.Controls
             ViewModel.EditorPreviousMarkerCommand.NotifyCanExecuteChanged();
             ViewModel.EditorNextMarkerCommand.NotifyCanExecuteChanged();
             ViewModel.EditorToggleActiveSelectionCommand.NotifyCanExecuteChanged();
+            ViewModel.EditorAddTrackCommmand.NotifyCanExecuteChanged();
             ViewModel.EditorNewMarkerCommand.NotifyCanExecuteChanged();
-            ViewModel.EditorNewClipCommand.NotifyCanExecuteChanged();
             ViewModel.EditorNewKeyframeCommand.NotifyCanExecuteChanged();
             ViewModel.EditorCutSelectedCommand.NotifyCanExecuteChanged();
             ViewModel.EditorPlaybackRateDecreaseCommand.NotifyCanExecuteChanged();
@@ -2170,15 +2194,15 @@ namespace MediaBase.Controls
             ViewModel.EditorToggleActiveSelectionCommand.ExecuteRequested +=
                 EditorToggleActiveSelectionCommand_ExecuteRequested;
 
+            ViewModel.EditorAddTrackCommmand.CanExecuteRequested +=
+                EditorAddTrackCommmand_CanExecuteRequested;
+            ViewModel.EditorAddTrackCommmand.ExecuteRequested +=
+                EditorAddTrackCommmand_ExecuteRequested;
+
             ViewModel.EditorNewMarkerCommand.CanExecuteRequested +=
                 EditorNewMarkerCommand_CanExecuteRequested;
             ViewModel.EditorNewMarkerCommand.ExecuteRequested +=
                 EditorNewMarkerCommand_ExecuteRequested;
-
-            ViewModel.EditorNewClipCommand.CanExecuteRequested +=
-                EditorNewClipCommand_CanExecuteRequested;
-            ViewModel.EditorNewClipCommand.ExecuteRequested +=
-                EditorNewClipCommand_ExecuteRequested;
 
             ViewModel.EditorNewKeyframeCommand.CanExecuteRequested +=
                 EditorNewKeyframeCommand_CanExecuteRequested;

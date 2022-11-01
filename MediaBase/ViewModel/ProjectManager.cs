@@ -236,8 +236,8 @@ namespace MediaBase.ViewModel
         public XamlUICommand EditorPreviousMarkerCommand { get; private set; }
         public XamlUICommand EditorNextMarkerCommand { get; private set; }
         public XamlUICommand EditorToggleActiveSelectionCommand { get; private set; }
+        public XamlUICommand EditorAddTrackCommmand { get; private set; }
         public XamlUICommand EditorNewMarkerCommand { get; private set; }
-        public XamlUICommand EditorNewClipCommand { get; private set; }
         public XamlUICommand EditorNewKeyframeCommand { get; private set; }
         public XamlUICommand EditorCutSelectedCommand { get; private set; }
         public XamlUICommand EditorPlaybackRateDecreaseCommand { get; private set; }
@@ -1842,6 +1842,14 @@ namespace MediaBase.ViewModel
                 IsEnabled = true
             });
 
+            // Editor: New Track
+            EditorAddTrackCommmand = new XamlUICommand
+            {
+                Label = "Add Track",
+                Description = "Add track to current media",
+                IconSource = new SymbolIconSource { Symbol = (Symbol)0xE92F }
+            };
+
             // Editor: New Marker
             EditorNewMarkerCommand = new XamlUICommand
             {
@@ -1854,21 +1862,6 @@ namespace MediaBase.ViewModel
             {
                 Key = VirtualKey.M,
                 Modifiers = VirtualKeyModifiers.Control,
-                IsEnabled = true
-            });
-
-            // Editor: New Clip
-            EditorNewClipCommand = new XamlUICommand
-            {
-                Label = "New Clip",
-                Description = "Create clip from current selection",
-                IconSource = new SymbolIconSource { Symbol = (Symbol)0xF406 }
-            };
-
-            EditorNewClipCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
-            {
-                Key = VirtualKey.M,
-                Modifiers = VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift,
                 IsEnabled = true
             });
 

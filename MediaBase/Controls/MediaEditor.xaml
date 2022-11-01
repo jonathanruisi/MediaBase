@@ -39,11 +39,12 @@
         </Border>
         
         <!-- Timeline -->
-        <controls:MediaTimeline x:Name="Timeline" Grid.Row="1"
-                                MinHeight="75" Height="75"
+        <controls:MediaTimeline x:Name="Timeline" Grid.Row="1" MinHeight="75"
                                 PositionElementRelativeHeight="1.0"
                                 SelectionInOutElementsRelativeHeight="1.0"
+                                ZoomBarHeight="15"
                                 PositionFollowMode="Advance"
+                                AutoRemoveEmptyTracks="True"
                                 Visibility="Collapsed"
                                 FramesPerSecond="{x:Bind RefreshRate, Mode=OneWay}"
                                 SelectedMarker="{x:Bind ViewModel.SelectedMarker, Mode=TwoWay}"
@@ -147,10 +148,10 @@
                               Command="{x:Bind ViewModel.EditorCutSelectedCommand}"/>
                 <AppBarButton x:Name="NewKeyframeButton" Width="40"
                               Command="{x:Bind ViewModel.EditorNewKeyframeCommand}"/>
-                <AppBarButton x:Name="NewClipButton" Width="40"
-                              Command="{x:Bind ViewModel.EditorNewClipCommand}"/>
                 <AppBarButton x:Name="NewMarkerButton" Width="40"
                               Command="{x:Bind ViewModel.EditorNewMarkerCommand}"/>
+                <AppBarButton x:Name="NewTrackButton" Width="40"
+                              Command="{x:Bind ViewModel.EditorAddTrackCommmand}"/>
                 <AppBarToggleButton x:Name="ActiveSelectionToggleButton" Width="40"
                                     Command="{x:Bind ViewModel.EditorToggleActiveSelectionCommand}"
                                     IsChecked="{x:Bind Timeline.IsSelectionEnabled, Mode=TwoWay}"/>
