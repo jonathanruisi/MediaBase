@@ -8,7 +8,8 @@
     xmlns:mediabase="using:MediaBase"
     xmlns:viewmodel="using:MediaBase.ViewModel"
     xmlns:interactivity="using:Microsoft.Xaml.Interactivity"
-    xmlns:interactions_core="using:Microsoft.Xaml.Interactions.Core">
+    xmlns:interactions_core="using:Microsoft.Xaml.Interactions.Core"
+    Loaded="UserControl_Loaded">
 
     <UserControl.Resources>
         <!-- Context Flyouts -->

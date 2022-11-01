@@ -793,6 +793,8 @@ namespace MediaBase.ViewModel
             if (ActiveMediaSource != null && ActiveMediaSource.Root == project)
                 ActiveMediaSource = null;
 
+            Messenger.Send<GeneralActionMessage, string>("CollapseAllTreeViewNodes");
+
             project.IsActive = false;
             CloseProject(project);
             Projects.Remove(project);
@@ -855,6 +857,8 @@ namespace MediaBase.ViewModel
 
             if (ActiveMediaSource != null && ActiveMediaSource.Root != null)
                 ActiveMediaSource = null;
+
+            Messenger.Send<GeneralActionMessage, string>("CollapseAllTreeViewNodes");
 
             IsActive = false;
             IsActive = true;
@@ -1015,7 +1019,7 @@ namespace MediaBase.ViewModel
 
         private void WorkspaceRemoveItemCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            ActiveWorkspaceBrowserNode.Root.Remove(ActiveWorkspaceBrowserNode);
+            ActiveWorkspaceBrowserNode.Parent.Remove(ActiveWorkspaceBrowserNode);
             ActiveWorkspaceBrowserNode = null;
         }
 
@@ -1337,8 +1341,9 @@ namespace MediaBase.ViewModel
         #region Private Properties
         private bool IsActiveMediaSourceFromSystemBrowser =>
             ActiveMediaSource.Parent == null &&
-            ActiveMediaSource.Source is MediaFile file &&
-            file.File == (StorageFile)ActiveSystemBrowserNode.Content;
+            ActiveMediaSource.Source is MediaFile sourceFile &&
+            ActiveSystemBrowserNode.Content is StorageFile browserFile &&
+            sourceFile.File == browserFile;
         #endregion
 
         #region Private Methods

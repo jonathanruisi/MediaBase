@@ -79,6 +79,11 @@ namespace MediaBase.Controls
                 ((SystemBrowser)r).SystemBrowserTreeView.SelectedNodes.Clear();
             });
 
+            messenger.Register<GeneralActionMessage, string>(this, "CollapseAllTreeViewNodes", (r, m) =>
+            {
+                ((SystemBrowser)r).SystemBrowserTreeView.CollapseAllNodes();
+            });
+
             // Project Manager's ActiveSystemBrowserNode property changed
             messenger.Register<PropertyChangedMessage<TreeViewNode>>(this, (r, m) =>
             {

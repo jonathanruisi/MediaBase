@@ -4,6 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 
+using CommunityToolkit.Mvvm.Messaging;
+
+using JLR.Utility.WinUI;
 using JLR.Utility.WinUI.ViewModel;
 
 using MediaBase.ViewModel;
@@ -37,6 +40,18 @@ namespace MediaBase.Controls
             DataContext = App.Current.Services.GetService<ProjectManager>();
 
             InitializeCommands();
+        }
+        #endregion
+
+        #region Event Handlers (UserControl)
+        private void UserControl_Loaded(object sender, RoutedEventArgs e)
+        {
+            var messenger = App.Current.Services.GetService<IMessenger>();
+
+            messenger.Register<GeneralActionMessage, string>(this, "CollapseAllTreeViewNodes", (r, m) =>
+            {
+                ((WorkspaceBrowser)r).WorkspaceBrowserTreeView.CollapseAllNodes();
+            });
         }
         #endregion
 

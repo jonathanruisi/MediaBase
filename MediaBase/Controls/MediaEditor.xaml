@@ -5,12 +5,127 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    xmlns:local="using:MediaBase.Controls"
+    xmlns:sys="using:System"
     xmlns:controls="using:JLR.Utility.WinUI.Controls"
     xmlns:win2d="using:Microsoft.Graphics.Canvas.UI.Xaml"
+    xmlns:geometry="using:Microsoft.Graphics.Canvas.Geometry"
     Loaded="UserControl_Loaded"
     Unloaded="UserControl_Unloaded">
 
+    <UserControl.Resources>
+        <!-- Keyframe -->
+        <controls:MarkerStyle x:Key="MarkerStyle_KeyframeDefault"
+                                 StrokeThickness="0"
+                                 TailStrokeThickness="1.0">
+            <controls:MarkerStyle.Geometry>
+                <PathGeometry>
+                    <PathGeometry.Figures>
+                        <PathFigure IsClosed="True" IsFilled="True" StartPoint="5,0">
+                            <PathFigure.Segments>
+                                <LineSegment Point="10,7.5"/>
+                                <LineSegment Point="5,15"/>
+                                <LineSegment Point="0,7.5"/>
+                            </PathFigure.Segments>
+                        </PathFigure>
+                    </PathGeometry.Figures>
+                </PathGeometry>
+            </controls:MarkerStyle.Geometry>
+
+            <controls:MarkerStyle.Fill>
+                <SolidColorBrush Color="RoyalBlue"/>
+            </controls:MarkerStyle.Fill>
+
+            <controls:MarkerStyle.TailStroke>
+                <SolidColorBrush Color="RoyalBlue"/>
+            </controls:MarkerStyle.TailStroke>
+
+            <controls:MarkerStyle.TailStrokeStyle>
+                <geometry:CanvasStrokeStyle DashStyle="Dash"/>
+            </controls:MarkerStyle.TailStrokeStyle>
+        </controls:MarkerStyle>
+
+        <!-- Marker (Selected) -->
+        <controls:MarkerStyle x:Key="SelectedMarkerStyle_KeyframeDefault"
+                                 StrokeThickness="1.0"
+                                 TailStrokeThickness="2.0">
+            <controls:MarkerStyle.Fill>
+                <SolidColorBrush Color="White"/>
+            </controls:MarkerStyle.Fill>
+
+            <controls:MarkerStyle.Stroke>
+                <SolidColorBrush Color="RoyalBlue"/>
+            </controls:MarkerStyle.Stroke>
+
+            <controls:MarkerStyle.TailStroke>
+                <SolidColorBrush Color="White"/>
+            </controls:MarkerStyle.TailStroke>
+
+            <controls:MarkerStyle.TailStrokeStyle>
+                <geometry:CanvasStrokeStyle DashStyle="Dash"/>
+            </controls:MarkerStyle.TailStrokeStyle>
+        </controls:MarkerStyle>
+
+        <!-- Track Span -->
+        <controls:TimespanMarkerStyle x:Key="TimespanMarkerStyle_KeyframeDefault"
+                                         SpanStrokeThickness="0"
+                                         SpanStartTailStrokeThickness="1.0"
+                                         SpanEndTailStrokeThickness="0">
+            <controls:TimespanMarkerStyle.SpanFill>
+                <SolidColorBrush Color="RoyalBlue"/>
+            </controls:TimespanMarkerStyle.SpanFill>
+
+            <controls:TimespanMarkerStyle.SpanLabel>
+                <SolidColorBrush Color="White"/>
+            </controls:TimespanMarkerStyle.SpanLabel>
+
+            <controls:TimespanMarkerStyle.SpanStartTailStroke>
+                <SolidColorBrush Color="RoyalBlue"/>
+            </controls:TimespanMarkerStyle.SpanStartTailStroke>
+
+            <controls:TimespanMarkerStyle.SpanStartTailStrokeStyle>
+                <geometry:CanvasStrokeStyle DashStyle="Dash"/>
+            </controls:TimespanMarkerStyle.SpanStartTailStrokeStyle>
+        </controls:TimespanMarkerStyle>
+
+        <!-- Track Span (Selected) -->
+        <controls:TimespanMarkerStyle x:Key="SelectedTimespanMarkerStyle_KeyframeDefault"
+                                         SpanStrokeThickness="2.0"
+                                         SpanStartTailStrokeThickness="2.0"
+                                         SpanEndTailStrokeThickness="2.0">
+            <controls:TimespanMarkerStyle.SpanFill>
+                <SolidColorBrush Color="White"/>
+            </controls:TimespanMarkerStyle.SpanFill>
+
+            <controls:TimespanMarkerStyle.SpanLabel>
+                <SolidColorBrush Color="RoyalBlue"/>
+            </controls:TimespanMarkerStyle.SpanLabel>
+
+            <controls:TimespanMarkerStyle.SpanStroke>
+                <SolidColorBrush Color="RoyalBlue"/>
+            </controls:TimespanMarkerStyle.SpanStroke>
+
+            <controls:TimespanMarkerStyle.SpanStartTailStroke>
+                <SolidColorBrush Color="White"/>
+            </controls:TimespanMarkerStyle.SpanStartTailStroke>
+
+            <controls:TimespanMarkerStyle.SpanEndTailStroke>
+                <SolidColorBrush Color="White"/>
+            </controls:TimespanMarkerStyle.SpanEndTailStroke>
+
+            <controls:TimespanMarkerStyle.SpanStrokeStyle>
+                <geometry:CanvasStrokeStyle DashStyle="Solid"/>
+            </controls:TimespanMarkerStyle.SpanStrokeStyle>
+
+            <controls:TimespanMarkerStyle.SpanStartTailStrokeStyle>
+                <geometry:CanvasStrokeStyle DashStyle="Dash"/>
+            </controls:TimespanMarkerStyle.SpanStartTailStrokeStyle>
+
+            <controls:TimespanMarkerStyle.SpanEndTailStrokeStyle>
+                <geometry:CanvasStrokeStyle DashStyle="Dash"/>
+            </controls:TimespanMarkerStyle.SpanEndTailStrokeStyle>
+        </controls:TimespanMarkerStyle>
+    </UserControl.Resources>
+    
     <Grid Background="{x:Bind Background}"
           BorderBrush="{x:Bind BorderBrush}"
           BorderThickness="{x:Bind BorderThickness}"
@@ -59,6 +174,11 @@
                                            SelectedStyle="{StaticResource SelectedMarkerStyle_Default}"
                                            TimespanMarkerStyle="{StaticResource TimespanMarkerStyle_Default}"
                                            SelectedTimespanMarkerStyle="{StaticResource SelectedTimespanMarkerStyle_Default}"/>
+                <controls:MarkerStyleGroup x:Key="KeyframeDefault"
+                                           Style="{StaticResource MarkerStyle_KeyframeDefault}"
+                                           SelectedStyle="{StaticResource SelectedMarkerStyle_KeyframeDefault}"
+                                           TimespanMarkerStyle="{StaticResource TimespanMarkerStyle_KeyframeDefault}"
+                                           SelectedTimespanMarkerStyle="{StaticResource SelectedTimespanMarkerStyle_KeyframeDefault}"/>
             </controls:MediaTimeline.MarkerStyleGroups>
         </controls:MediaTimeline>
 
@@ -100,6 +220,14 @@
                                                        ConverterParameter=1,
                                                        Mode=OneWay}"/>
                 <AppBarSeparator/>
+                <AppBarElementContainer x:Name="OpacitySlider" Width="100"
+                                        HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                        HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center">
+                    <Slider Minimum="0" Maximum="1" IsDirectionReversed="True"
+                            StepFrequency="0.01" SmallChange="0.01" LargeChange="0.1"
+                            Value="{x:Bind FrameOpacity, Mode=TwoWay}"/>
+                </AppBarElementContainer>
+                <AppBarSeparator x:Name="OpacityAdjustmentSeparator"/>
                 <AppBarToggleButton x:Name="LockScaleToFitToggleButton" Width="40"
                                     Command="{x:Bind ViewModel.EditorTogglePanAndZoomLockCommand}"
                                     IsChecked="{x:Bind IsLockScaleToFit, Mode=TwoWay}"/>

@@ -478,7 +478,8 @@ namespace MediaBase.Controls
 
             if (editor.IsLockScaleToFit)
             {
-                editor.FrameScale = editor.CalculateFrameScaleToFit(editor.Source.WidthInPixels, editor.Source.HeightInPixels);
+                editor.FrameScale = decimal.ToDouble(editor.CalculateFrameScaleToFit(editor.Source.WidthInPixels,
+                                                                                     editor.Source.HeightInPixels));
                 editor.FrameOffsetX = 0;
                 editor.FrameOffsetY = 0;
             }
@@ -729,7 +730,18 @@ namespace MediaBase.Controls
                 CurrentPosition = _player.PlaybackSession.Position;
 
             // Make adjustments based on any applicable keyframes
-            ApplyKeyframeAdjustments();
+            if (_keyframeStatus == null)
+                UpdateKeyframeStatus();
+            if (!IsLockScaleToFit &&
+                (PlaybackState == MediaPlaybackState.Playing ||
+                 (PlaybackState == MediaPlaybackState.Paused &&
+                  (_scrubType == ValueDragType.Position ||
+                   _scrubType == ValueDragType.SelectionStart ||
+                   _scrubType == ValueDragType.SelectionEnd ||
+                   _scrubType == ValueDragType.Selection))))
+            {
+                ApplyKeyframeAdjustments();
+            }
             ApplyFrameScaleAndPosition();
 
             // Draw the image
@@ -922,7 +934,7 @@ namespace MediaBase.Controls
 
             if (IsLockScaleToFit && Source != null)
             {
-                FrameScale = CalculateFrameScaleToFit(Source.WidthInPixels, Source.HeightInPixels);
+                FrameScale = decimal.ToDouble(CalculateFrameScaleToFit(Source.WidthInPixels, Source.HeightInPixels));
                 FrameOffsetX = 0;
                 FrameOffsetY = 0;
             }
@@ -1438,7 +1450,79 @@ namespace MediaBase.Controls
 
         private void EditorNewKeyframeCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            
+            var keyframe = new Keyframe((decimal)CurrentPosition.TotalSeconds, "Keyframes");
+
+            // Scale
+            var valueString = FrameScale.ToString("0.####");
+            var scaleToFitValue = Math.Round(CalculateFrameScaleToFit(Source.WidthInPixels, Source.HeightInPixels), 4);
+            if (_keyframeStatus.ScaleKeyframes.Count > 0 &&
+                _keyframeStatus.ScaleKeyframes.Any(x => x.Adjustments.Any(y => y.Value != valueString)))
+            {
+                keyframe.Adjustments.Add(KeyframeAdjustment.Scale,
+                    Math.Round((decimal)FrameScale, 4) == scaleToFitValue ? "Fit" : valueString);
+            }
+            else if (!IsLockScaleToFit && Math.Round((decimal)FrameScale, 4) != scaleToFitValue)
+            {
+                keyframe.Adjustments.Add(KeyframeAdjustment.Scale, valueString);
+            }
+
+            // OffsetX
+            valueString = FrameOffsetX.ToString("0.####");
+            if (_keyframeStatus.OffsetXKeyframes.Count > 0 &&
+                _keyframeStatus.OffsetXKeyframes.Any(x => x.Adjustments.Any(y => y.Value != valueString)))
+            {
+                keyframe.Adjustments.Add(KeyframeAdjustment.OffsetX, valueString);
+            }
+            else if (!IsLockScaleToFit && Math.Round((decimal)FrameOffsetX, 4) != 0M)
+            {
+                keyframe.Adjustments.Add(KeyframeAdjustment.OffsetX, valueString);
+            }
+
+            // OffsetY
+            valueString = FrameOffsetY.ToString("0.####");
+            if (_keyframeStatus.OffsetYKeyframes.Count > 0 &&
+                _keyframeStatus.OffsetYKeyframes.Any(x => x.Adjustments.Any(y => y.Value != valueString)))
+            {
+                keyframe.Adjustments.Add(KeyframeAdjustment.OffsetY, valueString);
+            }
+            else if (!IsLockScaleToFit && Math.Round((decimal)FrameOffsetY, 4) != 0M)
+            {
+                keyframe.Adjustments.Add(KeyframeAdjustment.OffsetY, valueString);
+            }
+
+            // Opacity
+            valueString = FrameOpacity.ToString("0.####");
+            if (_keyframeStatus.OpacityKeyframes.Count > 0 &&
+                _keyframeStatus.OpacityKeyframes.Any(x => x.Adjustments.Any(y => y.Value != valueString)))
+            {
+                keyframe.Adjustments.Add(KeyframeAdjustment.Opacity, valueString);
+            }
+            else if (Math.Round((decimal)FrameOpacity, 4) != 1.0M)
+            {
+                keyframe.Adjustments.Add(KeyframeAdjustment.Opacity, valueString);
+            }
+
+            // PlaybackRate
+            valueString = PlaybackRate.ToString("0.####");
+            if (_keyframeStatus.PlaybackRateKeyframes.Count > 0 &&
+                _keyframeStatus.PlaybackRateKeyframes.Any(x => x.Adjustments.Any(y => y.Value != valueString)))
+            {
+                keyframe.Adjustments.Add(KeyframeAdjustment.PlaybackRate, valueString);
+            }
+            else if (Math.Round((decimal)PlaybackRate, 4) != 1.0M)
+            {
+                keyframe.Adjustments.Add(KeyframeAdjustment.PlaybackRate, valueString);
+            }
+
+            // Add the keyframe to the source if adjustments were made
+            if (keyframe.Adjustments.Count > 0)
+            {
+                var index = 0;
+                while (index < Source.Markers.Count && Source.Markers[index].Position <= keyframe.Position)
+                    index++;
+
+                Source.Markers.Insert(index, keyframe);
+            }
         }
 
         private void EditorCutSelectedCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
@@ -1483,7 +1567,7 @@ namespace MediaBase.Controls
         {
             FrameOffsetX = 0;
             FrameOffsetY = 0;
-            FrameScale = CalculateFrameScaleToFit(Source.WidthInPixels, Source.HeightInPixels);
+            FrameScale = decimal.ToDouble(CalculateFrameScaleToFit(Source.WidthInPixels, Source.HeightInPixels));
         }
 
         private void EditorFrameZoomFullCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
@@ -1603,7 +1687,7 @@ namespace MediaBase.Controls
                 _frameBitmap = await CanvasBitmap.LoadAsync(SwapChainCanvas.SwapChain.Device,
                     await (image.Source as ImageFile).File.OpenReadAsync());
 
-                FrameScale = CalculateFrameScaleToFit(image.WidthInPixels, image.HeightInPixels);
+                FrameScale = decimal.ToDouble(CalculateFrameScaleToFit(image.WidthInPixels, image.HeightInPixels));
                 ApplyFrameScaleAndPosition();
 
                 // Configure timeline (if image is animated) and pause on first frame
@@ -1662,43 +1746,62 @@ namespace MediaBase.Controls
                     TimeSpan.FromSeconds(decimal.ToDouble(marker.Position));
         }
 
-        private void ApplyKeyframeAdjustments()
+        private void UpdateKeyframeStatus()
         {
-            // Once per source, find and sort all keyframes
-            if (_keyframeStatus is null)
+            _keyframeStatus ??= new KeyframeStatus();
+
+            var keyframes = from keyframe in Source.Markers.OfType<Keyframe>()
+                            where keyframe.Adjustments.ContainsKey(KeyframeAdjustment.Scale)
+                            orderby keyframe.Position
+                            select keyframe;
+            foreach (var keyframe in keyframes)
             {
-                _keyframeStatus = new KeyframeStatus();
-                var keyframes = from keyframe in Source.Markers.OfType<Keyframe>()
-                                where keyframe.Adjustments.ContainsKey(KeyframeAdjustment.Scale)
-                                orderby keyframe.Position
-                                select keyframe;
-                _keyframeStatus.ScaleKeyframes.AddRange(keyframes);
-
-                keyframes = from keyframe in Source.Markers.OfType<Keyframe>()
-                            where keyframe.Adjustments.ContainsKey(KeyframeAdjustment.OffsetX)
-                            orderby keyframe.Position
-                            select keyframe;
-                _keyframeStatus.OffsetXKeyframes.AddRange(keyframes);
-
-                keyframes = from keyframe in Source.Markers.OfType<Keyframe>()
-                            where keyframe.Adjustments.ContainsKey(KeyframeAdjustment.OffsetY)
-                            orderby keyframe.Position
-                            select keyframe;
-                _keyframeStatus.OffsetYKeyframes.AddRange(keyframes);
-
-                keyframes = from keyframe in Source.Markers.OfType<Keyframe>()
-                            where keyframe.Adjustments.ContainsKey(KeyframeAdjustment.Opacity)
-                            orderby keyframe.Position
-                            select keyframe;
-                _keyframeStatus.OpacityKeyframes.AddRange(keyframes);
-
-                keyframes = from keyframe in Source.Markers.OfType<Keyframe>()
-                            where keyframe.Adjustments.ContainsKey(KeyframeAdjustment.PlaybackRate)
-                            orderby keyframe.Position
-                            select keyframe;
-                _keyframeStatus.PlaybackRateKeyframes.AddRange(keyframes);
+                var index = _keyframeStatus.ScaleKeyframes.FindIndex(x => x.Position == keyframe.Position);
+                if (index == -1)
+                {
+                    _keyframeStatus.ScaleKeyframes.Add(keyframe);
+                }
+                else
+                {
+                    _keyframeStatus.ScaleKeyframes[index].Adjustments[KeyframeAdjustment.Scale] =
+                        keyframe.Adjustments[KeyframeAdjustment.Scale];
+                }
             }
 
+            foreach (var keyframe in _keyframeStatus.ScaleKeyframes)
+            {
+                if (!Source.Markers.OfType<Keyframe>().Any(x => x.Position == keyframe.Position &&
+                                                                x.Adjustments.ContainsKey(KeyframeAdjustment.Scale)))
+                    _keyframeStatus.ScaleKeyframes.Remove(keyframe);
+            }
+
+            keyframes = from keyframe in Source.Markers.OfType<Keyframe>()
+                        where keyframe.Adjustments.ContainsKey(KeyframeAdjustment.OffsetX)
+                        orderby keyframe.Position
+                        select keyframe;
+            _keyframeStatus.OffsetXKeyframes.AddRange(keyframes);
+
+            keyframes = from keyframe in Source.Markers.OfType<Keyframe>()
+                        where keyframe.Adjustments.ContainsKey(KeyframeAdjustment.OffsetY)
+                        orderby keyframe.Position
+                        select keyframe;
+            _keyframeStatus.OffsetYKeyframes.AddRange(keyframes);
+
+            keyframes = from keyframe in Source.Markers.OfType<Keyframe>()
+                        where keyframe.Adjustments.ContainsKey(KeyframeAdjustment.Opacity)
+                        orderby keyframe.Position
+                        select keyframe;
+            _keyframeStatus.OpacityKeyframes.AddRange(keyframes);
+
+            keyframes = from keyframe in Source.Markers.OfType<Keyframe>()
+                        where keyframe.Adjustments.ContainsKey(KeyframeAdjustment.PlaybackRate)
+                        orderby keyframe.Position
+                        select keyframe;
+            _keyframeStatus.PlaybackRateKeyframes.AddRange(keyframes);
+        }
+
+        private void ApplyKeyframeAdjustments()
+        {
             var currentPos = (decimal)CurrentPosition.TotalSeconds;
 
             // Scale
@@ -1728,12 +1831,12 @@ namespace MediaBase.Controls
 
                     double prevScale, nextScale;
                     if (prevKeyframe.Adjustments[KeyframeAdjustment.Scale] == "Fit")
-                        prevScale = CalculateFrameScaleToFit(Source.WidthInPixels, Source.HeightInPixels);
+                        prevScale = decimal.ToDouble(CalculateFrameScaleToFit(Source.WidthInPixels, Source.HeightInPixels));
                     else if (!double.TryParse(prevKeyframe.Adjustments[KeyframeAdjustment.Scale], out prevScale))
                         throw new Exception("Unable to parse keyframe adjustment value");
 
                     if (nextKeyframe.Adjustments[KeyframeAdjustment.Scale] == "Fit")
-                        nextScale = CalculateFrameScaleToFit(Source.WidthInPixels, Source.HeightInPixels);
+                        nextScale = decimal.ToDouble(CalculateFrameScaleToFit(Source.WidthInPixels, Source.HeightInPixels));
                     else if (!double.TryParse(nextKeyframe.Adjustments[KeyframeAdjustment.Scale], out nextScale))
                         throw new Exception("Unable to parse keyframe adjustment value");
 
@@ -1885,12 +1988,12 @@ namespace MediaBase.Controls
             }
         }
 
-        private double CalculateFrameScaleToFit(uint widthInPixels, uint heightInPixels)
+        private decimal CalculateFrameScaleToFit(uint widthInPixels, uint heightInPixels)
         {
             var destWidth = SwapChainCanvas.SwapChain.SizeInPixels.Width;
             var destHeight = SwapChainCanvas.SwapChain.SizeInPixels.Height;
-            var scaleW = 10 * Math.Log((double)destWidth / widthInPixels) / Math.Log(2.0);
-            var scaleH = 10 * Math.Log((double)destHeight / heightInPixels) / Math.Log(2.0);
+            var scaleW = 10 * (decimal)Math.Log((double)destWidth / widthInPixels) / (decimal)Math.Log(2.0);
+            var scaleH = 10 * (decimal)Math.Log((double)destHeight / heightInPixels) / (decimal)Math.Log(2.0);
             return Math.Min(scaleW, scaleH);
         }
 
@@ -2017,11 +2120,24 @@ namespace MediaBase.Controls
                 if (m.Sender != Source || m.PropertyName != nameof(MultimediaSource.Markers))
                     return;
 
+                var updateKeyframeStatus = false;
+
                 foreach (var marker in m.OldValue)
+                {
                     ((MediaEditor)r).Timeline.Markers.Remove(marker);
+                    if (!updateKeyframeStatus && marker is Keyframe)
+                        updateKeyframeStatus = true;
+                }
 
                 foreach (var marker in m.NewValue)
+                {
                     ((MediaEditor)r).Timeline.Markers.Add(marker);
+                    if (!updateKeyframeStatus && marker is Keyframe)
+                        updateKeyframeStatus = true;
+                }
+
+                if (updateKeyframeStatus)
+                    UpdateKeyframeStatus();
             });
 
             // MultimediaSource.Tracks collection changed
@@ -2127,6 +2243,9 @@ namespace MediaBase.Controls
             ZoomAndPanButtonSeparator.Visibility = vis;
             TimelineZoomOutButton.Visibility = vis;
             TimelineZoomInButton.Visibility = vis;
+
+            OpacityAdjustmentSeparator.Visibility = vis;
+            OpacitySlider.Visibility = vis;
         }
 
         private void RefreshCommandStates()
