@@ -501,11 +501,11 @@ namespace MediaBase.ViewModel
         {
             if (IsActiveMediaSourceFromSystemBrowser)
             {
-                return (ActiveSystemBrowserNode.Parent.Children.IndexOf(ActiveSystemBrowserNode),
+                return (ActiveSystemBrowserNode.Parent.Children.IndexOf(ActiveSystemBrowserNode) + 1,
                         ActiveSystemBrowserNode.Parent.Children.Count);
             }
 
-            return (ActiveMediaSource.Parent.Children.IndexOf(ActiveMediaSource),
+            return (ActiveMediaSource.Parent.Children.IndexOf(ActiveMediaSource) + 1,
                     ActiveMediaSource.Parent.Children.Count);
         }
 
@@ -554,7 +554,12 @@ namespace MediaBase.ViewModel
             if (ActiveMediaSource == ActiveWorkspaceBrowserNode)
                 args.CanExecute = ActiveWorkspaceBrowserNode != ActiveWorkspaceBrowserNode.Parent?.Children.First();
             else if (IsActiveMediaSourceFromSystemBrowser)
-                args.CanExecute = ActiveSystemBrowserNode != ActiveSystemBrowserNode.Parent?.Children.First();
+            {
+                var index = ActiveSystemBrowserNode.Parent?.Children.IndexOf(ActiveSystemBrowserNode);
+                args.CanExecute = index != null &&
+                                  index > 0 &&
+                                  ActiveSystemBrowserNode.Parent.Children[(int)index - 1].Content is StorageFile;
+            }
         }
 
         private void GeneralNextCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
@@ -566,7 +571,12 @@ namespace MediaBase.ViewModel
             if (ActiveMediaSource == ActiveWorkspaceBrowserNode)
                 args.CanExecute = ActiveWorkspaceBrowserNode != ActiveWorkspaceBrowserNode.Parent?.Children.Last();
             else if (IsActiveMediaSourceFromSystemBrowser)
-                args.CanExecute = ActiveSystemBrowserNode != ActiveSystemBrowserNode.Parent?.Children.Last();
+            {
+                var index = ActiveSystemBrowserNode.Parent?.Children.IndexOf(ActiveSystemBrowserNode);
+                args.CanExecute = index != null &&
+                                  index < ActiveSystemBrowserNode.Parent.Children.Count - 1 &&
+                                  ActiveSystemBrowserNode.Parent.Children[(int)index + 1].Content is StorageFile;
+            }    
         }
 
         private void GeneralDeleteMarkerCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
@@ -677,7 +687,7 @@ namespace MediaBase.ViewModel
                 var index = ActiveSystemBrowserNode.Parent.Children.IndexOf(ActiveSystemBrowserNode);
                 ActiveSystemBrowserNode = (GroupableTreeViewNode)ActiveSystemBrowserNode.Parent.Children[index - 1];
                 var mediaSource = CreateMediaSourceFromFile(ActiveSystemBrowserNode.Content as StorageFile);
-                mediaSource.GroupFlags = (ActiveSystemBrowserNode as IGroupable).GroupFlags;
+                mediaSource.GroupFlags = ActiveSystemBrowserNode.GroupFlags;
                 ActiveMediaSource = mediaSource;
             }
         }
@@ -694,7 +704,7 @@ namespace MediaBase.ViewModel
                 var index = ActiveSystemBrowserNode.Parent.Children.IndexOf(ActiveSystemBrowserNode);
                 ActiveSystemBrowserNode = (GroupableTreeViewNode)ActiveSystemBrowserNode.Parent.Children[index + 1];
                 var mediaSource = CreateMediaSourceFromFile(ActiveSystemBrowserNode.Content as StorageFile);
-                mediaSource.GroupFlags = (ActiveSystemBrowserNode as IGroupable).GroupFlags;
+                mediaSource.GroupFlags = ActiveSystemBrowserNode.GroupFlags;
                 ActiveMediaSource = mediaSource;
             }
         }
@@ -930,6 +940,9 @@ namespace MediaBase.ViewModel
                 Severity = InfoBarSeverity.Success,
                 IsCloseable = true
             });
+
+            // Make imported items ready
+            await MakeItemsReadyAsync(ActiveWorkspaceBrowserNode);
 
             bool HasSelectedAncestor(TreeViewNode node)
             {
@@ -1341,9 +1354,9 @@ namespace MediaBase.ViewModel
         #region Private Properties
         private bool IsActiveMediaSourceFromSystemBrowser =>
             ActiveMediaSource.Parent == null &&
-            ActiveMediaSource.Source is MediaFile sourceFile &&
+            ActiveMediaSource.Source is MediaFile file &&
             ActiveSystemBrowserNode.Content is StorageFile browserFile &&
-            sourceFile.File == browserFile;
+            file.File == browserFile;
         #endregion
 
         #region Private Methods

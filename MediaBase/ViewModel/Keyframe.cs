@@ -74,7 +74,7 @@ namespace MediaBase.ViewModel
     public enum PositionRelativeToKeyframe
     {
         None,
-        BeforeFirst,
+        BeforeOrAtFirst,
         AtOrAfterLast,
         Between
     }
@@ -93,24 +93,6 @@ namespace MediaBase.ViewModel
         {
             Name = nameof(Keyframe);
             Adjustments = new Dictionary<KeyframeAdjustment, string>();
-        }
-    }
-
-    public sealed class KeyframeStatus
-    {
-        public List<Keyframe> ScaleKeyframes { get; set; }
-        public List<Keyframe> OffsetXKeyframes { get; set; }
-        public List<Keyframe> OffsetYKeyframes { get; set; }
-        public List<Keyframe> OpacityKeyframes { get; set; }
-        public List<Keyframe> PlaybackRateKeyframes { get; set; }
-
-        public KeyframeStatus()
-        {
-            ScaleKeyframes = new List<Keyframe>();
-            OffsetXKeyframes = new List<Keyframe>();
-            OffsetYKeyframes = new List<Keyframe>();
-            OpacityKeyframes = new List<Keyframe>();
-            PlaybackRateKeyframes = new List<Keyframe>();
         }
     }
 }

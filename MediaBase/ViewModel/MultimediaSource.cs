@@ -132,6 +132,8 @@ namespace MediaBase.ViewModel
         [ViewModelCollection(nameof(Markers), "Marker")]
         public ObservableCollection<Marker> Markers { get; }
 
+        public LinkedList<Keyframe> Keyframes { get; }
+
         [ViewModelCollection(nameof(Tracks), "Track")]
         public ObservableCollection<string> Tracks { get; }
         #endregion
@@ -167,6 +169,8 @@ namespace MediaBase.ViewModel
 
             Tracks = new ObservableCollection<string>();
             Tracks.CollectionChanged += Tracks_CollectionChanged;
+
+            Keyframes = new LinkedList<Keyframe>();
         }
         #endregion
 
@@ -226,13 +230,49 @@ namespace MediaBase.ViewModel
             if (e.OldItems != null)
             {
                 foreach (Marker oldMarker in e.OldItems)
+                {
                     markerMessage.OldValue.Add(oldMarker);
+                    if (oldMarker is Keyframe keyframe)
+                    {
+                        Keyframes.Remove(keyframe);
+                    }
+                }
             }
 
             if (e.NewItems != null)
             {
                 foreach (Marker newMarker in e.NewItems)
+                {
                     markerMessage.NewValue.Add(newMarker);
+                    if (newMarker is Keyframe keyframe)
+                    {
+                        if (Keyframes.Count == 0)
+                            Keyframes.AddFirst(keyframe);
+                        else
+                        {
+                            LinkedListNode<Keyframe> referenceNode = null;
+                            if (keyframe.Position < Duration / 2)
+                            {
+                                referenceNode = Keyframes.First;
+                                while (referenceNode.Next != null && referenceNode.Next.Value.Position < keyframe.Position)
+                                    referenceNode = referenceNode.Next;
+                                Keyframes.AddAfter(referenceNode, keyframe);
+                            }
+                            else
+                            {
+                                referenceNode = Keyframes.Last;
+                                while (referenceNode.Previous != null && referenceNode.Previous.Value.Position > keyframe.Position)
+                                    referenceNode = referenceNode.Previous;
+                                Keyframes.AddBefore(referenceNode, keyframe);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (e.Action == NotifyCollectionChangedAction.Reset)
+            {
+                Keyframes.Clear();
             }
 
             Messenger.Send(markerMessage, nameof(Markers));

@@ -74,7 +74,6 @@ namespace MediaBase.Controls
         private ValueDragType _scrubType;
         private DateTime _sourceChangedTimestamp;
         private double _textFadeOpacity, _textFadeOpacityIncrement;
-        private KeyframeStatus _keyframeStatus;
         #endregion
 
         #region Properties
@@ -653,6 +652,7 @@ namespace MediaBase.Controls
             {
                 if (!IsFastPositionUpdate)
                     CurrentPosition = sender.Position;
+                _redrawTimer.Start();
             });
         }
 
@@ -715,7 +715,7 @@ namespace MediaBase.Controls
         #region Event Handlers (Timers)
         private void RedrawTimer_Tick(DispatcherQueueTimer sender, object args)
         {
-            if (_frameBitmap == null)
+            if (_frameBitmap == null || Source == null)
                 return;
 
             using var ds = SwapChainCanvas.SwapChain.CreateDrawingSession(Colors.Black);
@@ -730,15 +730,13 @@ namespace MediaBase.Controls
                 CurrentPosition = _player.PlaybackSession.Position;
 
             // Make adjustments based on any applicable keyframes
-            if (_keyframeStatus == null)
-                UpdateKeyframeStatus();
-            if (!IsLockScaleToFit &&
-                (PlaybackState == MediaPlaybackState.Playing ||
-                 (PlaybackState == MediaPlaybackState.Paused &&
-                  (_scrubType == ValueDragType.Position ||
-                   _scrubType == ValueDragType.SelectionStart ||
-                   _scrubType == ValueDragType.SelectionEnd ||
-                   _scrubType == ValueDragType.Selection))))
+            // during playback and scrubbing only
+            if (PlaybackState == MediaPlaybackState.Playing ||
+                (PlaybackState == MediaPlaybackState.Paused &&
+                 (_scrubType == ValueDragType.Position ||
+                  _scrubType == ValueDragType.SelectionStart ||
+                  _scrubType == ValueDragType.SelectionEnd ||
+                  _scrubType == ValueDragType.Selection)))
             {
                 ApplyKeyframeAdjustments();
             }
@@ -990,6 +988,7 @@ namespace MediaBase.Controls
 
                 if (Source.ContentType == MediaContentType.Video)
                 {
+                    _redrawTimer.Stop();
                     _player.PlaybackSession.PlaybackRate = 0;
                     _player.PlaybackSession.Position =
                         TimeSpan.FromSeconds(decimal.ToDouble(previewPosition));
@@ -1452,66 +1451,47 @@ namespace MediaBase.Controls
         {
             var keyframe = new Keyframe((decimal)CurrentPosition.TotalSeconds, "Keyframes");
 
-            // Scale
-            var valueString = FrameScale.ToString("0.####");
-            var scaleToFitValue = Math.Round(CalculateFrameScaleToFit(Source.WidthInPixels, Source.HeightInPixels), 4);
-            if (_keyframeStatus.ScaleKeyframes.Count > 0 &&
-                _keyframeStatus.ScaleKeyframes.Any(x => x.Adjustments.Any(y => y.Value != valueString)))
-            {
-                keyframe.Adjustments.Add(KeyframeAdjustment.Scale,
-                    Math.Round((decimal)FrameScale, 4) == scaleToFitValue ? "Fit" : valueString);
-            }
-            else if (!IsLockScaleToFit && Math.Round((decimal)FrameScale, 4) != scaleToFitValue)
-            {
-                keyframe.Adjustments.Add(KeyframeAdjustment.Scale, valueString);
-            }
+            string scaleValue;
+            if (Math.Round((decimal)FrameScale, 6).ToString() ==
+                Math.Round(CalculateFrameScaleToFit(Source.WidthInPixels, Source.HeightInPixels), 6).ToString())
+                scaleValue = "Fit";
+            else
+                scaleValue = Math.Round((decimal)FrameScale, 6).ToString();
 
-            // OffsetX
-            valueString = FrameOffsetX.ToString("0.####");
-            if (_keyframeStatus.OffsetXKeyframes.Count > 0 &&
-                _keyframeStatus.OffsetXKeyframes.Any(x => x.Adjustments.Any(y => y.Value != valueString)))
-            {
-                keyframe.Adjustments.Add(KeyframeAdjustment.OffsetX, valueString);
-            }
-            else if (!IsLockScaleToFit && Math.Round((decimal)FrameOffsetX, 4) != 0M)
-            {
-                keyframe.Adjustments.Add(KeyframeAdjustment.OffsetX, valueString);
-            }
+            var offsetXValue = Math.Round((decimal)FrameOffsetX, 4).ToString();
+            var offsetYValue = Math.Round((decimal)FrameOffsetY, 4).ToString();
+            var opacityValue = Math.Round((decimal)Opacity, 6).ToString();
+            var playbackRateValue = Math.Round((decimal)PlaybackRate, 2).ToString();
 
-            // OffsetY
-            valueString = FrameOffsetY.ToString("0.####");
-            if (_keyframeStatus.OffsetYKeyframes.Count > 0 &&
-                _keyframeStatus.OffsetYKeyframes.Any(x => x.Adjustments.Any(y => y.Value != valueString)))
+            if (Source.Keyframes.Count == 0)
             {
-                keyframe.Adjustments.Add(KeyframeAdjustment.OffsetY, valueString);
+                keyframe.Adjustments.Add(KeyframeAdjustment.Scale, scaleValue);
+                keyframe.Adjustments.Add(KeyframeAdjustment.OffsetX, offsetXValue);
+                keyframe.Adjustments.Add(KeyframeAdjustment.OffsetY, offsetYValue);
+                keyframe.Adjustments.Add(KeyframeAdjustment.Opacity, opacityValue);
+                keyframe.Adjustments.Add(KeyframeAdjustment.PlaybackRate, playbackRateValue);
             }
-            else if (!IsLockScaleToFit && Math.Round((decimal)FrameOffsetY, 4) != 0M)
+            else
             {
-                keyframe.Adjustments.Add(KeyframeAdjustment.OffsetY, valueString);
-            }
+                if (Source.Keyframes.Any(x => x.Adjustments.ContainsKey(KeyframeAdjustment.Scale) &&
+                                              x.Adjustments[KeyframeAdjustment.Scale].Split(',')[0] != scaleValue))
+                    keyframe.Adjustments.Add(KeyframeAdjustment.Scale, scaleValue);
 
-            // Opacity
-            valueString = FrameOpacity.ToString("0.####");
-            if (_keyframeStatus.OpacityKeyframes.Count > 0 &&
-                _keyframeStatus.OpacityKeyframes.Any(x => x.Adjustments.Any(y => y.Value != valueString)))
-            {
-                keyframe.Adjustments.Add(KeyframeAdjustment.Opacity, valueString);
-            }
-            else if (Math.Round((decimal)FrameOpacity, 4) != 1.0M)
-            {
-                keyframe.Adjustments.Add(KeyframeAdjustment.Opacity, valueString);
-            }
+                if (Source.Keyframes.Any(x => x.Adjustments.ContainsKey(KeyframeAdjustment.OffsetX) &&
+                                              x.Adjustments[KeyframeAdjustment.OffsetX].Split(',')[0] != offsetXValue))
+                    keyframe.Adjustments.Add(KeyframeAdjustment.OffsetX, offsetXValue);
 
-            // PlaybackRate
-            valueString = PlaybackRate.ToString("0.####");
-            if (_keyframeStatus.PlaybackRateKeyframes.Count > 0 &&
-                _keyframeStatus.PlaybackRateKeyframes.Any(x => x.Adjustments.Any(y => y.Value != valueString)))
-            {
-                keyframe.Adjustments.Add(KeyframeAdjustment.PlaybackRate, valueString);
-            }
-            else if (Math.Round((decimal)PlaybackRate, 4) != 1.0M)
-            {
-                keyframe.Adjustments.Add(KeyframeAdjustment.PlaybackRate, valueString);
+                if (Source.Keyframes.Any(x => x.Adjustments.ContainsKey(KeyframeAdjustment.OffsetY) &&
+                                              x.Adjustments[KeyframeAdjustment.OffsetY].Split(',')[0] != offsetYValue))
+                    keyframe.Adjustments.Add(KeyframeAdjustment.OffsetY, offsetYValue);
+
+                if (Source.Keyframes.Any(x => x.Adjustments.ContainsKey(KeyframeAdjustment.Opacity) &&
+                                              x.Adjustments[KeyframeAdjustment.Opacity].Split(',')[0] != opacityValue))
+                    keyframe.Adjustments.Add(KeyframeAdjustment.Opacity, opacityValue);
+
+                if (Source.Keyframes.Any(x => x.Adjustments.ContainsKey(KeyframeAdjustment.PlaybackRate) &&
+                                              x.Adjustments[KeyframeAdjustment.PlaybackRate].Split(',')[0] != playbackRateValue))
+                    keyframe.Adjustments.Add(KeyframeAdjustment.PlaybackRate, playbackRateValue);
             }
 
             // Add the keyframe to the source if adjustments were made
@@ -1636,7 +1616,6 @@ namespace MediaBase.Controls
             PlaybackRate = 1;
             TimeDisplayMode = TimeDisplayFormat.None;
             _prevFollowMode = FollowMode.NoFollow;
-            _keyframeStatus = null;
 
             // De-select all markers
             ViewModel.SelectedMarker = null;
@@ -1746,245 +1725,247 @@ namespace MediaBase.Controls
                     TimeSpan.FromSeconds(decimal.ToDouble(marker.Position));
         }
 
-        private void UpdateKeyframeStatus()
-        {
-            _keyframeStatus ??= new KeyframeStatus();
-
-            var keyframes = from keyframe in Source.Markers.OfType<Keyframe>()
-                            where keyframe.Adjustments.ContainsKey(KeyframeAdjustment.Scale)
-                            orderby keyframe.Position
-                            select keyframe;
-            foreach (var keyframe in keyframes)
-            {
-                var index = _keyframeStatus.ScaleKeyframes.FindIndex(x => x.Position == keyframe.Position);
-                if (index == -1)
-                {
-                    _keyframeStatus.ScaleKeyframes.Add(keyframe);
-                }
-                else
-                {
-                    _keyframeStatus.ScaleKeyframes[index].Adjustments[KeyframeAdjustment.Scale] =
-                        keyframe.Adjustments[KeyframeAdjustment.Scale];
-                }
-            }
-
-            foreach (var keyframe in _keyframeStatus.ScaleKeyframes)
-            {
-                if (!Source.Markers.OfType<Keyframe>().Any(x => x.Position == keyframe.Position &&
-                                                                x.Adjustments.ContainsKey(KeyframeAdjustment.Scale)))
-                    _keyframeStatus.ScaleKeyframes.Remove(keyframe);
-            }
-
-            keyframes = from keyframe in Source.Markers.OfType<Keyframe>()
-                        where keyframe.Adjustments.ContainsKey(KeyframeAdjustment.OffsetX)
-                        orderby keyframe.Position
-                        select keyframe;
-            _keyframeStatus.OffsetXKeyframes.AddRange(keyframes);
-
-            keyframes = from keyframe in Source.Markers.OfType<Keyframe>()
-                        where keyframe.Adjustments.ContainsKey(KeyframeAdjustment.OffsetY)
-                        orderby keyframe.Position
-                        select keyframe;
-            _keyframeStatus.OffsetYKeyframes.AddRange(keyframes);
-
-            keyframes = from keyframe in Source.Markers.OfType<Keyframe>()
-                        where keyframe.Adjustments.ContainsKey(KeyframeAdjustment.Opacity)
-                        orderby keyframe.Position
-                        select keyframe;
-            _keyframeStatus.OpacityKeyframes.AddRange(keyframes);
-
-            keyframes = from keyframe in Source.Markers.OfType<Keyframe>()
-                        where keyframe.Adjustments.ContainsKey(KeyframeAdjustment.PlaybackRate)
-                        orderby keyframe.Position
-                        select keyframe;
-            _keyframeStatus.PlaybackRateKeyframes.AddRange(keyframes);
-        }
-
         private void ApplyKeyframeAdjustments()
         {
             var currentPos = (decimal)CurrentPosition.TotalSeconds;
 
-            // Scale
-            if (_keyframeStatus.ScaleKeyframes.Count > 0)
+            var scaleKeyframes = new LinkedList<Keyframe>(Source.Keyframes.Where(x => x.Adjustments.ContainsKey(KeyframeAdjustment.Scale)));
+            var offsetXKeyframes = new LinkedList<Keyframe>(Source.Keyframes.Where(x => x.Adjustments.ContainsKey(KeyframeAdjustment.OffsetX)));
+            var offsetYKeyframes = new LinkedList<Keyframe>(Source.Keyframes.Where(x => x.Adjustments.ContainsKey(KeyframeAdjustment.OffsetY)));
+            var opacityKeyframes = new LinkedList<Keyframe>(Source.Keyframes.Where(x => x.Adjustments.ContainsKey(KeyframeAdjustment.Opacity)));
+            var playbackRateKeyframes = new LinkedList<Keyframe>(Source.Keyframes.Where(x => x.Adjustments.ContainsKey(KeyframeAdjustment.PlaybackRate)));
+
+            if (scaleKeyframes.Count > 0)
             {
-                if (_keyframeStatus.ScaleKeyframes.Count == 1 ||
-                currentPos < _keyframeStatus.ScaleKeyframes[0].Position)
+                IsLockScaleToFit = false;
+
+                if (scaleKeyframes.Count == 1 ||
+                    currentPos < scaleKeyframes.First.Value.Position ||
+                    currentPos >= scaleKeyframes.Last.Value.Position)
                 {
-                    if (!double.TryParse(_keyframeStatus.ScaleKeyframes[0].Adjustments[KeyframeAdjustment.Scale], out var scale))
-                        throw new Exception("Unable to parse keyframe adjustment value");
-                    FrameScale = scale;
-                }
-                else if (currentPos >= _keyframeStatus.ScaleKeyframes[^1].Position)
-                {
-                    if (!double.TryParse(_keyframeStatus.ScaleKeyframes[0].Adjustments[KeyframeAdjustment.Scale], out var scale))
-                        throw new Exception("Unable to parse keyframe adjustment value");
-                    FrameScale = scale;
+                    string valueString = null;
+
+                    if (scaleKeyframes.Count == 1 || currentPos < scaleKeyframes.First.Value.Position)
+                        valueString = scaleKeyframes.First.Value.Adjustments[KeyframeAdjustment.Scale];
+                    else if (currentPos >= scaleKeyframes.Last.Value.Position)
+                        valueString = scaleKeyframes.Last.Value.Adjustments[KeyframeAdjustment.Scale];
+
+                    var valueStrings = valueString.Split(',');
+                    FrameScale = decimal.ToDouble(ParseScale(valueStrings[0]));
                 }
                 else
                 {
-                    var prevKeyframe = _keyframeStatus.ScaleKeyframes.Where(x => x.Position <= currentPos)
-                                                                     .OrderBy(x => currentPos - x.Position)
-                                                                     .First();
-                    var nextKeyframe = _keyframeStatus.ScaleKeyframes.Where(x => x.Position > currentPos)
-                                                                     .OrderBy(x => x.Position - currentPos)
-                                                                     .First();
+                    var prevScaleKeyframe = scaleKeyframes.First;
+                    while (prevScaleKeyframe.Next.Value.Position <= currentPos)
+                        prevScaleKeyframe = prevScaleKeyframe.Next;
 
-                    double prevScale, nextScale;
-                    if (prevKeyframe.Adjustments[KeyframeAdjustment.Scale] == "Fit")
-                        prevScale = decimal.ToDouble(CalculateFrameScaleToFit(Source.WidthInPixels, Source.HeightInPixels));
-                    else if (!double.TryParse(prevKeyframe.Adjustments[KeyframeAdjustment.Scale], out prevScale))
-                        throw new Exception("Unable to parse keyframe adjustment value");
+                    var nextScaleKeyframe = scaleKeyframes.Last;
+                    while (nextScaleKeyframe.Previous.Value.Position > currentPos)
+                        nextScaleKeyframe = nextScaleKeyframe.Previous;
 
-                    if (nextKeyframe.Adjustments[KeyframeAdjustment.Scale] == "Fit")
-                        nextScale = decimal.ToDouble(CalculateFrameScaleToFit(Source.WidthInPixels, Source.HeightInPixels));
-                    else if (!double.TryParse(nextKeyframe.Adjustments[KeyframeAdjustment.Scale], out nextScale))
-                        throw new Exception("Unable to parse keyframe adjustment value");
+                    var prevScaleValueStrings = prevScaleKeyframe.Value.Adjustments[KeyframeAdjustment.Scale].Split(',');
+                    var isPrevHold = prevScaleValueStrings.Length > 1 && prevScaleValueStrings[1][0] == 'H';
 
-                    FrameScale = CalculateValue(prevKeyframe.Position, nextKeyframe.Position, prevScale, nextScale);
+                    var prevScaleValue = ParseScale(prevScaleValueStrings[0]);
+                    var nextScaleValue = ParseScale(nextScaleKeyframe.Value.Adjustments[KeyframeAdjustment.Scale].Split(',')[0]);
+
+                    if (isPrevHold)
+                        FrameScale = decimal.ToDouble(prevScaleValue);
+                    else
+                        FrameScale = CalculateValue(prevScaleKeyframe.Value.Position, nextScaleKeyframe.Value.Position,
+                                                    prevScaleValue, nextScaleValue);
+                }
+
+                decimal ParseScale(string valueString)
+                {
+                    if (valueString == "Fit")
+                        return CalculateFrameScaleToFit(Source.WidthInPixels, Source.HeightInPixels);
+                    else
+                    {
+                        if (!decimal.TryParse(valueString, out var value))
+                            throw new Exception("Unable to parse keyframe adjustment value");
+                        return value;
+                    }
                 }
             }
 
-            // OffsetX
-            if (_keyframeStatus.OffsetXKeyframes.Count > 0)
+            if (offsetXKeyframes.Count > 0)
             {
-                if (_keyframeStatus.OffsetXKeyframes.Count == 1 ||
-                currentPos < _keyframeStatus.OffsetXKeyframes[0].Position)
+                IsLockScaleToFit = false;
+
+                if (offsetXKeyframes.Count == 1 ||
+                    currentPos < offsetXKeyframes.First.Value.Position ||
+                    currentPos >= offsetXKeyframes.Last.Value.Position)
                 {
-                    if (!double.TryParse(_keyframeStatus.OffsetXKeyframes[0].Adjustments[KeyframeAdjustment.OffsetX], out var offset))
-                        throw new Exception("Unable to parse keyframe adjustment value");
-                    FrameOffsetX = offset;
-                }
-                else if (currentPos >= _keyframeStatus.OffsetXKeyframes[^1].Position)
-                {
-                    if (!double.TryParse(_keyframeStatus.OffsetXKeyframes[0].Adjustments[KeyframeAdjustment.OffsetX], out var offset))
-                        throw new Exception("Unable to parse keyframe adjustment value");
-                    FrameOffsetX = offset;
+                    string valueString = null;
+
+                    if (offsetXKeyframes.Count == 1 || currentPos < offsetXKeyframes.First.Value.Position)
+                        valueString = offsetXKeyframes.First.Value.Adjustments[KeyframeAdjustment.OffsetX];
+                    else if (currentPos >= offsetXKeyframes.Last.Value.Position)
+                        valueString = offsetXKeyframes.Last.Value.Adjustments[KeyframeAdjustment.OffsetX];
+
+                    var valueStrings = valueString.Split(',');
+                    FrameOffsetX = decimal.ToDouble(ParseValue(valueStrings[0]));
                 }
                 else
                 {
-                    var prevKeyframe = _keyframeStatus.OffsetXKeyframes.Where(x => x.Position <= currentPos)
-                                                                       .OrderBy(x => currentPos - x.Position)
-                                                                       .First();
-                    var nextKeyframe = _keyframeStatus.OffsetXKeyframes.Where(x => x.Position > currentPos)
-                                                                       .OrderBy(x => x.Position - currentPos)
-                                                                       .First();
+                    var prevOffsetXKeyframe = offsetXKeyframes.First;
+                    while (prevOffsetXKeyframe.Next.Value.Position <= currentPos)
+                        prevOffsetXKeyframe = prevOffsetXKeyframe.Next;
 
-                    if (!double.TryParse(prevKeyframe.Adjustments[KeyframeAdjustment.OffsetX], out var prevOffset))
-                        throw new Exception("Unable to parse keyframe adjustment value");
-                    if (!double.TryParse(nextKeyframe.Adjustments[KeyframeAdjustment.OffsetX], out var nextOffset))
-                        throw new Exception("Unable to parse keyframe adjustment value");
+                    var nextOffsetXKeyframe = offsetXKeyframes.Last;
+                    while (nextOffsetXKeyframe.Previous.Value.Position > currentPos)
+                        nextOffsetXKeyframe = nextOffsetXKeyframe.Previous;
 
-                    FrameScale = CalculateValue(prevKeyframe.Position, nextKeyframe.Position, prevOffset, nextOffset);
+                    var prevOffsetXValueStrings = prevOffsetXKeyframe.Value.Adjustments[KeyframeAdjustment.OffsetX].Split(',');
+                    var isPrevHold = prevOffsetXValueStrings.Length > 1 && prevOffsetXValueStrings[1][0] == 'H';
+
+                    var prevOffsetXValue = ParseValue(prevOffsetXValueStrings[0]);
+                    var nextOffsetXValue = ParseValue(nextOffsetXKeyframe.Value.Adjustments[KeyframeAdjustment.OffsetX].Split(',')[0]);
+
+                    if (isPrevHold)
+                        FrameOffsetX = decimal.ToDouble(prevOffsetXValue);
+                    else
+                        FrameOffsetX = CalculateValue(prevOffsetXKeyframe.Value.Position, nextOffsetXKeyframe.Value.Position,
+                                                      prevOffsetXValue, nextOffsetXValue);
                 }
             }
 
-            // OffsetY
-            if (_keyframeStatus.OffsetYKeyframes.Count > 0)
+            if (offsetYKeyframes.Count > 0)
             {
-                if (_keyframeStatus.OffsetYKeyframes.Count == 1 ||
-                currentPos < _keyframeStatus.OffsetYKeyframes[0].Position)
+                IsLockScaleToFit = false;
+
+                if (offsetYKeyframes.Count == 1 ||
+                    currentPos < offsetYKeyframes.First.Value.Position ||
+                    currentPos >= offsetYKeyframes.Last.Value.Position)
                 {
-                    if (!double.TryParse(_keyframeStatus.OffsetYKeyframes[0].Adjustments[KeyframeAdjustment.OffsetY], out var offset))
-                        throw new Exception("Unable to parse keyframe adjustment value");
-                    FrameOffsetY = offset;
-                }
-                else if (currentPos >= _keyframeStatus.OffsetYKeyframes[^1].Position)
-                {
-                    if (!double.TryParse(_keyframeStatus.OffsetYKeyframes[0].Adjustments[KeyframeAdjustment.OffsetY], out var offset))
-                        throw new Exception("Unable to parse keyframe adjustment value");
-                    FrameOffsetY = offset;
+                    string valueString = null;
+
+                    if (offsetYKeyframes.Count == 1 || currentPos < offsetYKeyframes.First.Value.Position)
+                        valueString = offsetYKeyframes.First.Value.Adjustments[KeyframeAdjustment.OffsetY];
+                    else if (currentPos >= offsetYKeyframes.Last.Value.Position)
+                        valueString = offsetYKeyframes.Last.Value.Adjustments[KeyframeAdjustment.OffsetY];
+
+                    var valueStrings = valueString.Split(',');
+                    FrameOffsetY = decimal.ToDouble(ParseValue(valueStrings[0]));
                 }
                 else
                 {
-                    var prevKeyframe = _keyframeStatus.OffsetYKeyframes.Where(x => x.Position <= currentPos)
-                                                                       .OrderBy(x => currentPos - x.Position)
-                                                                       .First();
-                    var nextKeyframe = _keyframeStatus.OffsetYKeyframes.Where(x => x.Position > currentPos)
-                                                                       .OrderBy(x => x.Position - currentPos)
-                                                                       .First();
+                    var prevOffsetYKeyframe = offsetYKeyframes.First;
+                    while (prevOffsetYKeyframe.Next.Value.Position <= currentPos)
+                        prevOffsetYKeyframe = prevOffsetYKeyframe.Next;
 
-                    if (!double.TryParse(prevKeyframe.Adjustments[KeyframeAdjustment.OffsetY], out var prevOffset))
-                        throw new Exception("Unable to parse keyframe adjustment value");
-                    if (!double.TryParse(nextKeyframe.Adjustments[KeyframeAdjustment.OffsetY], out var nextOffset))
-                        throw new Exception("Unable to parse keyframe adjustment value");
+                    var nextOffsetYKeyframe = offsetYKeyframes.Last;
+                    while (nextOffsetYKeyframe.Previous.Value.Position > currentPos)
+                        nextOffsetYKeyframe = nextOffsetYKeyframe.Previous;
 
-                    FrameScale = CalculateValue(prevKeyframe.Position, nextKeyframe.Position, prevOffset, nextOffset);
+                    var prevOffsetYValueStrings = prevOffsetYKeyframe.Value.Adjustments[KeyframeAdjustment.OffsetY].Split(',');
+                    var isPrevHold = prevOffsetYValueStrings.Length > 1 && prevOffsetYValueStrings[1][0] == 'H';
+
+                    var prevOffsetYValue = ParseValue(prevOffsetYValueStrings[0]);
+                    var nextOffsetYValue = ParseValue(nextOffsetYKeyframe.Value.Adjustments[KeyframeAdjustment.OffsetY].Split(',')[0]);
+
+                    if (isPrevHold)
+                        FrameOffsetY = decimal.ToDouble(prevOffsetYValue);
+                    else
+                        FrameOffsetY = CalculateValue(prevOffsetYKeyframe.Value.Position, nextOffsetYKeyframe.Value.Position,
+                                                      prevOffsetYValue, nextOffsetYValue);
                 }
             }
 
-            // Opacity
-            if (_keyframeStatus.OpacityKeyframes.Count > 0)
+            if (opacityKeyframes.Count > 0)
             {
-                if (_keyframeStatus.OpacityKeyframes.Count == 1 ||
-                currentPos < _keyframeStatus.OpacityKeyframes[0].Position)
+                if (opacityKeyframes.Count == 1 ||
+                    currentPos < opacityKeyframes.First.Value.Position ||
+                    currentPos >= opacityKeyframes.Last.Value.Position)
                 {
-                    if (!double.TryParse(_keyframeStatus.OpacityKeyframes[0].Adjustments[KeyframeAdjustment.Opacity], out var opacity))
-                        throw new Exception("Unable to parse keyframe adjustment value");
-                    FrameOpacity = opacity;
-                }
-                else if (currentPos >= _keyframeStatus.OpacityKeyframes[^1].Position)
-                {
-                    if (!double.TryParse(_keyframeStatus.OpacityKeyframes[0].Adjustments[KeyframeAdjustment.Opacity], out var opacity))
-                        throw new Exception("Unable to parse keyframe adjustment value");
-                    FrameOpacity = opacity;
+                    string valueString = null;
+
+                    if (opacityKeyframes.Count == 1 || currentPos < opacityKeyframes.First.Value.Position)
+                        valueString = opacityKeyframes.First.Value.Adjustments[KeyframeAdjustment.Opacity];
+                    else if (currentPos >= opacityKeyframes.Last.Value.Position)
+                        valueString = opacityKeyframes.Last.Value.Adjustments[KeyframeAdjustment.Opacity];
+
+                    var valueStrings = valueString.Split(',');
+                    FrameOpacity = decimal.ToDouble(ParseValue(valueStrings[0]));
                 }
                 else
                 {
-                    var prevKeyframe = _keyframeStatus.OpacityKeyframes.Where(x => x.Position <= currentPos)
-                                                                       .OrderBy(x => currentPos - x.Position)
-                                                                       .First();
-                    var nextKeyframe = _keyframeStatus.OpacityKeyframes.Where(x => x.Position > currentPos)
-                                                                       .OrderBy(x => x.Position - currentPos)
-                                                                       .First();
+                    var prevOpacityKeyframe = opacityKeyframes.First;
+                    while (prevOpacityKeyframe.Next.Value.Position <= currentPos)
+                        prevOpacityKeyframe = prevOpacityKeyframe.Next;
 
-                    if (!double.TryParse(prevKeyframe.Adjustments[KeyframeAdjustment.Opacity], out var prevOpacity))
-                        throw new Exception("Unable to parse keyframe adjustment value");
-                    if (!double.TryParse(nextKeyframe.Adjustments[KeyframeAdjustment.Opacity], out var nextOpacity))
-                        throw new Exception("Unable to parse keyframe adjustment value");
+                    var nextOpacityKeyframe = opacityKeyframes.Last;
+                    while (nextOpacityKeyframe.Previous.Value.Position > currentPos)
+                        nextOpacityKeyframe = nextOpacityKeyframe.Previous;
 
-                    FrameOpacity = CalculateValue(prevKeyframe.Position, nextKeyframe.Position, prevOpacity, nextOpacity);
+                    var prevOpacityValueStrings = prevOpacityKeyframe.Value.Adjustments[KeyframeAdjustment.Opacity].Split(',');
+                    var isPrevHold = prevOpacityValueStrings.Length > 1 && prevOpacityValueStrings[1][0] == 'H';
+
+                    var prevOpacityValue = ParseValue(prevOpacityValueStrings[0]);
+                    var nextOpacityValue = ParseValue(nextOpacityKeyframe.Value.Adjustments[KeyframeAdjustment.Opacity].Split(',')[0]);
+
+                    if (isPrevHold)
+                        FrameOpacity = decimal.ToDouble(prevOpacityValue);
+                    else
+                        FrameOpacity = CalculateValue(prevOpacityKeyframe.Value.Position, nextOpacityKeyframe.Value.Position,
+                                                      prevOpacityValue, nextOpacityValue);
                 }
             }
 
-            // PlaybackRate
-            if (_keyframeStatus.PlaybackRateKeyframes.Count > 0)
+            if (playbackRateKeyframes.Count > 0)
             {
-                if (_keyframeStatus.PlaybackRateKeyframes.Count == 1 ||
-                currentPos < _keyframeStatus.PlaybackRateKeyframes[0].Position)
+                if (playbackRateKeyframes.Count == 1 ||
+                    currentPos < playbackRateKeyframes.First.Value.Position ||
+                    currentPos >= playbackRateKeyframes.Last.Value.Position)
                 {
-                    if (!double.TryParse(_keyframeStatus.PlaybackRateKeyframes[0].Adjustments[KeyframeAdjustment.PlaybackRate], out var rate))
-                        throw new Exception("Unable to parse keyframe adjustment value");
-                    PlaybackRate = rate;
-                }
-                else if (currentPos >= _keyframeStatus.PlaybackRateKeyframes[^1].Position)
-                {
-                    if (!double.TryParse(_keyframeStatus.PlaybackRateKeyframes[0].Adjustments[KeyframeAdjustment.PlaybackRate], out var rate))
-                        throw new Exception("Unable to parse keyframe adjustment value");
-                    PlaybackRate = rate;
+                    string valueString = null;
+
+                    if (playbackRateKeyframes.Count == 1 || currentPos < playbackRateKeyframes.First.Value.Position)
+                        valueString = playbackRateKeyframes.First.Value.Adjustments[KeyframeAdjustment.PlaybackRate];
+                    else if (currentPos >= playbackRateKeyframes.Last.Value.Position)
+                        valueString = playbackRateKeyframes.Last.Value.Adjustments[KeyframeAdjustment.PlaybackRate];
+
+                    var valueStrings = valueString.Split(',');
+                    PlaybackRate = decimal.ToDouble(ParseValue(valueStrings[0]));
                 }
                 else
                 {
-                    var prevKeyframe = _keyframeStatus.PlaybackRateKeyframes.Where(x => x.Position <= currentPos)
-                                                                            .OrderBy(x => currentPos - x.Position)
-                                                                            .First();
-                    var nextKeyframe = _keyframeStatus.PlaybackRateKeyframes.Where(x => x.Position > currentPos)
-                                                                            .OrderBy(x => x.Position - currentPos)
-                                                                            .First();
+                    var prevPlaybackRateKeyframe = playbackRateKeyframes.First;
+                    while (prevPlaybackRateKeyframe.Next.Value.Position <= currentPos)
+                        prevPlaybackRateKeyframe = prevPlaybackRateKeyframe.Next;
 
-                    if (!double.TryParse(prevKeyframe.Adjustments[KeyframeAdjustment.PlaybackRate], out var prevPlaybackRate))
-                        throw new Exception("Unable to parse keyframe adjustment value");
-                    if (!double.TryParse(nextKeyframe.Adjustments[KeyframeAdjustment.PlaybackRate], out var nextPlaybackRate))
-                        throw new Exception("Unable to parse keyframe adjustment value");
+                    var nextPlaybackRateKeyframe = playbackRateKeyframes.Last;
+                    while (nextPlaybackRateKeyframe.Previous.Value.Position > currentPos)
+                        nextPlaybackRateKeyframe = nextPlaybackRateKeyframe.Previous;
 
-                    PlaybackRate = CalculateValue(prevKeyframe.Position, nextKeyframe.Position, prevPlaybackRate, nextPlaybackRate);
+                    var prevPlaybackRateValueStrings = prevPlaybackRateKeyframe.Value.Adjustments[KeyframeAdjustment.PlaybackRate].Split(',');
+                    var isPrevHold = prevPlaybackRateValueStrings.Length > 1 && prevPlaybackRateValueStrings[1][0] == 'H';
+
+                    var prevPlaybackRateValue = ParseValue(prevPlaybackRateValueStrings[0]);
+                    var nextPlaybackRateValue = ParseValue(nextPlaybackRateKeyframe.Value.Adjustments[KeyframeAdjustment.PlaybackRate].Split(',')[0]);
+
+                    if (isPrevHold)
+                        PlaybackRate = decimal.ToDouble(prevPlaybackRateValue);
+                    else
+                        PlaybackRate = CalculateValue(prevPlaybackRateKeyframe.Value.Position, nextPlaybackRateKeyframe.Value.Position,
+                                                      prevPlaybackRateValue, nextPlaybackRateValue);
                 }
+            }
+
+            // Local function to parse a keyframe adjustment string
+            decimal ParseValue(string valueString)
+            {
+                if (!decimal.TryParse(valueString, out var value))
+                    throw new Exception("Unable to parse keyframe adjustment value");
+                return value;
             }
 
             // Local function to calculate the value of a parameter
             // at a specific time between two keyframes
-            double CalculateValue(decimal t0, decimal t1, double v0, double v1)
+            double CalculateValue(decimal t0, decimal t1, decimal v0, decimal v1)
             {
-                return decimal.ToDouble(((decimal)(v1 - v0) / (t1 - t0) * (currentPos - t0)) + (decimal)v0);
+                return decimal.ToDouble(((v1 - v0) / (t1 - t0) * (currentPos - t0)) + v0);
             }
         }
 
@@ -2120,24 +2101,11 @@ namespace MediaBase.Controls
                 if (m.Sender != Source || m.PropertyName != nameof(MultimediaSource.Markers))
                     return;
 
-                var updateKeyframeStatus = false;
-
                 foreach (var marker in m.OldValue)
-                {
                     ((MediaEditor)r).Timeline.Markers.Remove(marker);
-                    if (!updateKeyframeStatus && marker is Keyframe)
-                        updateKeyframeStatus = true;
-                }
 
                 foreach (var marker in m.NewValue)
-                {
                     ((MediaEditor)r).Timeline.Markers.Add(marker);
-                    if (!updateKeyframeStatus && marker is Keyframe)
-                        updateKeyframeStatus = true;
-                }
-
-                if (updateKeyframeStatus)
-                    UpdateKeyframeStatus();
             });
 
             // MultimediaSource.Tracks collection changed

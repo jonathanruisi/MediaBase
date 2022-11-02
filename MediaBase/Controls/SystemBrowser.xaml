@@ -13,7 +13,7 @@
     <UserControl.Resources>
         <!-- Data Templates -->
         <DataTemplate x:Key="DefaultStorageItemDataTemplate"
-                      x:DataType="controls:GroupableTreeViewNode">
+                      x:DataType="TreeViewNode">
             <StackPanel Orientation="Horizontal"
                         DataContext="{x:Bind}">
                 <TextBlock HorizontalAlignment="Left"
@@ -28,7 +28,7 @@
         </DataTemplate>
 
         <DataTemplate x:Key="DriveDataTemplate"
-                      x:DataType="controls:GroupableTreeViewNode">
+                      x:DataType="TreeViewNode">
             <StackPanel Orientation="Horizontal"
                         DataContext="{x:Bind}">
                 <FontIcon x:Name="Symbol"
@@ -42,7 +42,7 @@
         </DataTemplate>
 
         <DataTemplate x:Key="FolderDataTemplate"
-                      x:DataType="controls:GroupableTreeViewNode">
+                      x:DataType="TreeViewNode">
             <StackPanel Orientation="Horizontal"
                         DataContext="{x:Bind}">
                 <FontIcon x:Name="Symbol"
