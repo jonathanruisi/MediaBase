@@ -250,7 +250,7 @@ namespace MediaBase.ViewModel
                             Keyframes.AddFirst(keyframe);
                         else
                         {
-                            LinkedListNode<Keyframe> referenceNode = null;
+                            LinkedListNode<Keyframe> referenceNode;
                             if (keyframe.Position < Duration / 2)
                             {
                                 referenceNode = Keyframes.First;

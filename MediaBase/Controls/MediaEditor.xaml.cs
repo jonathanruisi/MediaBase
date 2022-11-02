@@ -370,9 +370,7 @@ namespace MediaBase.Controls
             DataContext = App.Current.Services.GetService<ProjectManager>();
 
             // Initialize media player
-            _player = new MediaPlayer();
-            _player.AutoPlay = false;
-            _player.IsVideoFrameServerEnabled = true;
+            _player = new MediaPlayer { AutoPlay = false, IsVideoFrameServerEnabled = true };
             _player.CommandManager.IsEnabled = false;
 
             _player.MediaOpened += Player_MediaOpened;
@@ -972,10 +970,10 @@ namespace MediaBase.Controls
             Timeline.PositionFollowMode = FollowMode.NoFollow;
 
             // Set playback position to the control being scrubbed
-            if (e == ValueDragType.Position ||
-                e == ValueDragType.SelectionStart ||
-                e == ValueDragType.SelectionEnd ||
-                e == ValueDragType.Selection)
+            if (e is ValueDragType.Position or
+                     ValueDragType.SelectionStart or
+                     ValueDragType.SelectionEnd or
+                     ValueDragType.Selection)
             {
                 _prevPlaybackRate = PlaybackRate;
 

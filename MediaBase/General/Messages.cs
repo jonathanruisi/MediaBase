@@ -12,15 +12,17 @@ using Microsoft.UI.Xaml.Controls;
 
 namespace MediaBase
 {
-    public class GeneralActionMessage { }
+    public class GeneralMessage { }
 
-    public class GeneralInfoMessage<T>
+    public class GeneralMessage<T>
     {
-        public T Info { get; }
+        public List<T> Content { get; }
 
-        public GeneralInfoMessage(T info)
+        public GeneralMessage(params T[] content)
         {
-            Info = info;
+            Content = new List<T>();
+            if (content != null && content.Length > 0)
+                Content.AddRange(content);
         }
     }
 

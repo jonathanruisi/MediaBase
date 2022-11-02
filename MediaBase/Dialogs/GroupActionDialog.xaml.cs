@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 
+using JLR.Utility.WinUI;
+
 using MediaBase.ViewModel;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -159,26 +161,6 @@ namespace MediaBase.Dialogs
         #endregion
 
         #region Event Handlers (ContentDialog)
-        private void ContentDialog_Loaded(object sender, RoutedEventArgs e)
-        {
-            Group1Count = ViewModel.ActiveSystemBrowserNode.DepthFirstEnumerable().Count(x => x.CheckGroupFlag(1));
-            Group2Count = ViewModel.ActiveSystemBrowserNode.DepthFirstEnumerable().Count(x => x.CheckGroupFlag(2));
-            Group3Count = ViewModel.ActiveSystemBrowserNode.DepthFirstEnumerable().Count(x => x.CheckGroupFlag(3));
-            Group4Count = ViewModel.ActiveSystemBrowserNode.DepthFirstEnumerable().Count(x => x.CheckGroupFlag(4));
-
-            if (Group1Count == 0)
-                Group1ToggleButton.IsEnabled = false;
-
-            if (Group2Count == 0)
-                Group2ToggleButton.IsEnabled = false;
-
-            if (Group3Count == 0)
-                Group3ToggleButton.IsEnabled = false;
-
-            if (Group4Count == 0)
-                Group4ToggleButton.IsEnabled = false;
-        }
-
         private void GroupActionRadioButtons_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (GroupActionRadioButtons.SelectedItem == null)

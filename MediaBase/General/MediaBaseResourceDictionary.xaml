@@ -25,4 +25,13 @@
 
     <toolkit_converters:DoubleToVisibilityConverter x:Key="NonzeroToVisibleConverter"
                                                     GreaterThan="0"/>
+    <toolkit_converters:DoubleToObjectConverter x:Key="NonzeroToBooleanConverter"
+                                                GreaterThan="0">
+        <toolkit_converters:DoubleToObjectConverter.FalseValue>
+            <x:Boolean>False</x:Boolean>
+        </toolkit_converters:DoubleToObjectConverter.FalseValue>
+        <toolkit_converters:DoubleToObjectConverter.TrueValue>
+            <x:Boolean>True</x:Boolean>
+        </toolkit_converters:DoubleToObjectConverter.TrueValue>
+    </toolkit_converters:DoubleToObjectConverter>
 </ResourceDictionary>

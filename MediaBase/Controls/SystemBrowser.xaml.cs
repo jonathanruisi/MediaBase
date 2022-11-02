@@ -63,23 +63,23 @@ namespace MediaBase.Controls
                 }
             });
 
-            messenger.Register<GeneralInfoMessage<TreeViewNode>, string>(this, "SetSelectedSystemBrowserNode", (r, m) =>
+            messenger.Register<CollectionRequestMessage<GroupableTreeViewNode>, string>(this, "GetGroupedSystemBrowserNodes", (r, m) =>
             {
-                if (m.Info != null)
-                    ((SystemBrowser)r).SystemBrowserTreeView.SelectedNode = m.Info;
-                else
+                foreach (var rootNode in ((SystemBrowser)r).SystemBrowserTreeView.RootNodes.Cast<GroupableTreeViewNode>())
                 {
-                    ((SystemBrowser)r).SystemBrowserTreeView.SelectedNode = null;
-                    ((SystemBrowser)r).SystemBrowserTreeView.SelectedNodes.Clear();
+                    foreach (var node in rootNode.DepthFirstEnumerable().Where(x => x.GroupFlags != 0))
+                    {
+                        m.Reply(node);
+                    }
                 }
             });
 
-            messenger.Register<GeneralActionMessage, string>(this, "ClearSystemBrowserSelection", (r, m) =>
+            messenger.Register<GeneralMessage, string>(this, "ClearSystemBrowserSelection", (r, m) =>
             {
                 ((SystemBrowser)r).SystemBrowserTreeView.SelectedNodes.Clear();
             });
 
-            messenger.Register<GeneralActionMessage, string>(this, "CollapseAllTreeViewNodes", (r, m) =>
+            messenger.Register<GeneralMessage, string>(this, "CollapseAllTreeViewNodes", (r, m) =>
             {
                 ((SystemBrowser)r).SystemBrowserTreeView.CollapseAllNodes();
             });
@@ -264,28 +264,6 @@ namespace MediaBase.Controls
                 throw new ArgumentOutOfRangeException(nameof(group));
 
             GroupFlags ^= (1 << group);
-        }
-
-        public IEnumerator<GroupableTreeViewNode> GetEnumerator()
-        {
-            return DepthFirstEnumerable().GetEnumerator();
-        }
-
-        public IEnumerable<GroupableTreeViewNode> DepthFirstEnumerable()
-        {
-            yield return this;
-
-            if (HasChildren)
-            {
-                foreach (var child in Children)
-                {
-                    var childEnumerator = (child as GroupableTreeViewNode).DepthFirstEnumerable().GetEnumerator();
-                    while (childEnumerator.MoveNext())
-                    {
-                        yield return childEnumerator.Current;
-                    }
-                }
-            }
         }
     }
 }

@@ -2,40 +2,35 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 
+using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging.Messages;
+
+using JLR.Utility.WinUI;
+using JLR.Utility.WinUI.Dialogs;
 using JLR.Utility.WinUI.Messaging;
 using JLR.Utility.WinUI.ViewModel;
 
-using CommunityToolkit.Mvvm.Messaging;
+using MediaBase.Controls;
+using MediaBase.Dialogs;
 
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.UI;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 
 using Windows.Storage;
-using Windows.System;
-using JLR.Utility.WinUI.Dialogs;
-using CommunityToolkit.Mvvm.Messaging.Messages;
-using JLR.Utility.WinUI;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.UI.Xaml.Media;
 using Windows.Storage.Pickers;
-using WinRT.Interop;
-using System.Diagnostics;
-using System.IO;
-using System.Reflection.PortableExecutable;
-using Windows.Foundation;
-using Windows.ApplicationModel.Activation;
-using MediaBase.Controls;
-using Microsoft.UI.Input;
+using Windows.System;
 using Windows.UI.Core;
-using Microsoft.UI.Text;
-using CommunityToolkit.WinUI.UI;
-using Microsoft.UI;
-using MediaBase.Dialogs;
+
+using WinRT.Interop;
 
 namespace MediaBase.ViewModel
 {
@@ -501,12 +496,12 @@ namespace MediaBase.ViewModel
         {
             if (IsActiveMediaSourceFromSystemBrowser)
             {
-                return (ActiveSystemBrowserNode.Parent.Children.IndexOf(ActiveSystemBrowserNode) + 1,
-                        ActiveSystemBrowserNode.Parent.Children.Count);
+                var fileList = ActiveSystemBrowserNode.Parent.Children.Where(x => x.Content is StorageFile).ToList();
+                return (fileList.IndexOf(ActiveSystemBrowserNode) + 1, fileList.Count);
             }
 
-            return (ActiveMediaSource.Parent.Children.IndexOf(ActiveMediaSource) + 1,
-                    ActiveMediaSource.Parent.Children.Count);
+            var mediaList = ActiveMediaSource.Parent.Children.OfType<MultimediaSource>().ToList();
+            return (mediaList.IndexOf(ActiveMediaSource) + 1, mediaList.Count);
         }
 
         public static MultimediaSource CreateMediaSourceFromFile(StorageFile file)
@@ -803,7 +798,7 @@ namespace MediaBase.ViewModel
             if (ActiveMediaSource != null && ActiveMediaSource.Root == project)
                 ActiveMediaSource = null;
 
-            Messenger.Send<GeneralActionMessage, string>("CollapseAllTreeViewNodes");
+            Messenger.Send<GeneralMessage, string>("CollapseAllTreeViewNodes");
 
             project.IsActive = false;
             CloseProject(project);
@@ -868,7 +863,7 @@ namespace MediaBase.ViewModel
             if (ActiveMediaSource != null && ActiveMediaSource.Root != null)
                 ActiveMediaSource = null;
 
-            Messenger.Send<GeneralActionMessage, string>("CollapseAllTreeViewNodes");
+            Messenger.Send<GeneralMessage, string>("CollapseAllTreeViewNodes");
 
             IsActive = false;
             IsActive = true;
@@ -915,7 +910,7 @@ namespace MediaBase.ViewModel
             }
 
             // Clear the SystemBrowser TreeView's SelectedNodes list
-            Messenger.Send(new GeneralActionMessage(), "ClearSystemBrowserSelection");
+            Messenger.Send<GeneralMessage, string>("ClearSystemBrowserSelection");
 
             // Recursively import top-level folders
             foreach (var folder in folderList)
@@ -1111,11 +1106,21 @@ namespace MediaBase.ViewModel
         {
             ActiveMediaSource = null;
 
+            var groupedNodes = Messenger.Send<CollectionRequestMessage<GroupableTreeViewNode>, string>("GetGroupedSystemBrowserNodes").Responses;
+            var group1Nodes = groupedNodes.Where(x => x.CheckGroupFlag(1));
+            var group2Nodes = groupedNodes.Where(x => x.CheckGroupFlag(2));
+            var group3Nodes = groupedNodes.Where(x => x.CheckGroupFlag(3));
+            var group4Nodes = groupedNodes.Where(x => x.CheckGroupFlag(4));
+
             var dlg = new GroupActionDialog
             {
                 Title = "Perform Batch Action",
                 PrimaryButtonText = "Execute",
                 CloseButtonText = "Cancel",
+                Group1Count = group1Nodes.Count(),
+                Group2Count = group2Nodes.Count(),
+                Group3Count = group3Nodes.Count(),
+                Group4Count = group4Nodes.Count(),
                 XamlRoot = App.Window.Content.XamlRoot
             };
 
@@ -1127,36 +1132,15 @@ namespace MediaBase.ViewModel
             var itemsToProcess = new List<GroupableTreeViewNode>();
 
             if (dlg.ActOnGroup1 && dlg.Group1Count > 0)
-            {
-                itemsToProcess.AddRange(ActiveSystemBrowserNode.DepthFirstEnumerable()
-                                                               .Where(x => x.CheckGroupFlag(1)));
-            }
-
+                itemsToProcess.AddRange(group1Nodes);
             if (dlg.ActOnGroup2 && dlg.Group2Count > 0)
-            {
-                itemsToProcess.AddRange(ActiveSystemBrowserNode.DepthFirstEnumerable()
-                                                               .Where(x => x.CheckGroupFlag(2)));
-            }
-
+                itemsToProcess.AddRange(group2Nodes);
             if (dlg.ActOnGroup3 && dlg.Group3Count > 0)
-            {
-                itemsToProcess.AddRange(ActiveSystemBrowserNode.DepthFirstEnumerable()
-                                                               .Where(x => x.CheckGroupFlag(3)));
-            }
-
+                itemsToProcess.AddRange(group3Nodes);
             if (dlg.ActOnGroup4 && dlg.Group4Count > 0)
-            {
-                itemsToProcess.AddRange(ActiveSystemBrowserNode.DepthFirstEnumerable()
-                                                               .Where(x => x.CheckGroupFlag(4)));
-            }
+                itemsToProcess.AddRange(group4Nodes);
 
-            // Find and collapse all SystemBrowser nodes
-            foreach (var node in ActiveSystemBrowserNode.DepthFirstEnumerable()
-                                                        .Where(x => x.IsExpanded)
-                                                        .OrderByDescending(x => x.Depth))
-            {
-                node.IsExpanded = false;
-            }
+            Messenger.Send<GeneralMessage, string>("CollapseAllTreeViewNodes");
 
             // Process the batch action
             var currentItem = 1;

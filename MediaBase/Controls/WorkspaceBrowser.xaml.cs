@@ -48,7 +48,7 @@ namespace MediaBase.Controls
         {
             var messenger = App.Current.Services.GetService<IMessenger>();
 
-            messenger.Register<GeneralActionMessage, string>(this, "CollapseAllTreeViewNodes", (r, m) =>
+            messenger.Register<GeneralMessage, string>(this, "CollapseAllTreeViewNodes", (r, m) =>
             {
                 ((WorkspaceBrowser)r).WorkspaceBrowserTreeView.CollapseAllNodes();
             });

@@ -7,14 +7,12 @@
     xmlns:mediabase="using:MediaBase"
     mc:Ignorable="d"
     IsPrimaryButtonEnabled="True"
-    IsSecondaryButtonEnabled="False"
-    Loaded="ContentDialog_Loaded">
+    IsSecondaryButtonEnabled="False">
 
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="25"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -25,37 +23,53 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <ToggleButton x:Name="Group1ToggleButton" Margin="5,0,0,10"
+        <ToggleButton x:Name="Group1ToggleButton" Margin="0,0,0,10"
                       Grid.Row="0" Grid.Column="0"
-                      IsChecked="{x:Bind ActOnGroup1, Mode=TwoWay}">
-            <ToggleButton.Content>
-                <FontIconSource FontFamily="Segoe UI" Foreground="Gold" Glyph="❶"/>
-            </ToggleButton.Content>
-        </ToggleButton>
+                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                      VerticalAlignment="Stretch" VerticalContentAlignment="Center"
+                      IsChecked="{x:Bind ActOnGroup1, Mode=TwoWay}"
+                      IsEnabled="{x:Bind Group1Count,
+                                         Converter={StaticResource NonzeroToBooleanConverter},
+                                         Mode=OneWay}"
+                      Foreground="Gold"
+                      FontFamily="Segoe UI"
+                      Content="❶"/>
 
-        <ToggleButton x:Name="Group2ToggleButton" Margin="5,0,0,10"
+        <ToggleButton x:Name="Group2ToggleButton" Margin="0,0,0,10"
                       Grid.Row="0" Grid.Column="1"
-                      IsChecked="{x:Bind ActOnGroup2, Mode=TwoWay}">
-            <ToggleButton.Content>
-                <FontIconSource FontFamily="Segoe UI" Foreground="CornflowerBlue" Glyph="❷"/>
-            </ToggleButton.Content>
-        </ToggleButton>
+                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                      VerticalAlignment="Stretch" VerticalContentAlignment="Center"
+                      IsChecked="{x:Bind ActOnGroup2, Mode=TwoWay}"
+                      IsEnabled="{x:Bind Group2Count,
+                                         Converter={StaticResource NonzeroToBooleanConverter},
+                                         Mode=OneWay}"
+                      Foreground="CornflowerBlue"
+                      FontFamily="Segoe UI"
+                      Content="❷"/>
 
-        <ToggleButton x:Name="Group3ToggleButton" Margin="5,0,0,10"
+        <ToggleButton x:Name="Group3ToggleButton" Margin="0,0,0,10"
                       Grid.Row="0" Grid.Column="2"
-                      IsChecked="{x:Bind ActOnGroup3, Mode=TwoWay}">
-            <ToggleButton.Content>
-                <FontIconSource FontFamily="Segoe UI" Foreground="IndianRed" Glyph="❸"/>
-            </ToggleButton.Content>
-        </ToggleButton>
+                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                      VerticalAlignment="Stretch" VerticalContentAlignment="Center"
+                      IsChecked="{x:Bind ActOnGroup3, Mode=TwoWay}"
+                      IsEnabled="{x:Bind Group3Count,
+                                         Converter={StaticResource NonzeroToBooleanConverter},
+                                         Mode=OneWay}"
+                      Foreground="IndianRed"
+                      FontFamily="Segoe UI"
+                      Content="❸"/>
 
-        <ToggleButton x:Name="Group4ToggleButton" Margin="5,0,0,10"
+        <ToggleButton x:Name="Group4ToggleButton" Margin="0,0,0,10"
                       Grid.Row="0" Grid.Column="3"
-                      IsChecked="{x:Bind ActOnGroup4, Mode=TwoWay}">
-            <ToggleButton.Content>
-                <FontIconSource FontFamily="Segoe UI" Foreground="ForestGreen" Glyph="❹"/>
-            </ToggleButton.Content>
-        </ToggleButton>
+                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                      VerticalAlignment="Stretch" VerticalContentAlignment="Center"
+                      IsChecked="{x:Bind ActOnGroup4, Mode=TwoWay}"
+                      IsEnabled="{x:Bind Group4Count,
+                                         Converter={StaticResource NonzeroToBooleanConverter},
+                                         Mode=OneWay}"
+                      Foreground="ForestGreen"
+                      FontFamily="Segoe UI"
+                      Content="❹"/>
 
         <TextBlock Grid.Row="1" Grid.Column="0" FontSize="24" HorizontalAlignment="Center"
                    Text="{x:Bind Group1Count, Mode=OneWay}"/>
@@ -69,18 +83,18 @@
         <TextBlock Grid.Row="1" Grid.Column="3" FontSize="24" HorizontalAlignment="Center"
                    Text="{x:Bind Group4Count, Mode=OneWay}"/>
 
-        <RadioButtons x:Name="GroupActionRadioButtons" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="4"
-                      MaxColumns="3" Header="Action" SelectedIndex="0"
+        <RadioButtons x:Name="GroupActionRadioButtons" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="4"
+                      MaxColumns="3" Header="Action" SelectedIndex="0" Margin="0,25"
                       SelectionChanged="GroupActionRadioButtons_SelectionChanged">
             <x:String>Delete</x:String>
             <x:String>Copy</x:String>
             <x:String>Move</x:String>
         </RadioButtons>
 
-        <Button x:Name="FolderBrowseButton" Grid.Row="4" Grid.Column="0" Margin="5"
+        <Button x:Name="FolderBrowseButton" Grid.Row="3" Grid.Column="0" Margin="5"
                 HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Content="Browse..."
                 Click="FolderBrowseButton_Click"/>
-        <TextBox x:Name="TargetFolderPathTextBox" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="3" IsReadOnly="True"
+        <TextBox x:Name="TargetFolderPathTextBox" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3" IsReadOnly="True"
                  Text="{x:Bind TargetFolder.Path, Mode=OneWay}"/>
     </Grid>
 </ContentDialog>
