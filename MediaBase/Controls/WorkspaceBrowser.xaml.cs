@@ -58,7 +58,7 @@ namespace MediaBase.Controls
         #region Event Handlers (TreeView)
         private void WorkspaceBrowserTreeView_ItemInvoked(TreeView sender, TreeViewItemInvokedEventArgs args)
         {
-            if (args.InvokedItem is not ViewModelNode node)
+            if (args.InvokedItem is not ViewModelElement node)
             {
                 ViewModel.ActiveWorkspaceBrowserNode = null;
                 return;
@@ -72,7 +72,7 @@ namespace MediaBase.Controls
         private void WorkspaceBrowserTreeView_RightTapped(object sender, RightTappedRoutedEventArgs e)
         {
             if (sender is TreeViewItem item)
-                ViewModel.ActiveWorkspaceBrowserNode = item.DataContext as ViewModelNode;
+                ViewModel.ActiveWorkspaceBrowserNode = item.DataContext as ViewModelElement;
             else
                 ViewModel.ActiveWorkspaceBrowserNode = null;
 

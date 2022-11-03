@@ -47,7 +47,7 @@ namespace MediaBase.ViewModel
         #region Fields
         private StorageFile _file;
         private GroupableTreeViewNode _activeSystemBrowserNode;
-        private ViewModelNode _activeWorkspaceBrowserNode;
+        private ViewModelElement _activeWorkspaceBrowserNode;
         private MultimediaSource _activeMediaSource;
         private Marker _selectedMarker;
         private string _description;
@@ -88,7 +88,7 @@ namespace MediaBase.ViewModel
         /// <summary>
         /// Gets or sets a reference to the currently active workspace browser node.
         /// </summary>
-        public ViewModelNode ActiveWorkspaceBrowserNode
+        public ViewModelElement ActiveWorkspaceBrowserNode
         {
             get => _activeWorkspaceBrowserNode;
             set
@@ -883,7 +883,7 @@ namespace MediaBase.ViewModel
             var result = await dlg.ShowAsync();
             if (result == ContentDialogResult.Primary)
             {
-                ActiveWorkspaceBrowserNode.Children.Add(new MediaFolder(dlg.Text));
+                ((MediaFolder)ActiveWorkspaceBrowserNode).Children.Add(new MediaFolder(dlg.Text));
             }
         }
 
@@ -937,7 +937,7 @@ namespace MediaBase.ViewModel
             });
 
             // Make imported items ready
-            await MakeItemsReadyAsync(ActiveWorkspaceBrowserNode);
+            await MakeItemsReadyAsync((MediaFolder)ActiveWorkspaceBrowserNode);
 
             bool HasSelectedAncestor(TreeViewNode node)
             {
@@ -1257,7 +1257,7 @@ namespace MediaBase.ViewModel
             });
 
             // Media item added/removed
-            Messenger.Register<CollectionChangedMessage<ViewModelNode>, string>(this, nameof(ViewModelNode.Children), (r, m) =>
+            Messenger.Register<CollectionChangedMessage<ViewModelElement>, string>(this, nameof(ViewModelNode.Children), (r, m) =>
             {
                 if (m.Sender is not MediaFolder folder)
                     return;

@@ -204,7 +204,7 @@ namespace MediaBase.ViewModel
         {
             Messenger.Register<SerializedPropertyChangedMessage>(this, (r, m) =>
             {
-                if (m.Sender is ViewModelNode node && node.Root == r)
+                if (m.Sender is ViewModelElement node && node.Root == r)
                 {
                     ((Project)r).HasUnsavedChanges = true;
 

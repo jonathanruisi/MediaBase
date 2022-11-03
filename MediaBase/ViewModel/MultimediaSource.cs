@@ -19,7 +19,7 @@ namespace MediaBase.ViewModel
     /// <summary>
     /// Represents a multimedia object.
     /// </summary>
-    public abstract class MultimediaSource : ViewModelNode, IMultimediaItem, IMediaMetadata, IVideoProperties
+    public abstract class MultimediaSource : ViewModelElement, IMultimediaItem, IMediaMetadata, IVideoProperties
     {
         #region Constants
         /// <summary>
