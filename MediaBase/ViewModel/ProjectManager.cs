@@ -1107,20 +1107,20 @@ namespace MediaBase.ViewModel
             ActiveMediaSource = null;
 
             var groupedNodes = Messenger.Send<CollectionRequestMessage<GroupableTreeViewNode>, string>("GetGroupedSystemBrowserNodes").Responses;
-            var group1Nodes = groupedNodes.Where(x => x.CheckGroupFlag(1));
-            var group2Nodes = groupedNodes.Where(x => x.CheckGroupFlag(2));
-            var group3Nodes = groupedNodes.Where(x => x.CheckGroupFlag(3));
-            var group4Nodes = groupedNodes.Where(x => x.CheckGroupFlag(4));
+            var group1Files = groupedNodes.Where(x => x.CheckGroupFlag(1)).Select(x => x.Content).Cast<StorageFile>().ToList();
+            var group2Files = groupedNodes.Where(x => x.CheckGroupFlag(2)).Select(x => x.Content).Cast<StorageFile>().ToList();
+            var group3Files = groupedNodes.Where(x => x.CheckGroupFlag(3)).Select(x => x.Content).Cast<StorageFile>().ToList();
+            var group4Files = groupedNodes.Where(x => x.CheckGroupFlag(4)).Select(x => x.Content).Cast<StorageFile>().ToList();
 
             var dlg = new GroupActionDialog
             {
                 Title = "Perform Batch Action",
                 PrimaryButtonText = "Execute",
                 CloseButtonText = "Cancel",
-                Group1Count = group1Nodes.Count(),
-                Group2Count = group2Nodes.Count(),
-                Group3Count = group3Nodes.Count(),
-                Group4Count = group4Nodes.Count(),
+                Group1Count = group1Files.Count,
+                Group2Count = group2Files.Count,
+                Group3Count = group3Files.Count,
+                Group4Count = group4Files.Count,
                 XamlRoot = App.Window.Content.XamlRoot
             };
 
@@ -1128,17 +1128,16 @@ namespace MediaBase.ViewModel
             if (result != ContentDialogResult.Primary)
                 return;
 
-            var expandedParents = new HashSet<GroupableTreeViewNode>();
-            var itemsToProcess = new List<GroupableTreeViewNode>();
+            var filesToProcess = new List<StorageFile>();
 
             if (dlg.ActOnGroup1 && dlg.Group1Count > 0)
-                itemsToProcess.AddRange(group1Nodes);
+                filesToProcess.AddRange(group1Files);
             if (dlg.ActOnGroup2 && dlg.Group2Count > 0)
-                itemsToProcess.AddRange(group2Nodes);
+                filesToProcess.AddRange(group2Files);
             if (dlg.ActOnGroup3 && dlg.Group3Count > 0)
-                itemsToProcess.AddRange(group3Nodes);
+                filesToProcess.AddRange(group3Files);
             if (dlg.ActOnGroup4 && dlg.Group4Count > 0)
-                itemsToProcess.AddRange(group4Nodes);
+                filesToProcess.AddRange(group4Files);
 
             Messenger.Send<GeneralMessage, string>("CollapseAllTreeViewNodes");
 
@@ -1147,9 +1146,9 @@ namespace MediaBase.ViewModel
             switch (dlg.Action)
             {
                 case BatchAction.Delete:
-                    foreach (var item in itemsToProcess)
+                    foreach (var file in filesToProcess)
                     {
-                        var message1 = $"Moving {((StorageFile)item.Content).DisplayName} to the Recycle Bin (file {currentItem} of {itemsToProcess.Count})";
+                        var message1 = $"Moving {file.DisplayName} to the Recycle Bin (file {currentItem} of {filesToProcess.Count})";
                         Messenger.Send(new SetInfoBarMessage
                         {
                             Title = "Batch Operation Running",
@@ -1157,15 +1156,15 @@ namespace MediaBase.ViewModel
                             Severity = InfoBarSeverity.Informational,
                             IsCloseable = false
                         });
-                        await ((StorageFile)item.Content).DeleteAsync();
+                        await file.DeleteAsync();
                         currentItem++;
                     }
                     break;
 
                 case BatchAction.Copy:
-                    foreach (var item in itemsToProcess)
+                    foreach (var file in filesToProcess)
                     {
-                        var message2 = $"Copying {((StorageFile)item.Content).DisplayName} to {dlg.TargetFolder.Path} (file {currentItem} of {itemsToProcess.Count})";
+                        var message2 = $"Copying {file.DisplayName} to {dlg.TargetFolder.Path} (file {currentItem} of {filesToProcess.Count})";
                         Messenger.Send(new SetInfoBarMessage
                         {
                             Title = "Batch Operation Running",
@@ -1173,15 +1172,15 @@ namespace MediaBase.ViewModel
                             Severity = InfoBarSeverity.Informational,
                             IsCloseable = false
                         });
-                        await ((StorageFile)item.Content).CopyAsync(dlg.TargetFolder);
+                        await file.CopyAsync(dlg.TargetFolder);
                         currentItem++;
                     }
                     break;
 
                 case BatchAction.Move:
-                    foreach (var item in itemsToProcess)
+                    foreach (var file in filesToProcess)
                     {
-                        var message3 = $"Moving {((StorageFile)item.Content).DisplayName} to {dlg.TargetFolder.Path} (file {currentItem} of {itemsToProcess.Count})";
+                        var message3 = $"Moving {file.DisplayName} to {dlg.TargetFolder.Path} (file {currentItem} of {filesToProcess.Count})";
                         Messenger.Send(new SetInfoBarMessage
                         {
                             Title = "Batch Operation Running",
@@ -1189,7 +1188,7 @@ namespace MediaBase.ViewModel
                             Severity = InfoBarSeverity.Informational,
                             IsCloseable = false
                         });
-                        await ((StorageFile)item.Content).MoveAsync(dlg.TargetFolder);
+                        await file.MoveAsync(dlg.TargetFolder);
                         currentItem++;
                     }
                     break;
@@ -1205,6 +1204,34 @@ namespace MediaBase.ViewModel
                     });
                     return;
             }
+
+            // Alert user that the batch operation is complete
+            var summaryMessage = new StringBuilder();
+            if (dlg.Action == BatchAction.Copy)
+                summaryMessage.Append("Copied ");
+            else if (dlg.Action is BatchAction.Delete or BatchAction.Move)
+                summaryMessage.Append("Moved ");
+
+            summaryMessage.Append(filesToProcess.Count);
+            summaryMessage.Append(" file");
+            if (filesToProcess.Count != 1)
+                summaryMessage.Append('s');
+
+            if (dlg.Action == BatchAction.Delete)
+                summaryMessage.Append(" to the Recycle Bin");
+            else if (dlg.Action is BatchAction.Copy or BatchAction.Move)
+            {
+                summaryMessage.Append(" to ");
+                summaryMessage.Append(dlg.TargetFolder.Path);
+            }
+
+            Messenger.Send(new SetInfoBarMessage
+            {
+                Title = "Batch Operation Complete",
+                Message = summaryMessage.ToString(),
+                Severity = InfoBarSeverity.Success,
+                IsCloseable = true
+            });
         }
         #endregion
 

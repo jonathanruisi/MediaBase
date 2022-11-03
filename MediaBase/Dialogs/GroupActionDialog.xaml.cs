@@ -166,7 +166,19 @@ namespace MediaBase.Dialogs
             if (GroupActionRadioButtons.SelectedItem == null)
                 return;
 
-            Action = (BatchAction)Enum.Parse(typeof(BatchAction), (string)GroupActionRadioButtons.Items[GroupActionRadioButtons.SelectedIndex]);
+            Action = (BatchAction)Enum.Parse(typeof(BatchAction),
+                (string)GroupActionRadioButtons.Items[GroupActionRadioButtons.SelectedIndex]);
+
+            if (Action is BatchAction.Copy or BatchAction.Move)
+            {
+                FolderBrowseButton.Visibility = Visibility.Visible;
+                TargetFolderPathTextBox.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                FolderBrowseButton.Visibility = Visibility.Collapsed;
+                TargetFolderPathTextBox.Visibility = Visibility.Collapsed;
+            }
         }
 
         private async void FolderBrowseButton_Click(object sender, RoutedEventArgs e)
