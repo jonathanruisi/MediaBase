@@ -6,6 +6,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
     xmlns:mediabase="using:MediaBase"
+    xmlns:viewmodel="using:MediaBase.ViewModel"
     xmlns:controls="using:MediaBase.Controls"
     xmlns:storage="using:Windows.Storage"
     Loaded="UserControl_Loaded">
@@ -56,7 +57,7 @@
         </DataTemplate>
 
         <DataTemplate x:Key="WorkspaceFileDataTemplate"
-                      x:DataType="controls:GroupableTreeViewNode">
+                      x:DataType="TreeViewNode">
             <StackPanel Orientation="Horizontal"
                         DataContext="{x:Bind}">
                 <SymbolIcon x:Name="Symbol"
@@ -69,7 +70,7 @@
         </DataTemplate>
         
         <DataTemplate x:Key="ProjectFileDataTemplate"
-                      x:DataType="controls:GroupableTreeViewNode">
+                      x:DataType="TreeViewNode">
             <StackPanel Orientation="Horizontal"
                         DataContext="{x:Bind}">
                 <FontIcon x:Name="Symbol"
@@ -83,10 +84,11 @@
         </DataTemplate>
 
         <DataTemplate x:Key="ImageFileDataTemplate"
-                      x:DataType="controls:GroupableTreeViewNode">
+                      x:DataType="TreeViewNode">
             <Grid HorizontalAlignment="Stretch" VerticalAlignment="Center"
                   DataContext="{x:Bind}">
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
@@ -95,45 +97,53 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <FontIcon x:Name="Symbol"
-                          Grid.Column="0"
+                <FontIcon Grid.Column="0" Margin="-24,0,0,0"
+                          HorizontalAlignment="Center" VerticalAlignment="Center"
+                          Glyph="&#xE783;"
+                          Foreground="{StaticResource RedBrush}"
+                          Visibility="{x:Bind ((viewmodel:MediaFile)Content).IsReady,
+                                              Converter={StaticResource BoolToVisibilityConverter},
+                                              ConverterParameter=True,
+                                              Mode=OneWay}"/>
+
+                <FontIcon Grid.Column="1"
                           Margin="0,0,6,0"
                           FontFamily="Segoe Fluent Icons"
                           Glyph="&#xEB9F;"/>
                 
-                <TextBlock Grid.Column="1"
+                <TextBlock Grid.Column="2"
                            HorizontalAlignment="Left"
                            VerticalAlignment="Center"
-                           Text="{x:Bind ((storage:StorageFile)Content).Name}"/>
+                           Text="{x:Bind ((viewmodel:MediaFile)Content).Name}"/>
 
-                <Ellipse Grid.Column="2"
+                <Ellipse Grid.Column="3"
                          Fill="Gold" Width="10" Height="10" Stretch="Fill" StrokeThickness="0"
                          VerticalAlignment="Center" Margin="0,0,2,0"
-                         Visibility="{x:Bind GroupFlags,
+                         Visibility="{x:Bind ((viewmodel:MediaFile)Content).GroupFlags,
                                              Converter={StaticResource GroupMaskToVisibilityConverter},
                                              ConverterParameter=1,
                                              Mode=OneWay}"/>
 
-                <Ellipse Grid.Column="3"
+                <Ellipse Grid.Column="4"
                          Fill="CornflowerBlue" Width="10" Height="10" Stretch="Fill" StrokeThickness="0"
                          VerticalAlignment="Center" Margin="0,0,2,0"
-                         Visibility="{x:Bind GroupFlags,
+                         Visibility="{x:Bind ((viewmodel:MediaFile)Content).GroupFlags,
                                              Converter={StaticResource GroupMaskToVisibilityConverter},
                                              ConverterParameter=2,
                                              Mode=OneWay}"/>
 
-                <Ellipse Grid.Column="4"
+                <Ellipse Grid.Column="5"
                          Fill="IndianRed" Width="10" Height="10" Stretch="Fill" StrokeThickness="0"
                          VerticalAlignment="Center" Margin="0,0,2,0"
-                         Visibility="{x:Bind GroupFlags,
+                         Visibility="{x:Bind ((viewmodel:MediaFile)Content).GroupFlags,
                                              Converter={StaticResource GroupMaskToVisibilityConverter},
                                              ConverterParameter=3,
                                              Mode=OneWay}"/>
 
-                <Ellipse Grid.Column="5"
+                <Ellipse Grid.Column="6"
                          Fill="ForestGreen" Width="10" Height="10" Stretch="Fill" StrokeThickness="0"
                          VerticalAlignment="Center" Margin="0,0,2,0"
-                         Visibility="{x:Bind GroupFlags,
+                         Visibility="{x:Bind ((viewmodel:MediaFile)Content).GroupFlags,
                                              Converter={StaticResource GroupMaskToVisibilityConverter},
                                              ConverterParameter=4,
                                              Mode=OneWay}"/>
@@ -141,10 +151,11 @@
         </DataTemplate>
 
         <DataTemplate x:Key="VideoFileDataTemplate"
-                      x:DataType="controls:GroupableTreeViewNode">
+                      x:DataType="TreeViewNode">
             <Grid HorizontalAlignment="Stretch" VerticalAlignment="Center"
                   DataContext="{x:Bind}">
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
@@ -153,44 +164,53 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <FontIcon Grid.Column="0"
+                <FontIcon Grid.Column="0" Margin="-24,0,0,0"
+                          HorizontalAlignment="Center" VerticalAlignment="Center"
+                          Glyph="&#xE783;"
+                          Foreground="{StaticResource RedBrush}"
+                          Visibility="{x:Bind ((viewmodel:MediaFile)Content).IsReady,
+                                              Converter={StaticResource BoolToVisibilityConverter},
+                                              ConverterParameter=True,
+                                              Mode=OneWay}"/>
+                
+                <FontIcon Grid.Column="1"
                           Margin="0,0,6,0"
                           FontFamily="Segoe Fluent Icons"
                           Glyph="&#xE8B2;"/>
                 
-                <TextBlock Grid.Column="1"
+                <TextBlock Grid.Column="2"
                            HorizontalAlignment="Left"
                            VerticalAlignment="Center"
-                           Text="{x:Bind ((storage:StorageFile)Content).Name}"/>
+                           Text="{x:Bind ((viewmodel:MediaFile)Content).Name}"/>
 
-                <Ellipse Grid.Column="2"
+                <Ellipse Grid.Column="3"
                          Fill="Gold" Width="10" Height="10" Stretch="Fill" StrokeThickness="0"
                          VerticalAlignment="Center" Margin="0,0,2,0"
-                         Visibility="{x:Bind GroupFlags,
+                         Visibility="{x:Bind ((viewmodel:MediaFile)Content).GroupFlags,
                                              Converter={StaticResource GroupMaskToVisibilityConverter},
                                              ConverterParameter=1,
                                              Mode=OneWay}"/>
                 
-                <Ellipse Grid.Column="3"
+                <Ellipse Grid.Column="4"
                          Fill="CornflowerBlue" Width="10" Height="10" Stretch="Fill" StrokeThickness="0"
                          VerticalAlignment="Center" Margin="0,0,2,0"
-                         Visibility="{x:Bind GroupFlags,
+                         Visibility="{x:Bind ((viewmodel:MediaFile)Content).GroupFlags,
                                              Converter={StaticResource GroupMaskToVisibilityConverter},
                                              ConverterParameter=2,
                                              Mode=OneWay}"/>
                 
-                <Ellipse Grid.Column="4"
+                <Ellipse Grid.Column="5"
                          Fill="IndianRed" Width="10" Height="10" Stretch="Fill" StrokeThickness="0"
                          VerticalAlignment="Center" Margin="0,0,2,0"
-                         Visibility="{x:Bind GroupFlags,
+                         Visibility="{x:Bind ((viewmodel:MediaFile)Content).GroupFlags,
                                              Converter={StaticResource GroupMaskToVisibilityConverter},
                                              ConverterParameter=3,
                                              Mode=OneWay}"/>
                 
-                <Ellipse Grid.Column="5"
+                <Ellipse Grid.Column="6"
                          Fill="ForestGreen" Width="10" Height="10" Stretch="Fill" StrokeThickness="0"
                          VerticalAlignment="Center" Margin="0,0,2,0"
-                         Visibility="{x:Bind GroupFlags,
+                         Visibility="{x:Bind ((viewmodel:MediaFile)Content).GroupFlags,
                                              Converter={StaticResource GroupMaskToVisibilityConverter},
                                              ConverterParameter=4,
                                              Mode=OneWay}"/>

@@ -32,23 +32,25 @@ namespace MediaBase
 
             if (node.Content is StorageFolder folder)
             {
-                if (node.Depth == 0 && folder.DisplayName.Contains(':'))
+                if (node.Depth == 0 && folder.Name.Contains(':'))
                     return DriveTemplate;
                 else
                     return FolderTemplate;
             }
-            else if (node.Content is StorageFile file)
+            else if (node.Content is StorageFile storageFile)
             {
-                if (file.ContentType.ToLower().Contains("image"))
-                    return ImageFileTemplate;
-                if (file.ContentType.ToLower().Contains("video"))
-                    return VideoFileTemplate;
-
-                var extension = file.GetFileExtension();
+                var extension = storageFile.GetFileExtension();
                 if (extension == ProjectManager.WorkspaceFileExtension)
                     return WorkspaceFileTemplate;
                 if (extension == ProjectManager.ProjectFileExtension)
                     return ProjectFileTemplate;
+            }
+            else if (node.Content is MediaFile mediaFile)
+            {
+                if (mediaFile.ContentType == MediaContentType.Image)
+                    return ImageFileTemplate;
+                else if (mediaFile.ContentType == MediaContentType.Video)
+                    return VideoFileTemplate;
             }
 
             return DefaultTemplate;

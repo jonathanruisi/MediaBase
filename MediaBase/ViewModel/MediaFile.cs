@@ -16,12 +16,13 @@ namespace MediaBase.ViewModel
     /// Represents a multimedia file.
     /// </summary>
     [ViewModelType(nameof(MediaFile))]
-    public abstract class MediaFile : ViewModelElement, IMultimediaItem
+    public abstract class MediaFile : ViewModelElement, IMultimediaItem, IGroupable
     {
         #region Fields
         private Guid _id;
         private string _path;
         private StorageFile _file;
+        private int _groupFlags;
         private bool _isReady;
         #endregion
 
@@ -138,6 +139,32 @@ namespace MediaBase.ViewModel
             }
 
             return true;
+        }
+        #endregion
+
+        #region Interface Implementation (IGroupable)
+        public int GroupFlags
+        {
+            get => _groupFlags;
+            set => SetProperty(ref _groupFlags, value);
+        }
+
+        public bool CheckGroupFlag(int group)
+        {
+            group--;
+            if (group is < 0 or > 7)
+                throw new ArgumentOutOfRangeException(nameof(group));
+
+            return (GroupFlags & (1 << group)) != 0;
+        }
+
+        public void ToggleGroupFlag(int group)
+        {
+            group--;
+            if (group is < 0 or > 7)
+                throw new ArgumentOutOfRangeException(nameof(group));
+
+            GroupFlags ^= (1 << group);
         }
         #endregion
 

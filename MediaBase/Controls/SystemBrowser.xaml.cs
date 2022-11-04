@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
 
-using CommunityToolkit.Mvvm.Messaging.Messages;
 using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging.Messages;
 
 using JLR.Utility.WinUI;
 
@@ -15,17 +12,9 @@ using MediaBase.ViewModel;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
 
-using Windows.Foundation;
-using Windows.Foundation.Collections;
 using Windows.Storage;
-using Windows.System;
-using JLR.Utility.WinUI.ViewModel;
 
 namespace MediaBase.Controls
 {
@@ -63,11 +52,12 @@ namespace MediaBase.Controls
                 }
             });
 
-            messenger.Register<CollectionRequestMessage<GroupableTreeViewNode>, string>(this, "GetGroupedSystemBrowserNodes", (r, m) =>
+            messenger.Register<CollectionRequestMessage<TreeViewNode>, string>(this, "GetGroupedSystemBrowserNodes", (r, m) =>
             {
-                foreach (var rootNode in ((SystemBrowser)r).SystemBrowserTreeView.RootNodes.Cast<GroupableTreeViewNode>())
+                foreach (var rootNode in ((SystemBrowser)r).SystemBrowserTreeView.RootNodes)
                 {
-                    foreach (var node in rootNode.DepthFirstEnumerable().Where(x => x.GroupFlags != 0))
+                    foreach (var node in rootNode.DepthFirstEnumerable().Where(x => x.Content is IGroupable groupable &&
+                                                                                    groupable.GroupFlags != 0))
                     {
                         m.Reply(node);
                     }
@@ -90,9 +80,9 @@ namespace MediaBase.Controls
                 if (m.Sender != ViewModel && m.PropertyName != nameof(ViewModel.ActiveSystemBrowserNode))
                     return;
 
-                if (m.NewValue.Content is StorageFile file &&
-                    (file.ContentType.Contains("image") ||
-                     file.ContentType.Contains("video")))
+                if (m.NewValue.Content is MediaFile file &&
+                    (file.ContentType == MediaContentType.Image ||
+                     file.ContentType == MediaContentType.Video))
                 {
                     ((SystemBrowser)r).SystemBrowserTreeView.SelectedNode = m.NewValue;
                 }
@@ -107,8 +97,15 @@ namespace MediaBase.Controls
         #region Event Handlers (TreeView)
         private async void SystemBrowserTreeView_Expanding(TreeView sender, TreeViewExpandingEventArgs args)
         {
-            if (args.Node.HasUnrealizedChildren)
-                await FillTreeNode(args.Node);
+            if (!args.Node.HasUnrealizedChildren)
+                return;
+
+            await FillTreeNode(args.Node);
+
+            foreach (var mediaFile in args.Node.Children.Select(x => x.Content).OfType<MediaFile>())
+            {
+                await mediaFile.MakeReady();
+            }
         }
 
         private void SystemBrowserTreeView_Collapsed(TreeView sender, TreeViewCollapsedEventArgs args)
@@ -119,19 +116,15 @@ namespace MediaBase.Controls
 
         private void SystemBrowserTreeView_ItemInvoked(TreeView sender, TreeViewItemInvokedEventArgs args)
         {
-            if (args.InvokedItem is GroupableTreeViewNode node)
+            if (args.InvokedItem is TreeViewNode node)
             {
                 ViewModel.ActiveSystemBrowserNode = node;
                 if (node.Content is StorageFolder)
-                {
                     node.IsExpanded = !node.IsExpanded;
-                }
-                else if (node.Content is StorageFile file)
-                {
-                    var mediaSource = ProjectManager.CreateMediaSourceFromFile(file);
-                    mediaSource.GroupFlags = (node as IGroupable).GroupFlags;
-                    ViewModel.ActiveMediaSource = mediaSource;
-                }
+                else if (node.Content is ImageFile imageFile)
+                    ViewModel.ActiveMediaSource = new ImageSource(imageFile);
+                else if (node.Content is VideoFile videoFile)
+                    ViewModel.ActiveMediaSource = new VideoSource(videoFile);
             }
             else
             {
@@ -141,7 +134,7 @@ namespace MediaBase.Controls
 
         private void SystemBrowserTreeView_RightTapped(object sender, RightTappedRoutedEventArgs e)
         {
-            if (e.OriginalSource is FrameworkElement element && element.DataContext is GroupableTreeViewNode node)
+            if (e.OriginalSource is FrameworkElement element && element.DataContext is TreeViewNode node)
                 ViewModel.ActiveSystemBrowserNode = node;
             else
                 ViewModel.ActiveSystemBrowserNode = null;
@@ -155,7 +148,7 @@ namespace MediaBase.Controls
         {
             // Add the user's desktop folder to the browser
             var desktopFolder = await StorageFolder.GetFolderFromPathAsync(Environment.GetFolderPath(Environment.SpecialFolder.Desktop));
-            var desktopNode = new GroupableTreeViewNode
+            var desktopNode = new TreeViewNode
             {
                 Content = desktopFolder,
                 IsExpanded = false,
@@ -165,7 +158,7 @@ namespace MediaBase.Controls
 
             // Add the user's personal folder to the browser
             var personalFolder = await StorageFolder.GetFolderFromPathAsync(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
-            var personalNode = new GroupableTreeViewNode
+            var personalNode = new TreeViewNode
             {
                 Content = personalFolder,
                 IsExpanded = false,
@@ -178,7 +171,7 @@ namespace MediaBase.Controls
             foreach (var drive in drives)
             {
                 var driveFolder = await StorageFolder.GetFolderFromPathAsync(drive);
-                var driveNode = new GroupableTreeViewNode
+                var driveNode = new TreeViewNode
                 {
                     Content = driveFolder,
                     IsExpanded = false,
@@ -200,7 +193,7 @@ namespace MediaBase.Controls
 
             foreach (var subFolder in items.OfType<StorageFolder>())
             {
-                var newNode = new GroupableTreeViewNode
+                var newNode = new TreeViewNode
                 {
                     Content = subFolder,
                     HasUnrealizedChildren = true
@@ -220,50 +213,18 @@ namespace MediaBase.Controls
                     !contentType.Contains("video"))
                     continue;
 
-                var newNode = new GroupableTreeViewNode { Content = file };
+                var newNode = new TreeViewNode { HasUnrealizedChildren = false };
+                if (extension is "mbw" or "mbp")
+                    newNode.Content = file;
+                else if (contentType.Contains("image"))
+                    newNode.Content = new ImageFile(file) { Id = Guid.Empty };
+                else if (contentType.Contains("video"))
+                    newNode.Content = new VideoFile(file) { Id = Guid.Empty };
+                else continue;
+
                 node.Children.Add(newNode);
             }
         }
         #endregion
-    }
-
-    public sealed class GroupableTreeViewNode : TreeViewNode, IGroupable
-    {
-        /// <summary>
-        /// Gets or sets a value where each bit represents a group.
-        /// </summary>
-        /// <remarks>
-        /// The meaning of "group" is arbitrary and has no effect on the
-        /// functionality of this object.
-        /// </remarks>
-        public int GroupFlags
-        {
-            get => (int)GetValue(GroupFlagsProperty);
-            set => SetValue(GroupFlagsProperty, value);
-        }
-
-        public static readonly DependencyProperty GroupFlagsProperty =
-            DependencyProperty.Register("GroupFlags",
-                                        typeof(int),
-                                        typeof(GroupableTreeViewNode),
-                                        new PropertyMetadata(0));
-
-        public bool CheckGroupFlag(int group)
-        {
-            group--;
-            if (group is < 0 or > 7)
-                throw new ArgumentOutOfRangeException(nameof(group));
-
-            return (GroupFlags & (1 << group)) != 0;
-        }
-
-        public void ToggleGroupFlag(int group)
-        {
-            group--;
-            if (group is < 0 or > 7)
-                throw new ArgumentOutOfRangeException(nameof(group));
-
-            GroupFlags ^= (1 << group);
-        }
     }
 }

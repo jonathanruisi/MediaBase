@@ -98,6 +98,9 @@ namespace MediaBase.ViewModel
 
         public async Task<MediaComposition> BuildMediaCompositionAsync()
         {
+            if (!IsReady)
+                throw new Exception("Not ready");
+
             if (!Source.IsReady)
                 throw new Exception($"Source is not ready: {Source.Name}");
 
