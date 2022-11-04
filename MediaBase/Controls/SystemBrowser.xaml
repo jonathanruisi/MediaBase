@@ -101,7 +101,7 @@
                           HorizontalAlignment="Center" VerticalAlignment="Center"
                           Glyph="&#xE783;"
                           Foreground="{StaticResource RedBrush}"
-                          Visibility="{x:Bind ((viewmodel:MediaFile)Content).IsReady,
+                          Visibility="{x:Bind ((viewmodel:MultimediaSource)Content).IsReady,
                                               Converter={StaticResource BoolToVisibilityConverter},
                                               ConverterParameter=True,
                                               Mode=OneWay}"/>
@@ -114,12 +114,12 @@
                 <TextBlock Grid.Column="2"
                            HorizontalAlignment="Left"
                            VerticalAlignment="Center"
-                           Text="{x:Bind ((viewmodel:MediaFile)Content).Name}"/>
+                           Text="{x:Bind ((viewmodel:MultimediaSource)Content).Name}"/>
 
                 <Ellipse Grid.Column="3"
                          Fill="Gold" Width="10" Height="10" Stretch="Fill" StrokeThickness="0"
                          VerticalAlignment="Center" Margin="0,0,2,0"
-                         Visibility="{x:Bind ((viewmodel:MediaFile)Content).GroupFlags,
+                         Visibility="{x:Bind ((viewmodel:MultimediaSource)Content).GroupFlags,
                                              Converter={StaticResource GroupMaskToVisibilityConverter},
                                              ConverterParameter=1,
                                              Mode=OneWay}"/>
@@ -127,7 +127,7 @@
                 <Ellipse Grid.Column="4"
                          Fill="CornflowerBlue" Width="10" Height="10" Stretch="Fill" StrokeThickness="0"
                          VerticalAlignment="Center" Margin="0,0,2,0"
-                         Visibility="{x:Bind ((viewmodel:MediaFile)Content).GroupFlags,
+                         Visibility="{x:Bind ((viewmodel:MultimediaSource)Content).GroupFlags,
                                              Converter={StaticResource GroupMaskToVisibilityConverter},
                                              ConverterParameter=2,
                                              Mode=OneWay}"/>
@@ -135,7 +135,7 @@
                 <Ellipse Grid.Column="5"
                          Fill="IndianRed" Width="10" Height="10" Stretch="Fill" StrokeThickness="0"
                          VerticalAlignment="Center" Margin="0,0,2,0"
-                         Visibility="{x:Bind ((viewmodel:MediaFile)Content).GroupFlags,
+                         Visibility="{x:Bind ((viewmodel:MultimediaSource)Content).GroupFlags,
                                              Converter={StaticResource GroupMaskToVisibilityConverter},
                                              ConverterParameter=3,
                                              Mode=OneWay}"/>
@@ -143,7 +143,7 @@
                 <Ellipse Grid.Column="6"
                          Fill="ForestGreen" Width="10" Height="10" Stretch="Fill" StrokeThickness="0"
                          VerticalAlignment="Center" Margin="0,0,2,0"
-                         Visibility="{x:Bind ((viewmodel:MediaFile)Content).GroupFlags,
+                         Visibility="{x:Bind ((viewmodel:MultimediaSource)Content).GroupFlags,
                                              Converter={StaticResource GroupMaskToVisibilityConverter},
                                              ConverterParameter=4,
                                              Mode=OneWay}"/>
@@ -168,7 +168,7 @@
                           HorizontalAlignment="Center" VerticalAlignment="Center"
                           Glyph="&#xE783;"
                           Foreground="{StaticResource RedBrush}"
-                          Visibility="{x:Bind ((viewmodel:MediaFile)Content).IsReady,
+                          Visibility="{x:Bind ((viewmodel:MultimediaSource)Content).IsReady,
                                               Converter={StaticResource BoolToVisibilityConverter},
                                               ConverterParameter=True,
                                               Mode=OneWay}"/>
@@ -181,12 +181,12 @@
                 <TextBlock Grid.Column="2"
                            HorizontalAlignment="Left"
                            VerticalAlignment="Center"
-                           Text="{x:Bind ((viewmodel:MediaFile)Content).Name}"/>
+                           Text="{x:Bind ((viewmodel:MultimediaSource)Content).Name}"/>
 
                 <Ellipse Grid.Column="3"
                          Fill="Gold" Width="10" Height="10" Stretch="Fill" StrokeThickness="0"
                          VerticalAlignment="Center" Margin="0,0,2,0"
-                         Visibility="{x:Bind ((viewmodel:MediaFile)Content).GroupFlags,
+                         Visibility="{x:Bind ((viewmodel:MultimediaSource)Content).GroupFlags,
                                              Converter={StaticResource GroupMaskToVisibilityConverter},
                                              ConverterParameter=1,
                                              Mode=OneWay}"/>
@@ -194,7 +194,7 @@
                 <Ellipse Grid.Column="4"
                          Fill="CornflowerBlue" Width="10" Height="10" Stretch="Fill" StrokeThickness="0"
                          VerticalAlignment="Center" Margin="0,0,2,0"
-                         Visibility="{x:Bind ((viewmodel:MediaFile)Content).GroupFlags,
+                         Visibility="{x:Bind ((viewmodel:MultimediaSource)Content).GroupFlags,
                                              Converter={StaticResource GroupMaskToVisibilityConverter},
                                              ConverterParameter=2,
                                              Mode=OneWay}"/>
@@ -202,7 +202,7 @@
                 <Ellipse Grid.Column="5"
                          Fill="IndianRed" Width="10" Height="10" Stretch="Fill" StrokeThickness="0"
                          VerticalAlignment="Center" Margin="0,0,2,0"
-                         Visibility="{x:Bind ((viewmodel:MediaFile)Content).GroupFlags,
+                         Visibility="{x:Bind ((viewmodel:MultimediaSource)Content).GroupFlags,
                                              Converter={StaticResource GroupMaskToVisibilityConverter},
                                              ConverterParameter=3,
                                              Mode=OneWay}"/>
@@ -210,7 +210,7 @@
                 <Ellipse Grid.Column="6"
                          Fill="ForestGreen" Width="10" Height="10" Stretch="Fill" StrokeThickness="0"
                          VerticalAlignment="Center" Margin="0,0,2,0"
-                         Visibility="{x:Bind ((viewmodel:MediaFile)Content).GroupFlags,
+                         Visibility="{x:Bind ((viewmodel:MultimediaSource)Content).GroupFlags,
                                              Converter={StaticResource GroupMaskToVisibilityConverter},
                                              ConverterParameter=4,
                                              Mode=OneWay}"/>

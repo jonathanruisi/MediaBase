@@ -496,12 +496,12 @@ namespace MediaBase.ViewModel
         {
             if (IsActiveMediaSourceFromSystemBrowser)
             {
-                var fileList = ActiveSystemBrowserNode.Parent.Children.Where(x => x.Content is MediaFile).ToList();
-                return (fileList.IndexOf(ActiveSystemBrowserNode) + 1, fileList.Count);
+                var systemBrowserMediaList = ActiveSystemBrowserNode.Parent.Children.Where(x => x.Content is MultimediaSource).ToList();
+                return (systemBrowserMediaList.IndexOf(ActiveSystemBrowserNode) + 1, systemBrowserMediaList.Count);
             }
 
-            var mediaList = ActiveMediaSource.Parent.Children.OfType<MultimediaSource>().ToList();
-            return (mediaList.IndexOf(ActiveMediaSource) + 1, mediaList.Count);
+            var workspaceBrowserMediaList = ActiveMediaSource.Parent.Children.OfType<MultimediaSource>().ToList();
+            return (workspaceBrowserMediaList.IndexOf(ActiveMediaSource) + 1, workspaceBrowserMediaList.Count);
         }
         #endregion
 
@@ -535,7 +535,7 @@ namespace MediaBase.ViewModel
                 var index = ActiveSystemBrowserNode.Parent?.Children.IndexOf(ActiveSystemBrowserNode);
                 args.CanExecute = index != null &&
                                   index > 0 &&
-                                  ActiveSystemBrowserNode.Parent.Children[(int)index - 1].Content is MediaFile;
+                                  ActiveSystemBrowserNode.Parent.Children[(int)index - 1].Content is MultimediaSource;
             }
         }
 
@@ -552,7 +552,7 @@ namespace MediaBase.ViewModel
                 var index = ActiveSystemBrowserNode.Parent?.Children.IndexOf(ActiveSystemBrowserNode);
                 args.CanExecute = index != null &&
                                   index < ActiveSystemBrowserNode.Parent.Children.Count - 1 &&
-                                  ActiveSystemBrowserNode.Parent.Children[(int)index + 1].Content is MediaFile;
+                                  ActiveSystemBrowserNode.Parent.Children[(int)index + 1].Content is MultimediaSource;
             }    
         }
 
@@ -663,13 +663,7 @@ namespace MediaBase.ViewModel
             {
                 var index = ActiveSystemBrowserNode.Parent.Children.IndexOf(ActiveSystemBrowserNode);
                 ActiveSystemBrowserNode = ActiveSystemBrowserNode.Parent.Children[index - 1];
-
-                MultimediaSource mediaSource = null;
-                if (ActiveSystemBrowserNode.Content is ImageFile imageFile)
-                    mediaSource = new ImageSource(Guid.Empty, imageFile) { GroupFlags = imageFile.GroupFlags };
-                else if (ActiveSystemBrowserNode.Content is VideoFile videoFile)
-                    mediaSource = new VideoSource(Guid.Empty, videoFile) { GroupFlags = videoFile.GroupFlags };
-                ActiveMediaSource = mediaSource;
+                ActiveMediaSource = (MultimediaSource)ActiveSystemBrowserNode.Content;
             }
         }
 
@@ -684,13 +678,7 @@ namespace MediaBase.ViewModel
             {
                 var index = ActiveSystemBrowserNode.Parent.Children.IndexOf(ActiveSystemBrowserNode);
                 ActiveSystemBrowserNode = ActiveSystemBrowserNode.Parent.Children[index + 1];
-
-                MultimediaSource mediaSource = null;
-                if (ActiveSystemBrowserNode.Content is ImageFile imageFile)
-                    mediaSource = new ImageSource(Guid.Empty, imageFile) { GroupFlags = imageFile.GroupFlags };
-                else if (ActiveSystemBrowserNode.Content is VideoFile videoFile)
-                    mediaSource = new VideoSource(Guid.Empty, videoFile) { GroupFlags = videoFile.GroupFlags };
-                ActiveMediaSource = mediaSource;
+                ActiveMediaSource = (MultimediaSource)ActiveSystemBrowserNode.Content;
             }
         }
 
@@ -1058,38 +1046,26 @@ namespace MediaBase.ViewModel
             if (!int.TryParse((string)args.Parameter, out int group))
                 return;
 
-            if (ActiveMediaSource == ActiveWorkspaceBrowserNode)
+            ActiveMediaSource.ToggleGroupFlag(group);
+            if (App.TestKeyStates(VirtualKey.Control, CoreVirtualKeyStates.Down))
             {
-                ActiveMediaSource.ToggleGroupFlag(group);
-                if (App.TestKeyStates(VirtualKey.Control, CoreVirtualKeyStates.Down))
+                if (ActiveMediaSource == ActiveWorkspaceBrowserNode)
                 {
                     for (var i = ActiveMediaSource.Parent.Children.IndexOf(ActiveMediaSource) - 1; i >= 0; i--)
                     {
                         if (((MultimediaSource)ActiveMediaSource.Parent.Children[i]).CheckGroupFlag(group) != ActiveMediaSource.CheckGroupFlag(group))
                             ((MultimediaSource)ActiveMediaSource.Parent.Children[i]).ToggleGroupFlag(group);
-                        else
-                            break;
+                        else break;
                     }
                 }
-            }
-            else if (IsActiveMediaSourceFromSystemBrowser)
-            {
-                if (ActiveSystemBrowserNode.Content is not MediaFile mediaFile)
-                    throw new Exception("Active system browser node is not a media file");
-
-                mediaFile.ToggleGroupFlag(group);
-                ActiveMediaSource.ToggleGroupFlag(group);   // For visual indication in the editor
-                var newFlagValue = mediaFile.CheckGroupFlag(group);
-
-                if (App.TestKeyStates(VirtualKey.Control, CoreVirtualKeyStates.Down))
+                else if (IsActiveMediaSourceFromSystemBrowser)
                 {
                     for (var i = ActiveSystemBrowserNode.Parent.Children.IndexOf(ActiveSystemBrowserNode) - 1; i >= 0; i--)
                     {
-                        if (ActiveSystemBrowserNode.Parent.Children[i].Content is MediaFile groupableFile &&
-                            groupableFile.CheckGroupFlag(group) != newFlagValue)
-                            groupableFile.ToggleGroupFlag(group);
-                        else
-                            break;
+                        if (ActiveSystemBrowserNode.Parent.Children[i].Content is MultimediaSource prevMediaSource &&
+                            prevMediaSource.CheckGroupFlag(group) != ActiveMediaSource.CheckGroupFlag(group))
+                            prevMediaSource.ToggleGroupFlag(group);
+                        else break;
                     }
                 }
             }
@@ -1100,21 +1076,21 @@ namespace MediaBase.ViewModel
             ActiveMediaSource = null;
 
             var groupedNodes = Messenger.Send<CollectionRequestMessage<TreeViewNode>, string>("GetGroupedSystemBrowserNodes").Responses;
-            var group1Files = groupedNodes.Select(x => x.Content).OfType<MediaFile>()
+            var group1Files = groupedNodes.Select(x => x.Content).OfType<MultimediaSource>()
                                                                  .Where(x => x.CheckGroupFlag(1))
-                                                                 .Select(x => x.File)
+                                                                 .Select(x => ((MediaFile)x.Source).File)
                                                                  .ToList();
-            var group2Files = groupedNodes.Select(x => x.Content).OfType<MediaFile>()
+            var group2Files = groupedNodes.Select(x => x.Content).OfType<MultimediaSource>()
                                                                  .Where(x => x.CheckGroupFlag(2))
-                                                                 .Select(x => x.File)
+                                                                 .Select(x => ((MediaFile)x.Source).File)
                                                                  .ToList();
-            var group3Files = groupedNodes.Select(x => x.Content).OfType<MediaFile>()
+            var group3Files = groupedNodes.Select(x => x.Content).OfType<MultimediaSource>()
                                                                  .Where(x => x.CheckGroupFlag(3))
-                                                                 .Select(x => x.File)
+                                                                 .Select(x => ((MediaFile)x.Source).File)
                                                                  .ToList();
-            var group4Files = groupedNodes.Select(x => x.Content).OfType<MediaFile>()
+            var group4Files = groupedNodes.Select(x => x.Content).OfType<MultimediaSource>()
                                                                  .Where(x => x.CheckGroupFlag(4))
-                                                                 .Select(x => x.File)
+                                                                 .Select(x => ((MediaFile)x.Source).File)
                                                                  .ToList();
 
             var dlg = new GroupActionDialog
@@ -1371,7 +1347,7 @@ namespace MediaBase.ViewModel
         #region Private Properties
         private bool IsActiveMediaSourceFromSystemBrowser =>
             ActiveMediaSource.Parent == null &&
-            ActiveMediaSource.Source == ActiveSystemBrowserNode.Content;
+            ActiveMediaSource == ActiveSystemBrowserNode.Content;
         #endregion
 
         #region Private Methods

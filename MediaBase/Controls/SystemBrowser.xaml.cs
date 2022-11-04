@@ -80,9 +80,9 @@ namespace MediaBase.Controls
                 if (m.Sender != ViewModel && m.PropertyName != nameof(ViewModel.ActiveSystemBrowserNode))
                     return;
 
-                if (m.NewValue.Content is MediaFile file &&
-                    (file.ContentType == MediaContentType.Image ||
-                     file.ContentType == MediaContentType.Video))
+                if (m.NewValue.Content is MultimediaSource mediaSource &&
+                    (mediaSource.ContentType == MediaContentType.Image ||
+                     mediaSource.ContentType == MediaContentType.Video))
                 {
                     ((SystemBrowser)r).SystemBrowserTreeView.SelectedNode = m.NewValue;
                 }
@@ -102,9 +102,9 @@ namespace MediaBase.Controls
 
             await FillTreeNode(args.Node);
 
-            foreach (var mediaFile in args.Node.Children.Select(x => x.Content).OfType<MediaFile>())
+            foreach (var mediaSource in args.Node.Children.Select(x => x.Content).OfType<MultimediaSource>())
             {
-                await mediaFile.MakeReady();
+                await mediaSource.MakeReady();
             }
         }
 
@@ -121,10 +121,8 @@ namespace MediaBase.Controls
                 ViewModel.ActiveSystemBrowserNode = node;
                 if (node.Content is StorageFolder)
                     node.IsExpanded = !node.IsExpanded;
-                else if (node.Content is ImageFile imageFile)
-                    ViewModel.ActiveMediaSource = new ImageSource(imageFile);
-                else if (node.Content is VideoFile videoFile)
-                    ViewModel.ActiveMediaSource = new VideoSource(videoFile);
+                else if (node.Content is MultimediaSource mediaSource)
+                    ViewModel.ActiveMediaSource = mediaSource;
             }
             else
             {
@@ -207,19 +205,13 @@ namespace MediaBase.Controls
                 var extension = file.GetFileExtension();
                 var contentType = file.ContentType.ToLower();
 
-                if (extension != "mbw" &&
-                    extension != "mbp" &&
-                    !contentType.Contains("image") &&
-                    !contentType.Contains("video"))
-                    continue;
-
                 var newNode = new TreeViewNode { HasUnrealizedChildren = false };
                 if (extension is "mbw" or "mbp")
                     newNode.Content = file;
                 else if (contentType.Contains("image"))
-                    newNode.Content = new ImageFile(file) { Id = Guid.Empty };
+                    newNode.Content = new ImageSource(Guid.Empty, new ImageFile(file) { Id = Guid.Empty });
                 else if (contentType.Contains("video"))
-                    newNode.Content = new VideoFile(file) { Id = Guid.Empty };
+                    newNode.Content = new VideoSource(Guid.Empty, new VideoFile(file) { Id = Guid.Empty });
                 else continue;
 
                 node.Children.Add(newNode);

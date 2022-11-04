@@ -45,11 +45,11 @@ namespace MediaBase
                 if (extension == ProjectManager.ProjectFileExtension)
                     return ProjectFileTemplate;
             }
-            else if (node.Content is MediaFile mediaFile)
+            else if (node.Content is MultimediaSource mediaSource)
             {
-                if (mediaFile.ContentType == MediaContentType.Image)
+                if (mediaSource.ContentType == MediaContentType.Image)
                     return ImageFileTemplate;
-                else if (mediaFile.ContentType == MediaContentType.Video)
+                else if (mediaSource.ContentType == MediaContentType.Video)
                     return VideoFileTemplate;
             }
 
