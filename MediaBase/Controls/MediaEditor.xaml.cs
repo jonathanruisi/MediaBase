@@ -162,7 +162,7 @@ namespace MediaBase.Controls
             DependencyProperty.Register("CurrentFrame",
                                         typeof(decimal),
                                         typeof(MediaEditor),
-                                        new PropertyMetadata(0,
+                                        new PropertyMetadata(0M,
                                             OnCurrentFrameChanged));
 
         public bool IsFastPositionUpdate
@@ -323,17 +323,17 @@ namespace MediaBase.Controls
                                         typeof(MediaEditor),
                                         new PropertyMetadata(Colors.White));
 
-        public float TextOverlayOutlineThickness
+        public double TextOverlayOutlineThickness
         {
-            get => (float)GetValue(TextOverlayOutlineThicknessProperty);
+            get => (double)GetValue(TextOverlayOutlineThicknessProperty);
             set => SetValue(TextOverlayOutlineThicknessProperty, value);
         }
 
         public static readonly DependencyProperty TextOverlayOutlineThicknessProperty =
             DependencyProperty.Register("TextOverlayOutlineThickness",
-                                        typeof(float),
+                                        typeof(double),
                                         typeof(MediaEditor),
-                                        new PropertyMetadata(0.5f));
+                                        new PropertyMetadata(0.5));
 
         public InputSystemCursorShape PrimaryCursorShape
         {
@@ -482,7 +482,9 @@ namespace MediaBase.Controls
 
         private static void OnCurrentFrameChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            if (d is not MediaEditor editor || editor.Source is null)
+            if (d is not MediaEditor editor ||
+                editor.Source is null ||
+                ((decimal)e.OldValue).CompareTo((decimal)e.NewValue) == 0)
                 return;
 
             // Frame change was not due to the user interacting with the timeline,
@@ -648,7 +650,6 @@ namespace MediaBase.Controls
             {
                 if (!IsFastPositionUpdate)
                     CurrentPosition = sender.Position;
-                _redrawTimer.Start();
             });
         }
 
@@ -684,14 +685,9 @@ namespace MediaBase.Controls
             {
                 if (_frameSizingBitmap == null)
                 {
-                    int width = (int)(IsPanAndZoomEnabled
-                        ? Source.WidthInPixels
-                        : SwapChainCanvas.ActualWidth);
-                    int height = (int)(IsPanAndZoomEnabled
-                        ? Source.HeightInPixels
-                        : SwapChainCanvas.ActualHeight);
                     _frameSizingBitmap = new SoftwareBitmap(BitmapPixelFormat.Rgba8,
-                                                            width, height,
+                                                            (int)Source.WidthInPixels,
+                                                            (int)Source.HeightInPixels,
                                                             BitmapAlphaMode.Ignore);
                 }
 
@@ -846,10 +842,10 @@ namespace MediaBase.Controls
                 using var timeRemainTextGeometry = CanvasGeometry.CreateText(timeRemainTextLayout);
 
                 ds.FillGeometry(positionTextGeometry, 15, 15, TextOverlayColor);
-                ds.DrawGeometry(positionTextGeometry, 15, 15, TextOverlayOutlineColor, TextOverlayOutlineThickness);
+                ds.DrawGeometry(positionTextGeometry, 15, 15, TextOverlayOutlineColor, (float)TextOverlayOutlineThickness);
 
                 ds.FillGeometry(timeRemainTextGeometry, -15, 15, TextOverlayColor);
-                ds.DrawGeometry(timeRemainTextGeometry, -15, 15, TextOverlayOutlineColor, TextOverlayOutlineThickness);
+                ds.DrawGeometry(timeRemainTextGeometry, -15, 15, TextOverlayOutlineColor, (float)TextOverlayOutlineThickness);
             }
 
             // Determine title text opacity (during title text fade)
@@ -977,7 +973,6 @@ namespace MediaBase.Controls
 
                 if (Source.ContentType == MediaContentType.Video)
                 {
-                    _redrawTimer.Stop();
                     _player.PlaybackSession.PlaybackRate = 0;
                     _player.PlaybackSession.Position =
                         TimeSpan.FromSeconds(decimal.ToDouble(previewPosition));
@@ -1636,10 +1631,11 @@ namespace MediaBase.Controls
             if (Source == null)
             {
                 RefreshRate = App.RefreshRate;
-                IsPanAndZoomEnabled = true;
                 TimeDisplayMode = TimeDisplayFormat.None;
                 return;
             }
+
+            IsPanAndZoomEnabled = true;
 
             if (!Source.IsReady)
                 await Source.MakeReady();
@@ -1650,13 +1646,11 @@ namespace MediaBase.Controls
 
             if (Source is ViewModel.ImageSource image)
             {
-                IsPanAndZoomEnabled = true;
                 TimeDisplayMode = TimeDisplayFormat.FrameNumber;
                 _frameBitmap = await CanvasBitmap.LoadAsync(SwapChainCanvas.SwapChain.Device,
                     await (image.Source as ImageFile).File.OpenReadAsync());
-
                 if (!IsLockPanAndZoom)
-                    FrameScale = decimal.ToDouble(CalculateFrameScaleToFit(image.WidthInPixels, image.HeightInPixels));
+                    FrameScale = decimal.ToDouble(CalculateFrameScaleToFit(Source.WidthInPixels, Source.HeightInPixels));
                 ApplyFrameScaleAndPosition();
 
                 // Configure timeline (if image is animated) and pause on first frame
@@ -1678,12 +1672,14 @@ namespace MediaBase.Controls
             }
             else if (Source is VideoSource video)
             {
-                IsPanAndZoomEnabled = true;
                 TimeDisplayMode = TimeDisplayFormat.TimecodeWithFrame;
                 Timeline.Duration = TimeSpan.FromSeconds(decimal.ToDouble(video.Duration));
                 Timeline.Position = 0;
 
                 _player.Source = await video.BuildMediaSourceAsync();
+                
+                if (!IsLockPanAndZoom)
+                    FrameScale = decimal.ToDouble(CalculateFrameScaleToFit(Source.WidthInPixels, Source.HeightInPixels));
 
                 // Add cuts to timeline as selections
                 if (!video.AreCutsApplied)
@@ -1727,7 +1723,7 @@ namespace MediaBase.Controls
 
             if (scaleKeyframes.Count > 0)
             {
-                IsLockPanAndZoom = false;
+                IsPanAndZoomEnabled = true;
 
                 if (scaleKeyframes.Count == 1 ||
                     currentPos < scaleKeyframes.First.Value.Position ||
@@ -1781,7 +1777,7 @@ namespace MediaBase.Controls
 
             if (offsetXKeyframes.Count > 0)
             {
-                IsLockPanAndZoom = false;
+                IsPanAndZoomEnabled = true;
 
                 if (offsetXKeyframes.Count == 1 ||
                     currentPos < offsetXKeyframes.First.Value.Position ||
@@ -1823,7 +1819,7 @@ namespace MediaBase.Controls
 
             if (offsetYKeyframes.Count > 0)
             {
-                IsLockPanAndZoom = false;
+                IsPanAndZoomEnabled = true;
 
                 if (offsetYKeyframes.Count == 1 ||
                     currentPos < offsetYKeyframes.First.Value.Position ||

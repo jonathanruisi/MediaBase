@@ -107,12 +107,15 @@
                 
                 <!-- Workspace Toggles -->
                 <StackPanel Grid.Column="3" Orientation="Horizontal">
-                    <ToggleButton Content="Browser" Width="100" VerticalAlignment="Top"
+                    <ToggleButton Content="Browser" Width="85" VerticalAlignment="Top"
                                   Margin="20,0,5,0" Padding="0,0,0,2" CornerRadius="0,0,10,10"
                                   IsChecked="True" Click="SystemBrowserToggle_Click"/>
-                    <ToggleButton Content="Workspace" Width="100" VerticalAlignment="Top"
-                                  Margin="0" Padding="0,0,0,2" CornerRadius="0,0,10,10"
+                    <ToggleButton Content="Workspace" Width="85" VerticalAlignment="Top"
+                                  Margin="0,0,5,0" Padding="0,0,0,2" CornerRadius="0,0,10,10"
                                   IsChecked="True" Click="WorkspaceBrowserToggle_Click"/>
+                    <ToggleButton Content="Properties" Width="85" VerticalAlignment="Top"
+                                  Margin="0" Padding="0,0,0,2" CornerRadius="0,0,10,10"
+                                  IsChecked="True" Click="MediaPropertiesToggle_Click"/>
                 </StackPanel>
             </Grid>
 
@@ -138,19 +141,18 @@
 
         <!-- Main UI -->
         <Grid Grid.Row="1">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" x:Name="SystemBrowserColumn"/>
                 <ColumnDefinition Width="Auto" x:Name="SystemBrowserResizeColumn"/>
                 <ColumnDefinition Width="Auto" x:Name="WorkspaceBrowserColumn"/>
                 <ColumnDefinition Width="Auto" x:Name="WorkspaceBrowserResizeColumn"/>
+                <ColumnDefinition Width="Auto" x:Name="MediaPropertiesColumn"/>
+                <ColumnDefinition Width="Auto" x:Name="MediaPropertiesResizeColumn"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <Grid x:Name="SystemBrowserPanel" Grid.Row="0" Grid.Column="0" Grid.RowSpan="2"
+            <!-- System Browser -->
+            <Grid x:Name="SystemBrowserPanel" Grid.Column="0"
                   Visibility="Visible" MinWidth="250" Background="#282828">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -159,16 +161,17 @@
                 
                 <Border Grid.Row="0" Background="#080828" BorderThickness="0" BorderBrush="Transparent">
                     <StackPanel Orientation="Vertical">
-                        <TextBlock FontSize="14" FontWeight="Bold" Margin="10,5,0,5" Foreground="#2828F0"
-                                   Text="System Browser"/>
+                        <TextBlock FontSize="14" FontWeight="Bold" Margin="10,5,0,5"
+                                   Foreground="#2828F0" Text="System Browser"/>
                         <Rectangle Stretch="Fill" Height="3" Fill="#0808A0"/>
                     </StackPanel>
                 </Border>
                 <controls:SystemBrowser x:Name="SystemBrowser" Grid.Row="1"/>
             </Grid>
 
-            <Grid x:Name="WorkspaceBrowserPanel" Grid.Row="0" Grid.Column="2" Grid.RowSpan="2"
-                        Visibility="Visible" MinWidth="250" Background="#282828">
+            <!-- Workspace Browser -->
+            <Grid x:Name="WorkspaceBrowserPanel" Grid.Column="2"
+                  Visibility="Visible" MinWidth="250" Background="#282828">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
@@ -176,36 +179,51 @@
                 
                 <Border Grid.Row="0" Background="#082808" BorderThickness="0" BorderBrush="Transparent">
                     <StackPanel Orientation="Vertical">
-                        <TextBlock FontSize="14" FontWeight="Bold" Margin="10,5,0,5" Foreground="#28F028"
-                                   Text="Workspace Browser"/>
+                        <TextBlock FontSize="14" FontWeight="Bold" Margin="10,5,0,5"
+                                   Foreground="#28F028" Text="Workspace Browser"/>
                         <Rectangle Stretch="Fill" Height="3" Fill="#08A008"/>
                     </StackPanel>
                 </Border>
                 <controls:WorkspaceBrowser x:Name="WorkspaceBrowser" Grid.Row="1"/>
             </Grid>
+            
+            <!-- Media Properties -->
+            <Grid x:Name="MediaPropertiesPanel" Grid.Column="4" 
+                  Visibility="Visible" MinWidth="250" Background="#282828">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
 
-            <toolkit:GridSplitter x:Name="SystemBrowserGridSplitter" Grid.Row="0" Grid.Column="1" Grid.RowSpan="2"
-                                  ResizeBehavior="PreviousAndNext" ResizeDirection="Columns" Margin="0,0,5,0"
-                                  CursorBehavior="ChangeOnSplitterHover" GripperCursor="SizeWestEast"/>
-
-            <toolkit:GridSplitter x:Name="WorkspaceBrowserGridSplitter" Grid.Row="0" Grid.Column="3" Grid.RowSpan="2"
-                                  ResizeBehavior="PreviousAndNext" ResizeDirection="Columns" Margin="0,0,5,0"
-                                  CursorBehavior="ChangeOnSplitterHover" GripperCursor="SizeWestEast"/>
-
-            <!-- Properties -->
-            <toolkit:Expander Grid.Row="1" Grid.Column="4"
-                              ExpandDirection="Down" IsExpanded="False"
-                              HorizontalContentAlignment="Stretch"
-                              Header="Properties">
-                
-            </toolkit:Expander>
+                <Border Grid.Row="0" Background="#280808" BorderThickness="0" BorderBrush="Transparent">
+                    <StackPanel Orientation="Vertical">
+                        <TextBlock FontSize="14" FontWeight="Bold" Margin="10,5,0,5"
+                                   Foreground="#F02828" Text="Properties"/>
+                        <Rectangle Stretch="Fill" Height="3" Fill="#A00808"/>
+                    </StackPanel>
+                </Border>
+                <controls:MediaPropertiesControl x:Name="MediaProperties" Grid.Row="1"/>
+            </Grid>
 
             <!-- Media Editor -->
-            <controls:MediaEditor x:Name="Editor" Grid.Row="0" Grid.Column="4"
+            <controls:MediaEditor x:Name="Editor" Grid.Column="6"
                                   HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                                   IsFastPositionUpdate="True"
                                   FontFamily="Consolas" FontSize="32" FontWeight="Bold"
                                   Source="{x:Bind ViewModel.ActiveMediaSource, Mode=OneWay}"/>
+
+            <!-- Grid Splitters -->
+            <toolkit:GridSplitter x:Name="SystemBrowserGridSplitter" Grid.Column="1"
+                                  ResizeBehavior="PreviousAndNext" ResizeDirection="Columns" Margin="0,0,5,0"
+                                  CursorBehavior="ChangeOnSplitterHover" GripperCursor="SizeWestEast"/>
+
+            <toolkit:GridSplitter x:Name="WorkspaceBrowserGridSplitter" Grid.Column="3"
+                                  ResizeBehavior="PreviousAndNext" ResizeDirection="Columns" Margin="0,0,5,0"
+                                  CursorBehavior="ChangeOnSplitterHover" GripperCursor="SizeWestEast"/>
+
+            <toolkit:GridSplitter x:Name="MediaPropertiesGridSplitter" Grid.Column="5"
+                                  ResizeBehavior="PreviousAndNext" ResizeDirection="Columns" Margin="0,0,5,0"
+                                  CursorBehavior="ChangeOnSplitterHover" GripperCursor="SizeWestEast"/>
         </Grid>
 
         <!-- Info Bar -->

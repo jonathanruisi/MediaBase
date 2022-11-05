@@ -47,7 +47,7 @@ namespace MediaBase
     {
         #region Fields
         private readonly AppWindow _appWindow;
-        private GridLength _systemBrowserWidth, _workspaceBrowserWidth;
+        private GridLength _systemBrowserWidth, _workspaceBrowserWidth, _mediaPropertiesWidth;
         #endregion
 
         #region Properties
@@ -235,6 +235,23 @@ namespace MediaBase
                 WorkspaceBrowserColumn.Width = _workspaceBrowserWidth;
                 WorkspaceBrowserPanel.Visibility = Visibility.Visible;
                 WorkspaceBrowserGridSplitter.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void MediaPropertiesToggle_Click(object sender, RoutedEventArgs e)
+        {
+            if (MediaPropertiesPanel.Visibility == Visibility.Visible)
+            {
+                _mediaPropertiesWidth = MediaPropertiesColumn.Width;
+                MediaPropertiesColumn.Width = new GridLength(0);
+                MediaPropertiesPanel.Visibility = Visibility.Collapsed;
+                MediaPropertiesGridSplitter.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                MediaPropertiesColumn.Width = _mediaPropertiesWidth;
+                MediaPropertiesPanel.Visibility = Visibility.Visible;
+                MediaPropertiesGridSplitter.Visibility = Visibility.Visible;
             }
         }
         #endregion

@@ -1,0 +1,140 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="MediaBase.ViewModel.ProjectManager">
+    <Position X="10.75" Y="7.25" Width="4" />
+    <TypeIdentifier>
+      <HashCode>GDWrwl40G2lzGQmUzJ0xCAgmMqbGjkBGGa1AQES6kws=</HashCode>
+      <FileName>ViewModel\ProjectManager.cs</FileName>
+    </TypeIdentifier>
+    <ShowAsAssociation>
+      <Property Name="SelectedMarker" />
+    </ShowAsAssociation>
+    <ShowAsCollectionAssociation>
+      <Property Name="MediaItemDictionary" />
+    </ShowAsCollectionAssociation>
+  </Class>
+  <Class Name="JLR.Utility.WinUI.ViewModel.ViewModelNode">
+    <Position X="19.25" Y="7.25" Width="2" />
+    <TypeIdentifier />
+  </Class>
+  <Class Name="JLR.Utility.WinUI.ViewModel.ViewModelElement">
+    <Position X="21" Y="0.5" Width="2.5" />
+    <TypeIdentifier />
+  </Class>
+  <Class Name="MediaBase.ViewModel.ImageFile">
+    <Position X="23" Y="12" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAQAAAAAAAAAAAAAAAEAAAAIAAAEAAAAQAAIAAAA=</HashCode>
+      <FileName>ViewModel\ImageFile.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="MediaBase.ViewModel.ImageSource">
+    <Position X="28.5" Y="16.25" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAABAAAAAAEAAAAAAAAAACABQAAAAABA=</HashCode>
+      <FileName>ViewModel\ImageSource.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="MediaBase.ViewModel.Keyframe">
+    <Position X="15.5" Y="11.75" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAgAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>ViewModel\Keyframe.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="MediaBase.ViewModel.Marker">
+    <Position X="15.5" Y="7.25" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAkAAAAACAAAkABAAAAAAAAAAAAABBAAAgCAAAAA=</HashCode>
+      <FileName>ViewModel\Marker.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="MediaBase.ViewModel.MediaFile">
+    <Position X="24.25" Y="7.25" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AACCAAAAAAACAAIEAABAAEAAAAAEAAAACAAQAAAAEBA=</HashCode>
+      <FileName>ViewModel\MediaFile.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="MediaBase.ViewModel.MediaFolder">
+    <Position X="19" Y="10.25" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>ViewModel\MediaFolder.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="MediaBase.ViewModel.MultimediaSource">
+    <Position X="29.75" Y="7.25" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>EAiCJYBAAkECGAAAAJhAAEhAAAIAQEGACAAQAAIAAIA=</HashCode>
+      <FileName>ViewModel\MultimediaSource.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="MediaBase.ViewModel.Project">
+    <Position X="18.25" Y="12.25" Width="4" />
+    <TypeIdentifier>
+      <HashCode>AACAAAgAAEESAAoAAAAAAEAAIIAEAAAAAIAAAAAAEAA=</HashCode>
+      <FileName>ViewModel\Project.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="MediaBase.ViewModel.VideoFile">
+    <Position X="25.75" Y="12" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAYAAAAACAAAAABAAAEAAAAIAQAEAAAAQAAIAAAA=</HashCode>
+      <FileName>ViewModel\VideoFile.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="MediaBase.ViewModel.VideoSource">
+    <Position X="31.5" Y="16.25" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AACACAAAAAIBACAAAAAAEUEAAIAIAAABCQIQAAAAABA=</HashCode>
+      <FileName>ViewModel\VideoSource.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="MediaBase.Controls.MediaEditor">
+    <Position X="0.5" Y="3" Width="4.25" />
+    <TypeIdentifier>
+      <HashCode>GNi67YROWiA1Dy8OkHWkOG3iOK7wOqtVmkR8GP31YIc=</HashCode>
+      <FileName>Controls\MediaEditor.xaml.cs</FileName>
+    </TypeIdentifier>
+    <ShowAsAssociation>
+      <Property Name="ViewModel" />
+    </ShowAsAssociation>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="MediaBase.Controls.SystemBrowser">
+    <Position X="16.25" Y="18.25" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>CAAAAAAAAAAAAAAAAAFCAARAEAAAAAAAAAAAQAAAAAA=</HashCode>
+      <FileName>Controls\SystemBrowser.xaml.cs</FileName>
+    </TypeIdentifier>
+    <ShowAsAssociation>
+      <Property Name="ViewModel" />
+    </ShowAsAssociation>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="MediaBase.Controls.WorkspaceBrowser">
+    <Position X="5.75" Y="18.25" Width="4" />
+    <TypeIdentifier>
+      <HashCode>AAAIEAAAAAAAAAAAAAAAAABCEAAAAAAAEAABAAAAgAA=</HashCode>
+      <FileName>Controls\WorkspaceBrowser.xaml.cs</FileName>
+    </TypeIdentifier>
+    <ShowAsAssociation>
+      <Property Name="ViewModel" />
+    </ShowAsAssociation>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Interface Name="MediaBase.ViewModel.IMultimediaItem">
+    <Position X="8" Y="14.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAACAAAAAAAAAAAAAAAAAEQAAAAAAAAACAAQAAAAAAA=</HashCode>
+      <FileName>ViewModel\IMultimediaItem.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

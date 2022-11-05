@@ -18,6 +18,7 @@
     <None Remove="Assets\Logo_Package.scale-400.png" />
     <None Remove="Assets\Logo_Tile_Medium.scale-400.png" />
     <None Remove="Controls\MediaEditor.xaml" />
+    <None Remove="Controls\MediaPropertiesControl.xaml" />
     <None Remove="Controls\SystemBrowser.xaml" />
     <None Remove="Controls\WorkspaceBrowser.xaml" />
     <None Remove="Dialogs\GroupActionDialog.xaml" />
@@ -64,6 +65,11 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Remove="Controls\SystemBrowser.xaml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Controls\MediaPropertiesControl.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Page Update="Dialogs\MarkerDialog.xaml">
