@@ -77,7 +77,7 @@ namespace MediaBase.Controls
             // Project Manager's ActiveSystemBrowserNode property changed
             messenger.Register<PropertyChangedMessage<TreeViewNode>>(this, (r, m) =>
             {
-                if (m.Sender != ViewModel && m.PropertyName != nameof(ViewModel.ActiveSystemBrowserNode))
+                if (m.Sender != ViewModel || m.PropertyName != nameof(ViewModel.ActiveSystemBrowserNode))
                     return;
 
                 if (m.NewValue.Content is MultimediaSource mediaSource &&

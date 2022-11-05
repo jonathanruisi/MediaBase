@@ -74,6 +74,7 @@ namespace MediaBase.Controls
         private ValueDragType _scrubType;
         private DateTime _sourceChangedTimestamp;
         private double _textFadeOpacity, _textFadeOpacityIncrement;
+        private int _currentSourceIndex, _currentSourceParentTotal;
         #endregion
 
         #region Properties
@@ -238,18 +239,29 @@ namespace MediaBase.Controls
                                         typeof(MediaEditor),
                                         new PropertyMetadata(10));
 
-        public bool IsLockScaleToFit
+        public bool IsPanAndZoomEnabled
         {
-            get => (bool)GetValue(IsLockScaleToFitProperty);
-            set => SetValue(IsLockScaleToFitProperty, value);
+            get => (bool)GetValue(IsPanAndZoomEnabledProperty);
+            set => SetValue(IsPanAndZoomEnabledProperty, value);
         }
 
-        public static readonly DependencyProperty IsLockScaleToFitProperty =
-            DependencyProperty.Register("IsLockScaleToFit",
+        public static readonly DependencyProperty IsPanAndZoomEnabledProperty =
+            DependencyProperty.Register("IsPanAndZoomEnabled",
                                         typeof(bool),
                                         typeof(MediaEditor),
-                                        new PropertyMetadata(true,
-                                            OnIsLockScaleToFitChanged));
+                                        new PropertyMetadata(false));
+
+        public bool IsLockPanAndZoom
+        {
+            get => (bool)GetValue(IsLockPanAndZoomProperty);
+            set => SetValue(IsLockPanAndZoomProperty, value);
+        }
+
+        public static readonly DependencyProperty IsLockPanAndZoomProperty =
+            DependencyProperty.Register("IsLockPanAndZoom",
+                                        typeof(bool),
+                                        typeof(MediaEditor),
+                                        new PropertyMetadata(false));
 
         public TimeDisplayFormat TimeDisplayMode
         {
@@ -468,20 +480,6 @@ namespace MediaBase.Controls
             editor._player.IsLoopingEnabled = editor.IsLoopingEnabled;
         }
 
-        private static void OnIsLockScaleToFitChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            if (d is not MediaEditor editor || editor.Source is null)
-                return;
-
-            if (editor.IsLockScaleToFit)
-            {
-                editor.FrameScale = decimal.ToDouble(editor.CalculateFrameScaleToFit(editor.Source.WidthInPixels,
-                                                                                     editor.Source.HeightInPixels));
-                editor.FrameOffsetX = 0;
-                editor.FrameOffsetY = 0;
-            }
-        }
-
         private static void OnCurrentFrameChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             if (d is not MediaEditor editor || editor.Source is null)
@@ -686,12 +684,12 @@ namespace MediaBase.Controls
             {
                 if (_frameSizingBitmap == null)
                 {
-                    int width = (int)(IsLockScaleToFit
-                        ? SwapChainCanvas.ActualWidth
-                        : Source.WidthInPixels);
-                    int height = (int)(IsLockScaleToFit
-                        ? SwapChainCanvas.ActualHeight
-                        : Source.HeightInPixels);
+                    int width = (int)(IsPanAndZoomEnabled
+                        ? Source.WidthInPixels
+                        : SwapChainCanvas.ActualWidth);
+                    int height = (int)(IsPanAndZoomEnabled
+                        ? Source.HeightInPixels
+                        : SwapChainCanvas.ActualHeight);
                     _frameSizingBitmap = new SoftwareBitmap(BitmapPixelFormat.Rgba8,
                                                             width, height,
                                                             BitmapAlphaMode.Ignore);
@@ -859,6 +857,7 @@ namespace MediaBase.Controls
             {
                 _textFadeOpacity = 1.0;
                 _textFadeOpacityIncrement = 0;
+                (_currentSourceIndex, _currentSourceParentTotal) = ViewModel.GetActiveMediaSourceIndexAndParentTotal();
             }
             else if (_textFadeOpacity == 1.0 && _textFadeOpacityIncrement == 0)
             {
@@ -883,9 +882,8 @@ namespace MediaBase.Controls
                 };
 
                 // Current source number out of total in folder
-                var (sourceIndex, parentTotal) = ViewModel.GetActiveMediaSourceIndexAndParentTotal();
                 using var sourceNumberTextLayout = new CanvasTextLayout(ds,
-                    $"{sourceIndex}/{parentTotal}", titleTextFormat,
+                    $"{_currentSourceIndex}/{_currentSourceParentTotal}", titleTextFormat,
                     (float)SwapChainCanvas.ActualWidth, (float)SwapChainCanvas.ActualHeight);
                 using var sourceNumberTextGeometry = CanvasGeometry.CreateText(sourceNumberTextLayout);
 
@@ -927,13 +925,6 @@ namespace MediaBase.Controls
             }
 
             SwapChainCanvas.SwapChain?.ResizeBuffers(e.NewSize);
-
-            if (IsLockScaleToFit && Source != null)
-            {
-                FrameScale = decimal.ToDouble(CalculateFrameScaleToFit(Source.WidthInPixels, Source.HeightInPixels));
-                FrameOffsetX = 0;
-                FrameOffsetY = 0;
-            }
         }
         #endregion
 
@@ -1083,7 +1074,7 @@ namespace MediaBase.Controls
         {
             var point = e.GetCurrentPoint(RenderAreaBorder);
 
-            if (_destRect.Contains(point.Position) && !IsLockScaleToFit)
+            if (_destRect.Contains(point.Position) && IsPanAndZoomEnabled)
             {
                 var isCtrlPressed = App.TestKeyStates(Windows.System.VirtualKey.Control, CoreVirtualKeyStates.Down);
 
@@ -1111,7 +1102,7 @@ namespace MediaBase.Controls
             if (point.Properties.PointerUpdateKind == PointerUpdateKind.LeftButtonReleased)
             {
                 RenderAreaBorder.ReleasePointerCapture(e.Pointer);
-                ProtectedCursor = _destRect.Contains(point.Position) && !IsLockScaleToFit
+                ProtectedCursor = _destRect.Contains(point.Position) && IsPanAndZoomEnabled
                     ? _hoverCursor
                     : _primaryCursor;
             }
@@ -1135,12 +1126,12 @@ namespace MediaBase.Controls
             var point = e.GetCurrentPoint(RenderAreaBorder);
             var isPointerOverFrame = _destRect.Contains(point.Position);
 
-            if (isPointerOverFrame && !IsLockScaleToFit && ProtectedCursor != _hoverCursor)
+            if (isPointerOverFrame && IsPanAndZoomEnabled && ProtectedCursor != _hoverCursor)
                 ProtectedCursor = _hoverCursor;
-            else if ((!isPointerOverFrame || IsLockScaleToFit) && ProtectedCursor != _primaryCursor)
+            else if ((!isPointerOverFrame || !IsPanAndZoomEnabled) && ProtectedCursor != _primaryCursor)
                 ProtectedCursor = _primaryCursor;
 
-            if (!IsLockScaleToFit && point.Properties.IsLeftButtonPressed && _isPointerCapturedForFrame)
+            if (IsPanAndZoomEnabled && point.Properties.IsLeftButtonPressed && _isPointerCapturedForFrame)
             {
                 if (ProtectedCursor != _dragCursor)
                     ProtectedCursor = _dragCursor;
@@ -1154,7 +1145,7 @@ namespace MediaBase.Controls
 
         private void RenderAreaBorder_PointerWheelChanged(object sender, PointerRoutedEventArgs e)
         {
-            if (IsLockScaleToFit || _isPointerCapturedForFrame)
+            if (!IsPanAndZoomEnabled || _isPointerCapturedForFrame)
                 return;
 
             var point = e.GetCurrentPoint(RenderAreaBorder);
@@ -1596,14 +1587,6 @@ namespace MediaBase.Controls
                 _player.Pause();
             }
 
-            // Reset frame position and scale
-            if (IsLockScaleToFit)
-            {
-                FrameScale = 0;
-                FrameOffsetX = 0;
-                FrameOffsetY = 0;
-            }
-
             // Halt redraw timer
             _redrawTimer.Stop();
 
@@ -1636,6 +1619,14 @@ namespace MediaBase.Controls
                 _frameSizingBitmap = null;
             }
 
+            // Reset frame position and scale
+            if (!IsLockPanAndZoom)
+            {
+                FrameScale = 0;
+                FrameOffsetX = 0;
+                FrameOffsetY = 0;
+            }
+
             // Reset timeline
             Timeline.Reset();
         }
@@ -1645,7 +1636,7 @@ namespace MediaBase.Controls
             if (Source == null)
             {
                 RefreshRate = App.RefreshRate;
-                IsLockScaleToFit = true;
+                IsPanAndZoomEnabled = true;
                 TimeDisplayMode = TimeDisplayFormat.None;
                 return;
             }
@@ -1659,12 +1650,13 @@ namespace MediaBase.Controls
 
             if (Source is ViewModel.ImageSource image)
             {
-                IsLockScaleToFit = true;
+                IsPanAndZoomEnabled = true;
                 TimeDisplayMode = TimeDisplayFormat.FrameNumber;
                 _frameBitmap = await CanvasBitmap.LoadAsync(SwapChainCanvas.SwapChain.Device,
                     await (image.Source as ImageFile).File.OpenReadAsync());
 
-                FrameScale = decimal.ToDouble(CalculateFrameScaleToFit(image.WidthInPixels, image.HeightInPixels));
+                if (!IsLockPanAndZoom)
+                    FrameScale = decimal.ToDouble(CalculateFrameScaleToFit(image.WidthInPixels, image.HeightInPixels));
                 ApplyFrameScaleAndPosition();
 
                 // Configure timeline (if image is animated) and pause on first frame
@@ -1686,7 +1678,7 @@ namespace MediaBase.Controls
             }
             else if (Source is VideoSource video)
             {
-                IsLockScaleToFit = true;
+                IsPanAndZoomEnabled = true;
                 TimeDisplayMode = TimeDisplayFormat.TimecodeWithFrame;
                 Timeline.Duration = TimeSpan.FromSeconds(decimal.ToDouble(video.Duration));
                 Timeline.Position = 0;
@@ -1735,7 +1727,7 @@ namespace MediaBase.Controls
 
             if (scaleKeyframes.Count > 0)
             {
-                IsLockScaleToFit = false;
+                IsLockPanAndZoom = false;
 
                 if (scaleKeyframes.Count == 1 ||
                     currentPos < scaleKeyframes.First.Value.Position ||
@@ -1789,7 +1781,7 @@ namespace MediaBase.Controls
 
             if (offsetXKeyframes.Count > 0)
             {
-                IsLockScaleToFit = false;
+                IsLockPanAndZoom = false;
 
                 if (offsetXKeyframes.Count == 1 ||
                     currentPos < offsetXKeyframes.First.Value.Position ||
@@ -1831,7 +1823,7 @@ namespace MediaBase.Controls
 
             if (offsetYKeyframes.Count > 0)
             {
-                IsLockScaleToFit = false;
+                IsLockPanAndZoom = false;
 
                 if (offsetYKeyframes.Count == 1 ||
                     currentPos < offsetYKeyframes.First.Value.Position ||

@@ -230,24 +230,24 @@
                 <AppBarSeparator x:Name="OpacityAdjustmentSeparator"/>
                 <AppBarToggleButton x:Name="LockScaleToFitToggleButton" Width="40"
                                     Command="{x:Bind ViewModel.EditorTogglePanAndZoomLockCommand}"
-                                    IsChecked="{x:Bind IsLockScaleToFit, Mode=TwoWay}"/>
+                                    IsChecked="{x:Bind IsLockPanAndZoom, Mode=TwoWay}"/>
                 <AppBarButton x:Name="CenterFrameButton" Width="40"
                               Command="{x:Bind ViewModel.EditorCenterFrameCommand}"
-                              Visibility="{x:Bind IsLockScaleToFit,
+                              Visibility="{x:Bind IsPanAndZoomEnabled,
                                                   Converter={StaticResource BoolToVisibilityConverter},
-                                                  ConverterParameter=True,
+                                                  ConverterParameter=False,
                                                   Mode=OneWay}"/>
                 <AppBarButton x:Name="FrameZoomFullButton" Width="40"
                               Command="{x:Bind ViewModel.EditorFrameZoomFullCommand}"
-                              Visibility="{x:Bind IsLockScaleToFit,
+                              Visibility="{x:Bind IsPanAndZoomEnabled,
                                                   Converter={StaticResource BoolToVisibilityConverter},
-                                                  ConverterParameter=True,
+                                                  ConverterParameter=False,
                                                   Mode=OneWay}"/>
                 <AppBarButton x:Name="FrameZoomFitButton" Width="40"
                               Command="{x:Bind ViewModel.EditorFrameZoomFitCommand}"
-                              Visibility="{x:Bind IsLockScaleToFit,
+                              Visibility="{x:Bind IsPanAndZoomEnabled,
                                                   Converter={StaticResource BoolToVisibilityConverter},
-                                                  ConverterParameter=True,
+                                                  ConverterParameter=False,
                                                   Mode=OneWay}"/>
                 <AppBarButton x:Name="TimelineZoomOutButton" Width="40"
                               Command="{x:Bind ViewModel.EditorTimelineZoomOutCommand}"/>
