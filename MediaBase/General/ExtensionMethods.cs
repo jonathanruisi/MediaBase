@@ -33,7 +33,6 @@ namespace MediaBase
             value -= minute * 60;
             var second = (int)value;
             value -= second;
-            var frame = (int)(value / (1M / framesPerSecond));
 
             var builder = new StringBuilder();
             if (hour > 0) builder.Append($"{hour:00}:");
@@ -41,12 +40,17 @@ namespace MediaBase
             builder.Append($"{second:00}");
             if (format == TimeDisplayFormat.TimecodeWithMillis)
                 builder.Append($".{value:000}");
-            else if (framesPerSecond > 100)
-                builder.Append($";{frame:000}");
-            else if (framesPerSecond > 10)
-                builder.Append($";{frame:00}");
             else
-                builder.Append($";{frame:0}");
+            {
+                var frame = (int)(value / (1M / framesPerSecond));
+                if (framesPerSecond > 100)
+                    builder.Append($";{frame:000}");
+                else if (framesPerSecond > 10)
+                    builder.Append($";{frame:00}");
+                else
+                    builder.Append($";{frame:0}");
+            }
+
             return builder.ToString();
         }
         #endregion

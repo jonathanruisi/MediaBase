@@ -17,13 +17,13 @@ namespace MediaBase.ViewModel
 
         #region Properties
         /// <summary>
-        /// Gets or sets a value indicating whether or not this
+        /// Gets a value indicating whether or not this
         /// <see cref="ImageSource"/> contains animation keyframes.
         /// </summary>
         public bool IsAnimated
         {
             get => _isAnimated;
-            set => SetProperty(ref _isAnimated, value);
+            private set => SetProperty(ref _isAnimated, value);
         }
 
         public override bool IsReady
@@ -46,6 +46,24 @@ namespace MediaBase.ViewModel
         {
             _isAnimated = false;
             _isReady = false;
+        }
+        #endregion
+
+        #region Public Methods
+        public void Animate(decimal duration)
+        {
+            if (duration <= 0)
+                throw new ArgumentOutOfRangeException(nameof(duration), "Value must be greater than zero");
+
+            Duration = duration;
+            FramesPerSecond = App.RefreshRate;
+            IsAnimated = true;
+        }
+
+        protected override void OnReadXmlComplete()
+        {
+            if (Keyframes.Any())
+                Animate(Keyframes.Max(x => x.Position));
         }
         #endregion
 

@@ -405,6 +405,7 @@ namespace MediaBase
             return scaleFactorPercent / 100.0;
         }
 
+        // TODO: Make these rectangles more accurate to allow for the most draggable area possible
         private void SetDragRegionForCustomTitleBar(AppWindow appWindow)
         {
             if (!AppWindowTitleBar.IsCustomizationSupported() ||

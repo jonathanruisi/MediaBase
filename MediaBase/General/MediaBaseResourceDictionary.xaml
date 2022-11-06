@@ -5,6 +5,15 @@
     xmlns:toolkit_converters="using:CommunityToolkit.WinUI.UI.Converters"
     xmlns:xaml="using:Microsoft.UI.Xaml">
 
+    <!-- Theme Overrides -->
+    <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Dark">
+            <!-- Expander -->
+            <x:Double x:Key="ExpanderMinHeight">0</x:Double>
+            <Thickness x:Key="ExpanderContentPadding">0,0,0,8</Thickness>
+        </ResourceDictionary>
+    </ResourceDictionary.ThemeDictionaries>
+
     <!-- Brushes -->
     <SolidColorBrush x:Key="RedBrush" Color="Red"/>
     <SolidColorBrush x:Key="WhiteBrush" Color="White"/>
@@ -22,6 +31,8 @@
 
     <local:GroupMaskToBooleanConverter x:Key="GroupMaskToBooleanConverter"/>
     <local:GroupMaskToVisibilityConverter x:Key="GroupMaskToVisibilityConverter"/>
+    <local:MediaTypeToStringConverter x:Key="MediaTypeToStringConverter"/>
+    <local:RatingAdjustmentConverter x:Key="RatingConverter"/>
 
     <toolkit_converters:DoubleToVisibilityConverter x:Key="NonzeroToVisibleConverter"
                                                     GreaterThan="0"/>
@@ -34,4 +45,13 @@
             <x:Boolean>True</x:Boolean>
         </toolkit_converters:DoubleToObjectConverter.TrueValue>
     </toolkit_converters:DoubleToObjectConverter>
+
+    <toolkit_converters:EmptyObjectToObjectConverter x:Key="ObjectToVisibilityConverter">
+        <toolkit_converters:EmptyObjectToObjectConverter.EmptyValue>
+            <xaml:Visibility>Collapsed</xaml:Visibility>
+        </toolkit_converters:EmptyObjectToObjectConverter.EmptyValue>
+        <toolkit_converters:EmptyObjectToObjectConverter.NotEmptyValue>
+            <xaml:Visibility>Visible</xaml:Visibility>
+        </toolkit_converters:EmptyObjectToObjectConverter.NotEmptyValue>
+    </toolkit_converters:EmptyObjectToObjectConverter>
 </ResourceDictionary>

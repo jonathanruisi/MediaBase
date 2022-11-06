@@ -227,7 +227,12 @@
                                                 VideoFileTemplate="{StaticResource VideoFileDataTemplate}"/>
     </UserControl.Resources>
 
-    <Grid>
+    <Grid Background="{x:Bind Background}"
+          BorderBrush="{x:Bind BorderBrush}"
+          BorderThickness="{x:Bind BorderThickness}"
+          CornerRadius="{x:Bind CornerRadius}"
+          HorizontalAlignment="{x:Bind HorizontalAlignment}"
+          VerticalAlignment="{x:Bind VerticalAlignment}">
         <TreeView x:Name="SystemBrowserTreeView"
                   HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                   SelectionMode="Multiple"

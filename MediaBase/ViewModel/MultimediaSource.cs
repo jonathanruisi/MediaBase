@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 
 using JLR.Utility.WinUI.Messaging;
@@ -123,7 +124,7 @@ namespace MediaBase.ViewModel
 
         [ViewModelCollection(nameof(Tags), "Tag")]
         public ObservableCollection<string> Tags { get; }
-        
+
         /// <summary>
         /// Gets a collection of markers used to provide
         /// information or trigger an action (keyframe markers)
@@ -132,7 +133,9 @@ namespace MediaBase.ViewModel
         [ViewModelCollection(nameof(Markers), "Marker")]
         public ObservableCollection<Marker> Markers { get; }
 
-        public LinkedList<Keyframe> Keyframes { get; }
+        public IEnumerable<Keyframe> Keyframes => Markers.OfType<Keyframe>().OrderBy(x => x.Position);
+
+        public IEnumerable<Marker> NonKeyframeMarkers => Markers.OfType<Marker>().OrderBy(x => x.Position);
 
         [ViewModelCollection(nameof(Tracks), "Track")]
         public ObservableCollection<string> Tracks { get; }
@@ -169,8 +172,6 @@ namespace MediaBase.ViewModel
 
             Tracks = new ObservableCollection<string>();
             Tracks.CollectionChanged += Tracks_CollectionChanged;
-
-            Keyframes = new LinkedList<Keyframe>();
         }
         #endregion
 
@@ -221,6 +222,8 @@ namespace MediaBase.ViewModel
 
         private void Markers_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
+            var isKeyframeNotify = false;
+            var isNonKeyframeMarkerNotify = false;
             var markerMessage = new CollectionChangedMessage<Marker>(this, nameof(Markers), e.Action)
             {
                 OldStartingIndex = e.OldStartingIndex,
@@ -232,10 +235,8 @@ namespace MediaBase.ViewModel
                 foreach (Marker oldMarker in e.OldItems)
                 {
                     markerMessage.OldValue.Add(oldMarker);
-                    if (oldMarker is Keyframe keyframe)
-                    {
-                        Keyframes.Remove(keyframe);
-                    }
+                    if (oldMarker is Keyframe)
+                        isKeyframeNotify = true;
                 }
             }
 
@@ -244,37 +245,15 @@ namespace MediaBase.ViewModel
                 foreach (Marker newMarker in e.NewItems)
                 {
                     markerMessage.NewValue.Add(newMarker);
-                    if (newMarker is Keyframe keyframe)
-                    {
-                        if (Keyframes.Count == 0)
-                            Keyframes.AddFirst(keyframe);
-                        else
-                        {
-                            LinkedListNode<Keyframe> referenceNode;
-                            if (keyframe.Position < Duration / 2)
-                            {
-                                referenceNode = Keyframes.First;
-                                while (referenceNode.Next != null && referenceNode.Next.Value.Position < keyframe.Position)
-                                    referenceNode = referenceNode.Next;
-                                Keyframes.AddAfter(referenceNode, keyframe);
-                            }
-                            else
-                            {
-                                referenceNode = Keyframes.Last;
-                                while (referenceNode.Previous != null && referenceNode.Previous.Value.Position > keyframe.Position)
-                                    referenceNode = referenceNode.Previous;
-                                Keyframes.AddBefore(referenceNode, keyframe);
-                            }
-                        }
-                    }
+                    if (newMarker.GetType() == typeof(Marker))
+                        isNonKeyframeMarkerNotify = true;
                 }
             }
 
-            if (e.Action == NotifyCollectionChangedAction.Reset)
-            {
-                Keyframes.Clear();
-            }
-
+            if (isKeyframeNotify)
+                OnPropertyChanged(nameof(Keyframes));
+            if (isNonKeyframeMarkerNotify)
+                OnPropertyChanged(nameof(NonKeyframeMarkers));
             Messenger.Send(markerMessage, nameof(Markers));
             NotifySerializedCollectionChanged(nameof(Markers));
         }

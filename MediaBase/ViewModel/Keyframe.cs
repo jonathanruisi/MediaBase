@@ -84,7 +84,7 @@ namespace MediaBase.ViewModel
     {
         private const string DefaultStyleString = "KeyframeDefault";
 
-        [ViewModelCollection(nameof(Adjustments), "Adjustment")]
+        [ViewModelCollection(nameof(Adjustments), "Adjustment", true)]
         public Dictionary<KeyframeAdjustment, string> Adjustments { get; }
 
         public Keyframe() : this(0) { }
@@ -93,6 +93,17 @@ namespace MediaBase.ViewModel
         {
             Name = nameof(Keyframe);
             Adjustments = new Dictionary<KeyframeAdjustment, string>();
+        }
+
+        protected override object CustomPropertyParser(string propertyName, string content)
+        {
+            if (propertyName == "Adjustment")
+            {
+                var kvpStrings = content[1..^1].Split(',', StringSplitOptions.TrimEntries);
+                return KeyValuePair.Create(Enum.Parse(typeof(KeyframeAdjustment), kvpStrings[0]), (object)kvpStrings[1]);
+            }
+
+            return null;
         }
     }
 }

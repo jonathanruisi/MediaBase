@@ -251,14 +251,14 @@ namespace MediaBase.Controls
                                         typeof(MediaEditor),
                                         new PropertyMetadata(false));
 
-        public bool IsLockPanAndZoom
+        public bool IsHoldCurrentPanAndZoom
         {
-            get => (bool)GetValue(IsLockPanAndZoomProperty);
-            set => SetValue(IsLockPanAndZoomProperty, value);
+            get => (bool)GetValue(IsHoldCurrentPanAndZoomProperty);
+            set => SetValue(IsHoldCurrentPanAndZoomProperty, value);
         }
 
-        public static readonly DependencyProperty IsLockPanAndZoomProperty =
-            DependencyProperty.Register("IsLockPanAndZoom",
+        public static readonly DependencyProperty IsHoldCurrentPanAndZoomProperty =
+            DependencyProperty.Register("IsHoldCurrentPanAndZoom",
                                         typeof(bool),
                                         typeof(MediaEditor),
                                         new PropertyMetadata(false));
@@ -914,13 +914,16 @@ namespace MediaBase.Controls
         #region Event Handlers (SwapChain)
         private void SwapChainCanvas_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            if (_frameSizingBitmap != null)
-            {
-                _frameSizingBitmap.Dispose();
-                _frameSizingBitmap = null;
-            }
-
             SwapChainCanvas.SwapChain?.ResizeBuffers(e.NewSize);
+
+            if (!IsHoldCurrentPanAndZoom)
+            {
+                FrameOffsetX = 0;
+                FrameOffsetY = 0;
+                if (Source != null)
+                    FrameScale = decimal.ToDouble(CalculateFrameScaleToFit(Source.WidthInPixels,
+                                                                       Source.HeightInPixels));
+            }
         }
         #endregion
 
@@ -1447,7 +1450,7 @@ namespace MediaBase.Controls
             var opacityValue = Math.Round((decimal)Opacity, 6).ToString();
             var playbackRateValue = Math.Round((decimal)PlaybackRate, 2).ToString();
 
-            if (Source.Keyframes.Count == 0)
+            if (!Source.Keyframes.Any())
             {
                 keyframe.Adjustments.Add(KeyframeAdjustment.Scale, scaleValue);
                 keyframe.Adjustments.Add(KeyframeAdjustment.OffsetX, offsetXValue);
@@ -1481,11 +1484,7 @@ namespace MediaBase.Controls
             // Add the keyframe to the source if adjustments were made
             if (keyframe.Adjustments.Count > 0)
             {
-                var index = 0;
-                while (index < Source.Markers.Count && Source.Markers[index].Position <= keyframe.Position)
-                    index++;
-
-                Source.Markers.Insert(index, keyframe);
+                Source.Markers.Add(keyframe);
             }
         }
 
@@ -1615,7 +1614,7 @@ namespace MediaBase.Controls
             }
 
             // Reset frame position and scale
-            if (!IsLockPanAndZoom)
+            if (!IsHoldCurrentPanAndZoom)
             {
                 FrameScale = 0;
                 FrameOffsetX = 0;
@@ -1649,7 +1648,7 @@ namespace MediaBase.Controls
                 TimeDisplayMode = TimeDisplayFormat.FrameNumber;
                 _frameBitmap = await CanvasBitmap.LoadAsync(SwapChainCanvas.SwapChain.Device,
                     await (image.Source as ImageFile).File.OpenReadAsync());
-                if (!IsLockPanAndZoom)
+                if (!IsHoldCurrentPanAndZoom)
                     FrameScale = decimal.ToDouble(CalculateFrameScaleToFit(Source.WidthInPixels, Source.HeightInPixels));
                 ApplyFrameScaleAndPosition();
 
@@ -1678,7 +1677,7 @@ namespace MediaBase.Controls
 
                 _player.Source = await video.BuildMediaSourceAsync();
                 
-                if (!IsLockPanAndZoom)
+                if (!IsHoldCurrentPanAndZoom)
                     FrameScale = decimal.ToDouble(CalculateFrameScaleToFit(Source.WidthInPixels, Source.HeightInPixels));
 
                 // Add cuts to timeline as selections

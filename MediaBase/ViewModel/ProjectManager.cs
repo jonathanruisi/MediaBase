@@ -42,6 +42,7 @@ namespace MediaBase.ViewModel
         public static readonly string DefaultTitle = "MediaBASE";
         public static readonly string WorkspaceFileExtension = "mbw";
         public static readonly string ProjectFileExtension = "mbp";
+        private const double DefaultImageAnimationDuration = 5.0;
         #endregion
 
         #region Fields
@@ -221,6 +222,7 @@ namespace MediaBase.ViewModel
         public XamlUICommand ToolsToggleGroup3Command { get; private set; }
         public XamlUICommand ToolsToggleGroup4Command { get; private set; }
         public XamlUICommand ToolsBatchActionCommand { get; private set; }
+        public XamlUICommand ToolsAnimateImageCommand { get; private set; }
 
         // Editor
         public XamlUICommand EditorPlayCommand { get; private set; }
@@ -648,6 +650,14 @@ namespace MediaBase.ViewModel
         private void ToolsBatchActionCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
             args.CanExecute = ActiveSystemBrowserNode != null;
+        }
+
+        private void ToolsAnimateImageCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = ActiveMediaSource != null &&
+                              ActiveMediaSource is ImageSource image &&
+                              image.Duration == 0 &&
+                              image.IsAnimated == false;
         }
         #endregion
 
@@ -1215,6 +1225,35 @@ namespace MediaBase.ViewModel
                 IsCloseable = true
             });
         }
+
+        private async void ToolsAnimateImageCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            var dlg = new TextPromptDialog
+            {
+                Title = $"Animate: {ActiveMediaSource.Name}",
+                PromptText = "Enter the duration for the animation, in seconds",
+                Text = DefaultImageAnimationDuration.ToString(),
+                PrimaryButtonText = "OK",
+                CloseButtonText = "Cancel",
+                XamlRoot = App.Window.Content.XamlRoot
+            };
+
+            var result = await dlg.ShowAsync();
+            if (result != ContentDialogResult.Primary)
+                return;
+
+            if (!double.TryParse(dlg.Text, out double duration))
+            {
+                App.ShowMessageBoxAsync("Only decimal numbers are valid", "Invalid Duration");
+                return;
+            }
+
+            var currentImage = (ImageSource)ActiveMediaSource;
+            ActiveMediaSource = null;
+
+            currentImage.Animate((decimal)duration);
+            ActiveMediaSource = currentImage;
+        }
         #endregion
 
         #region Method Overrides (ViewModelElement)
@@ -1654,6 +1693,19 @@ namespace MediaBase.ViewModel
 
             ToolsToggleGroup1Command.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
+                Key = VirtualKey.Number1,
+                IsEnabled = true
+            });
+
+            ToolsToggleGroup1Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.Number1,
+                Modifiers = VirtualKeyModifiers.Control,
+                IsEnabled = true
+            });
+
+            ToolsToggleGroup1Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
                 Key = VirtualKey.NumberPad1,
                 IsEnabled = true
             });
@@ -1677,6 +1729,19 @@ namespace MediaBase.ViewModel
                     FontFamily = new FontFamily("Segoe UI")
                 }
             };
+
+            ToolsToggleGroup1Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.Number2,
+                IsEnabled = true
+            });
+
+            ToolsToggleGroup1Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.Number2,
+                Modifiers = VirtualKeyModifiers.Control,
+                IsEnabled = true
+            });
 
             ToolsToggleGroup2Command.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
@@ -1704,6 +1769,19 @@ namespace MediaBase.ViewModel
                 }
             };
 
+            ToolsToggleGroup1Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.Number3,
+                IsEnabled = true
+            });
+
+            ToolsToggleGroup1Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.Number3,
+                Modifiers = VirtualKeyModifiers.Control,
+                IsEnabled = true
+            });
+
             ToolsToggleGroup3Command.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.NumberPad3,
@@ -1730,6 +1808,19 @@ namespace MediaBase.ViewModel
                 }
             };
 
+            ToolsToggleGroup1Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.Number4,
+                IsEnabled = true
+            });
+
+            ToolsToggleGroup1Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.Number4,
+                Modifiers = VirtualKeyModifiers.Control,
+                IsEnabled = true
+            });
+
             ToolsToggleGroup4Command.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.NumberPad4,
@@ -1739,6 +1830,21 @@ namespace MediaBase.ViewModel
             ToolsToggleGroup4Command.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.NumberPad4,
+                Modifiers = VirtualKeyModifiers.Control,
+                IsEnabled = true
+            });
+
+            // Tools: Animate Image
+            ToolsAnimateImageCommand = new XamlUICommand
+            {
+                Label = "Animate Image",
+                Description = "Change image properties over time to produce an animation",
+                IconSource = new SymbolIconSource { Symbol = (Symbol)0xE776 }
+            };
+
+            ToolsAnimateImageCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.I,
                 Modifiers = VirtualKeyModifiers.Control,
                 IsEnabled = true
             });
@@ -2138,6 +2244,11 @@ namespace MediaBase.ViewModel
                 ToolsBatchActionCommand_CanExecuteRequested;
             ToolsBatchActionCommand.ExecuteRequested +=
                 ToolsBatchActionCommand_ExecuteRequested;
+
+            ToolsAnimateImageCommand.CanExecuteRequested +=
+                ToolsAnimateImageCommand_CanExecuteRequested;
+            ToolsAnimateImageCommand.ExecuteRequested +=
+                ToolsAnimateImageCommand_ExecuteRequested;
         }
         #endregion
     }
