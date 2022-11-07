@@ -95,7 +95,7 @@ namespace MediaBase.Controls
         #endregion
 
         #region Event Handlers (TreeView)
-        private async void SystemBrowserTreeView_Expanding(TreeView sender, TreeViewExpandingEventArgs args)
+        private static async void SystemBrowserTreeView_Expanding(TreeView sender, TreeViewExpandingEventArgs args)
         {
             if (!args.Node.HasUnrealizedChildren)
                 return;
@@ -108,7 +108,7 @@ namespace MediaBase.Controls
             }
         }
 
-        private void SystemBrowserTreeView_Collapsed(TreeView sender, TreeViewCollapsedEventArgs args)
+        private static void SystemBrowserTreeView_Collapsed(TreeView sender, TreeViewCollapsedEventArgs args)
         {
             args.Node.Children.Clear();
             args.Node.HasUnrealizedChildren = true;

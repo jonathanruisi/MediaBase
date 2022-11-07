@@ -24,7 +24,7 @@ namespace MediaBase.Controls
         #endregion
 
         #region Event Handlers
-        private void UserControl_Loaded(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+        private void UserControl_Loaded(object sender, RoutedEventArgs e)
         {
             var messenger = App.Current.Services.GetService<IMessenger>();
 
@@ -38,10 +38,5 @@ namespace MediaBase.Controls
             });
         }
         #endregion
-
-        private void TagTokenizer_SizeChanged(object sender, SizeChangedEventArgs e)
-        {
-
-        }
     }
 }
