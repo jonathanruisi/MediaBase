@@ -4,10 +4,16 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:linq="using:System.Linq"
+    xmlns:viewmodel="using:MediaBase.ViewModel"
     xmlns:toolkit="using:CommunityToolkit.WinUI.UI.Controls"
     mc:Ignorable="d"
     Loaded="UserControl_Loaded">
 
+    <UserControl.Resources>
+        <CollectionViewSource x:Name="MarkerCollectionViewSource" IsSourceGrouped="True"/>
+    </UserControl.Resources>
+    
     <Grid Background="{x:Bind Background}"
           BorderBrush="{x:Bind BorderBrush}"
           BorderThickness="{x:Bind BorderThickness}"
@@ -65,8 +71,7 @@
                   Visibility="{x:Bind ViewModel.ActiveMediaSource,
                                       Converter={StaticResource ObjectToVisibilityConverter},
                                       Mode=OneWay}">
-            <ListView x:Name="TrackList" SelectionMode="Extended" MinHeight="100"
-                      ItemsSource="{x:Bind ViewModel.ActiveMediaSource.Tracks, Mode=OneWay}"/>
+            <ListView x:Name="TrackList" SelectionMode="Extended" MinHeight="100"/>
         </Expander>
 
         <!-- Markers -->
@@ -78,8 +83,25 @@
                                       Converter={StaticResource ObjectToVisibilityConverter},
                                       Mode=OneWay}">
             <ListView x:Name="MarkerList" SelectionMode="Extended" MinHeight="100"
-                      ItemsSource="{x:Bind ViewModel.ActiveMediaSource.NonKeyframeMarkers, Mode=OneWay}"
-                      SelectedItem="{x:Bind ViewModel.SelectedMarker, Mode=TwoWay}"/>
+                      ItemsSource="{Binding Source={StaticResource MarkerCollectionViewSource}}"
+                      SelectedItem="{x:Bind ViewModel.SelectedMarker, Mode=TwoWay}">
+                <ListView.GroupStyle>
+                    <GroupStyle>
+                        <GroupStyle.HeaderTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Key}"/>
+                            </DataTemplate>
+                        </GroupStyle.HeaderTemplate>
+                    </GroupStyle>
+                </ListView.GroupStyle>
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="viewmodel:Marker">
+                        <Border BorderBrush="White" BorderThickness="2">
+                            <TextBlock Text="{x:Bind Name}"/>
+                        </Border>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
         </Expander>
 
         <!-- Keyframes -->
@@ -90,8 +112,7 @@
                   Visibility="{x:Bind ViewModel.ActiveMediaSource,
                                       Converter={StaticResource ObjectToVisibilityConverter},
                                       Mode=OneWay}">
-            <ListView x:Name="KeyframeList" SelectionMode="Extended" MinHeight="100"
-                      ItemsSource="{x:Bind ViewModel.ActiveMediaSource.Keyframes, Mode=OneWay}"/>
+            <ListView x:Name="KeyframeList" SelectionMode="Extended" MinHeight="100"/>
         </Expander>
 
         <!-- Tags -->

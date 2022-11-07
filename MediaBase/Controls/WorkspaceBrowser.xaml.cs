@@ -64,7 +64,7 @@ namespace MediaBase.Controls
             e.Handled = true;
         }
 
-        private static async void WorkspaceBrowserTreeView_Expanding(TreeView sender, TreeViewExpandingEventArgs args)
+        private async void WorkspaceBrowserTreeView_Expanding(TreeView sender, TreeViewExpandingEventArgs args)
         {
             if (args.Item is not ViewModelNode node)
                 return;

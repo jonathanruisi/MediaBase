@@ -121,7 +121,7 @@ namespace MediaBase.ViewModel
                         ActiveWorkspaceBrowserNode = null;
                 }
 
-                SetProperty(ref _activeMediaSource, value);
+                SetProperty(ref _activeMediaSource, value, true);
 
                 if (_activeMediaSource != null)
                 {

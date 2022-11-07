@@ -133,11 +133,7 @@ namespace MediaBase.ViewModel
         [ViewModelCollection(nameof(Markers), "Marker")]
         public ObservableCollection<Marker> Markers { get; }
 
-        public IEnumerable<Keyframe> Keyframes =>
-            Markers.Where(x => x.GetType() == typeof(Keyframe)).Cast<Keyframe>();
-
-        public IEnumerable<Marker> NonKeyframeMarkers =>
-            Markers.Where(x => x.GetType() == typeof(Marker));
+        public IEnumerable<Keyframe> Keyframes => Markers.OfType<Keyframe>();
 
         [ViewModelCollection(nameof(Tracks), "Track")]
         public ObservableCollection<string> Tracks { get; }
@@ -259,8 +255,6 @@ namespace MediaBase.ViewModel
 
             if (isKeyframeNotify)
                 OnPropertyChanged(nameof(Keyframes));
-            if (isNonKeyframeMarkerNotify)
-                OnPropertyChanged(nameof(NonKeyframeMarkers));
             Messenger.Send(markerMessage, nameof(Markers));
             NotifySerializedCollectionChanged(nameof(Markers));
         }
