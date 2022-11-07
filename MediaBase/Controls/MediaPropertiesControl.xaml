@@ -65,7 +65,7 @@
                   Visibility="{x:Bind ViewModel.ActiveMediaSource,
                                       Converter={StaticResource ObjectToVisibilityConverter},
                                       Mode=OneWay}">
-            <ListView x:Name="TrackList" SelectionMode="Single" MinHeight="100"
+            <ListView x:Name="TrackList" SelectionMode="Extended" MinHeight="100"
                       ItemsSource="{x:Bind ViewModel.ActiveMediaSource.Tracks, Mode=OneWay}"/>
         </Expander>
 
@@ -77,8 +77,9 @@
                   Visibility="{x:Bind ViewModel.ActiveMediaSource,
                                       Converter={StaticResource ObjectToVisibilityConverter},
                                       Mode=OneWay}">
-            <ListView x:Name="MarkerList" SelectionMode="Single" MinHeight="100"
-                      ItemsSource="{x:Bind ViewModel.ActiveMediaSource.NonKeyframeMarkers, Mode=OneWay}"/>
+            <ListView x:Name="MarkerList" SelectionMode="Extended" MinHeight="100"
+                      ItemsSource="{x:Bind ViewModel.ActiveMediaSource.NonKeyframeMarkers, Mode=OneWay}"
+                      SelectedItem="{x:Bind ViewModel.SelectedMarker, Mode=TwoWay}"/>
         </Expander>
 
         <!-- Keyframes -->
@@ -89,7 +90,7 @@
                   Visibility="{x:Bind ViewModel.ActiveMediaSource,
                                       Converter={StaticResource ObjectToVisibilityConverter},
                                       Mode=OneWay}">
-            <ListView x:Name="KeyframeList" SelectionMode="Single" MinHeight="100"
+            <ListView x:Name="KeyframeList" SelectionMode="Extended" MinHeight="100"
                       ItemsSource="{x:Bind ViewModel.ActiveMediaSource.Keyframes, Mode=OneWay}"/>
         </Expander>
 
@@ -102,7 +103,7 @@
                                       Converter={StaticResource ObjectToVisibilityConverter},
                                       Mode=OneWay}">
             <toolkit:TokenizingTextBox x:Name="TagTokenizer"
-                                       TokenDelimiter="," Margin="5,0"
+                                       TokenDelimiter="," Margin="5,0" SelectionMode="Extended"
                                        HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                                        ItemsSource="{x:Bind ViewModel.ActiveMediaSource.Tags, Mode=OneWay}"
                                        SuggestedItemsSource="{x:Bind ViewModel.TagDatabase, Mode=OneTime}"/>
@@ -116,7 +117,7 @@
                   Visibility="{x:Bind ViewModel.ActiveMediaSource,
                                       Converter={StaticResource ObjectToVisibilityConverter},
                                       Mode=OneWay}">
-            <ListView x:Name="RelatedMediaList" SelectionMode="Single" MinHeight="100"/>
+            <ListView x:Name="RelatedMediaList" SelectionMode="Extended" MinHeight="100"/>
         </Expander>
     </Grid>
 </UserControl>

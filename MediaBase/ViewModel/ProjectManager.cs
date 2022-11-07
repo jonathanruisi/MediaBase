@@ -893,8 +893,9 @@ namespace MediaBase.ViewModel
 
                 if (node.Content is StorageFolder folder)
                     folderList.Add(folder);
-                else if (node.Content is StorageFile file)
-                    fileList.Add(file);
+                else if (node.Content is MultimediaSource mediaSource &&
+                         mediaSource.Source is MediaFile mediaFile)
+                    fileList.Add(mediaFile.File);
             }
 
             // Clear the SystemBrowser TreeView's SelectedNodes list

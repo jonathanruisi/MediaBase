@@ -133,9 +133,11 @@ namespace MediaBase.ViewModel
         [ViewModelCollection(nameof(Markers), "Marker")]
         public ObservableCollection<Marker> Markers { get; }
 
-        public IEnumerable<Keyframe> Keyframes => Markers.OfType<Keyframe>().OrderBy(x => x.Position);
+        public IEnumerable<Keyframe> Keyframes =>
+            Markers.Where(x => x.GetType() == typeof(Keyframe)).Cast<Keyframe>();
 
-        public IEnumerable<Marker> NonKeyframeMarkers => Markers.OfType<Marker>().OrderBy(x => x.Position);
+        public IEnumerable<Marker> NonKeyframeMarkers =>
+            Markers.Where(x => x.GetType() == typeof(Marker));
 
         [ViewModelCollection(nameof(Tracks), "Track")]
         public ObservableCollection<string> Tracks { get; }
@@ -235,8 +237,11 @@ namespace MediaBase.ViewModel
                 foreach (Marker oldMarker in e.OldItems)
                 {
                     markerMessage.OldValue.Add(oldMarker);
-                    if (oldMarker is Keyframe)
+                    if (!isKeyframeNotify && oldMarker is Keyframe)
                         isKeyframeNotify = true;
+                    else if (!isNonKeyframeMarkerNotify && oldMarker.GetType() == typeof(Marker))
+                        isNonKeyframeMarkerNotify = true;
+
                 }
             }
 
@@ -245,7 +250,9 @@ namespace MediaBase.ViewModel
                 foreach (Marker newMarker in e.NewItems)
                 {
                     markerMessage.NewValue.Add(newMarker);
-                    if (newMarker.GetType() == typeof(Marker))
+                    if (!isKeyframeNotify && newMarker is Keyframe)
+                        isKeyframeNotify = true;
+                    else if (!isNonKeyframeMarkerNotify && newMarker.GetType() == typeof(Marker))
                         isNonKeyframeMarkerNotify = true;
                 }
             }
