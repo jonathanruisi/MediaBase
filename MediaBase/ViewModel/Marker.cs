@@ -1,4 +1,8 @@
-﻿using System.Text;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using System.Xml;
 
 using JLR.Utility.WinUI.Controls;
@@ -6,21 +10,16 @@ using JLR.Utility.WinUI.ViewModel;
 
 namespace MediaBase.ViewModel
 {
-    /// <summary>
-    /// Represents a point in time (or span of time) in a video.
-    /// </summary>
     [ViewModelType(nameof(Marker))]
     public class Marker : ViewModelElement, ITimelineMarker
     {
         #region Fields
+        private const string DefaultStyleString = "MarkerDefault";
         private decimal _position, _duration;
-        private int _group;
+        private string _group, _style;
         #endregion
 
         #region Properties
-        /// <summary>
-        /// Gets or sets the offset within the timeline where the marker occurs, in seconds.
-        /// </summary>
         [ViewModelProperty(nameof(Position), XmlNodeType.Element)]
         public decimal Position
         {
@@ -28,48 +27,37 @@ namespace MediaBase.ViewModel
             set => SetProperty(ref _position, value);
         }
 
-        /// <summary>
-        /// Gets or sets the duration of the marker within the timeline, in seconds.
-        /// </summary>
         [ViewModelProperty(nameof(Duration), XmlNodeType.Element)]
         public decimal Duration
         {
             get => _duration;
-            set
-            {
-                SetProperty(ref _duration, value);
-
-                if (_duration == 0)
-                    Group = 0;
-            }
+            set => SetProperty(ref _duration, value);
         }
 
-        /// <summary>
-        /// Gets or sets a value which identifies the category
-        /// or track to which the marker belongs.
-        /// </summary>
-        /// <remarks>
-        /// If this type is used with a <see cref="MediaTimeline"/>,
-        /// it is expected that markers with duration = 0 are assigned
-        /// to track 0. Track 0 is used to display "chapter" style
-        /// markers on a <see cref="MediaTimeline"/>.
-        /// </remarks>
         [ViewModelProperty(nameof(Group), XmlNodeType.Attribute)]
-        public int Group
+        public string Group
         {
             get => _group;
             set => SetProperty(ref _group, value);
         }
+
+        [ViewModelProperty(nameof(Style), XmlNodeType.Element)]
+        public string Style
+        {
+            get => _style;
+            set => SetProperty(ref _style, value);
+        }
         #endregion
 
-        #region Constructor
+        #region Constructors
         public Marker() : this(0) { }
 
-        public Marker(decimal position, decimal duration = 0M, int track = 0)
+        public Marker(decimal position, decimal duration = 0, string group = null, string style = DefaultStyleString)
         {
             _position = position;
             _duration = duration;
-            _group = track;
+            _group = group;
+            _style = style;
         }
         #endregion
 
@@ -81,9 +69,9 @@ namespace MediaBase.ViewModel
 
         public string ToString(int framesPerSecond)
         {
-            var builder = new StringBuilder($"{Name} @{Position.ToTimecodeString(framesPerSecond, framesPerSecond <= 0)}");
+            var builder = new StringBuilder($"{Name} @{Position.ToTimecodeString(framesPerSecond, framesPerSecond == 0 ? TimeDisplayFormat.TimecodeWithMillis : TimeDisplayFormat.TimecodeWithFrame)}");
             if (Duration > 0)
-                builder.Append($" (Duration: {Duration.ToTimecodeString(framesPerSecond, framesPerSecond <= 0)})");
+                builder.Append($" (Duration: {Duration.ToTimecodeString(framesPerSecond, framesPerSecond == 0 ? TimeDisplayFormat.TimecodeWithMillis : TimeDisplayFormat.TimecodeWithFrame)})");
             return builder.ToString();
         }
         #endregion

@@ -4,11 +4,16 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 
+using CommunityToolkit.Mvvm.Messaging;
+
+using JLR.Utility.WinUI;
+
 using MediaBase.ViewModel;
 
 using CommunityToolkit.Mvvm.Messaging;
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -22,6 +27,8 @@ using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.System;
+using Windows.UI.Core;
 using Windows.UI.Popups;
 
 using WinRT.Interop;
@@ -54,6 +61,11 @@ namespace MediaBase
             InitializeWithWindow.Initialize(messageDialog, WindowHandle);
             await messageDialog.ShowAsync();
         }
+
+        public static bool TestKeyStates(VirtualKey key, CoreVirtualKeyStates states)
+        {
+            return InputKeyboardSource.GetKeyStateForCurrentThread(key).HasFlag(states);
+        }
         #endregion
 
         #region Event Handlers
@@ -62,6 +74,26 @@ namespace MediaBase
             Window = new MainWindow();
             WindowHandle = WindowNative.GetWindowHandle(Window);
             Window.Activate();
+
+            // Handle file-activated launch
+            var activationArgs = AppInstance.GetActivatedEventArgs();
+            if (activationArgs is FileActivatedEventArgs fileArgs && fileArgs.Kind == ActivationKind.File)
+            {
+                if (fileArgs.Files.Count > 1)
+                {
+                    ShowMessageBoxAsync("MediaBase was launched from multiple files.\n" +
+                                        "This is not supported.",
+                                        "File Launch Error");
+                }
+                else
+                {
+                    var ext = fileArgs.Files[0].GetFileExtension();
+                    if (ext == ProjectManager.WorkspaceFileExtension)
+                        Services.GetService<ProjectManager>().WorkspaceOpenCommand.Execute(fileArgs.Files[0]);
+                    if (ext == ProjectManager.ProjectFileExtension)
+                        Services.GetService<ProjectManager>().ProjectOpenCommand.Execute(fileArgs.Files[0]);
+                }
+            }
         }
 
         private void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
@@ -75,7 +107,7 @@ namespace MediaBase
         {
             var services = new ServiceCollection();
             services.AddSingleton<IMessenger>(StrongReferenceMessenger.Default);
-            services.AddSingleton<Project>();
+            services.AddSingleton<ProjectManager>();
             return services.BuildServiceProvider();
         }
         #endregion

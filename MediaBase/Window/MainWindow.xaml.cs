@@ -7,15 +7,16 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 using System.Threading.Tasks;
 
+using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging.Messages;
+using CommunityToolkit.WinUI.UI.Controls;
+
 using JLR.Utility.WinUI;
 using JLR.Utility.WinUI.Dialogs;
 using JLR.Utility.WinUI.ViewModel;
 
 using MediaBase.ViewModel;
-
-using CommunityToolkit.Mvvm.Messaging;
-using CommunityToolkit.Mvvm.Messaging.Messages;
-using CommunityToolkit.WinUI.UI.Controls;
+using MediaBase.Window;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI;
@@ -28,6 +29,8 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 
+using Windows.ApplicationModel;
+using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Graphics;
@@ -40,15 +43,15 @@ using WinRT.Interop;
 
 namespace MediaBase
 {
-    public sealed partial class MainWindow : Window
+    public sealed partial class MainWindow : Microsoft.UI.Xaml.Window
     {
         #region Fields
-        private static readonly string DefaultAppTitle = "MediaBASE";
         private readonly AppWindow _appWindow;
+        private GridLength _systemBrowserWidth, _workspaceBrowserWidth, _mediaPropertiesWidth;
         #endregion
 
         #region Properties
-        public Project ViewModel { get; private set; }
+        public ProjectManager ViewModel { get; private set; }
         #endregion
 
         #region Commands
@@ -65,7 +68,7 @@ namespace MediaBase
         {
             InitializeComponent();
 
-            ViewModel = App.Current.Services.GetService<Project>();
+            ViewModel = App.Current.Services.GetService<ProjectManager>();
 
             Activated += MainWindow_Activated;
             Closed += MainWindow_Closed;
@@ -73,7 +76,7 @@ namespace MediaBase
 
             _appWindow = this.GetAppWindowForCurrentWindow();
             _appWindow.Changed += AppWindow_Changed;
-            _appWindow.Title = DefaultAppTitle;
+            _appWindow.Title = ProjectManager.DefaultTitle;
 
             // Use custom title bar, if supported
             if (AppWindowTitleBar.IsCustomizationSupported())
@@ -87,6 +90,9 @@ namespace MediaBase
             {
                 AppTitleBar.Visibility = Visibility.Collapsed;
             }
+
+            if (!ViewModel.IsActive)
+                ViewModel.IsActive = true;
 
             RegisterMessages();
             InitializeCommands();
@@ -132,12 +138,8 @@ namespace MediaBase
 
         }
 
-        private async void ExitCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        private void ExitCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            // Prompt user to save unsaved changes (user can cancel the close)
-            if (await ViewModel.PromptToSaveChanges(Content.XamlRoot) == false)
-                return;
-
             ViewModel.IsActive = false;
             App.Current.Exit();
         }
@@ -151,7 +153,7 @@ namespace MediaBase
 
         private void MainWindow_Closed(object sender, WindowEventArgs args)
         {
-            
+
         }
 
         private void MainWindow_SizeChanged(object sender, WindowSizeChangedEventArgs args)
@@ -199,6 +201,57 @@ namespace MediaBase
                 default:
                     sender.TitleBar.ResetToDefault();
                     break;
+            }
+        }
+
+        private void SystemBrowserToggle_Click(object sender, RoutedEventArgs e)
+        {
+            if (SystemBrowserPanel.Visibility == Visibility.Visible)
+            {
+                _systemBrowserWidth = SystemBrowserColumn.Width;
+                SystemBrowserColumn.Width = new GridLength(0);
+                SystemBrowserPanel.Visibility = Visibility.Collapsed;
+                SystemBrowserGridSplitter.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                SystemBrowserColumn.Width = _systemBrowserWidth;
+                SystemBrowserPanel.Visibility = Visibility.Visible;
+                SystemBrowserGridSplitter.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void WorkspaceBrowserToggle_Click(object sender, RoutedEventArgs e)
+        {
+            if (WorkspaceBrowserPanel.Visibility == Visibility.Visible)
+            {
+                _workspaceBrowserWidth = WorkspaceBrowserColumn.Width;
+                WorkspaceBrowserColumn.Width = new GridLength(0);
+                WorkspaceBrowserPanel.Visibility = Visibility.Collapsed;
+                WorkspaceBrowserGridSplitter.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                WorkspaceBrowserColumn.Width = _workspaceBrowserWidth;
+                WorkspaceBrowserPanel.Visibility = Visibility.Visible;
+                WorkspaceBrowserGridSplitter.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void MediaPropertiesToggle_Click(object sender, RoutedEventArgs e)
+        {
+            if (MediaPropertiesPanel.Visibility == Visibility.Visible)
+            {
+                _mediaPropertiesWidth = MediaPropertiesColumn.Width;
+                MediaPropertiesColumn.Width = new GridLength(0);
+                MediaPropertiesPanel.Visibility = Visibility.Collapsed;
+                MediaPropertiesGridSplitter.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                MediaPropertiesColumn.Width = _mediaPropertiesWidth;
+                MediaPropertiesPanel.Visibility = Visibility.Visible;
+                MediaPropertiesGridSplitter.Visibility = Visibility.Visible;
             }
         }
         #endregion
@@ -277,33 +330,45 @@ namespace MediaBase
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xF3B1 }
             };
 
-            ViewNormalCommand.CanExecuteRequested += ViewChangePresenter_CanExecuteRequested;
-            ViewNormalCommand.ExecuteRequested += ViewChangePresenter_ExecuteRequested;
+            ViewNormalCommand.CanExecuteRequested +=
+                ViewChangePresenter_CanExecuteRequested;
+            ViewNormalCommand.ExecuteRequested +=
+                ViewChangePresenter_ExecuteRequested;
 
-            ViewCompactCommand.CanExecuteRequested += ViewChangePresenter_CanExecuteRequested;
-            ViewCompactCommand.ExecuteRequested += ViewChangePresenter_ExecuteRequested;
+            ViewCompactCommand.CanExecuteRequested +=
+                ViewChangePresenter_CanExecuteRequested;
+            ViewCompactCommand.ExecuteRequested +=
+                ViewChangePresenter_ExecuteRequested;
 
-            ViewFullscreenCommand.CanExecuteRequested += ViewChangePresenter_CanExecuteRequested;
-            ViewFullscreenCommand.ExecuteRequested += ViewChangePresenter_ExecuteRequested;
+            ViewFullscreenCommand.CanExecuteRequested +=
+                ViewChangePresenter_CanExecuteRequested;
+            ViewFullscreenCommand.ExecuteRequested +=
+                ViewChangePresenter_ExecuteRequested;
 
-            HelpDebugLogWindowCommand.CanExecuteRequested += HelpDebugLogWindowCommand_CanExecuteRequested;
-            HelpDebugLogWindowCommand.ExecuteRequested += HelpDebugLogWindowCommand_ExecuteRequested;
+            HelpDebugLogWindowCommand.CanExecuteRequested +=
+                HelpDebugLogWindowCommand_CanExecuteRequested;
+            HelpDebugLogWindowCommand.ExecuteRequested +=
+                HelpDebugLogWindowCommand_ExecuteRequested;
 
-            HelpAboutCommand.CanExecuteRequested += HelpAboutCommand_CanExecuteRequested;
-            HelpAboutCommand.ExecuteRequested += HelpAboutCommand_ExecuteRequested;
+            HelpAboutCommand.CanExecuteRequested +=
+                HelpAboutCommand_CanExecuteRequested;
+            HelpAboutCommand.ExecuteRequested +=
+                HelpAboutCommand_ExecuteRequested;
 
-            ExitCommand.CanExecuteRequested += ExitCommand_CanExecuteRequested;
-            ExitCommand.ExecuteRequested += ExitCommand_ExecuteRequested;
+            ExitCommand.CanExecuteRequested +=
+                ExitCommand_CanExecuteRequested;
+            ExitCommand.ExecuteRequested +=
+                ExitCommand_ExecuteRequested;
         }
 
         private void RegisterMessages()
         {
             var messenger = App.Current.Services.GetService<IMessenger>();
 
-            // Project.HasUnsavedChanges
+            // ProjectManager.HasUnsavedChanges
             messenger.Register<PropertyChangedMessage<bool>>(this, (r, m) =>
             {
-                if (m.Sender != ViewModel || m.PropertyName != nameof(Project.HasUnsavedChanges))
+                if (m.Sender != ViewModel || m.PropertyName != nameof(ProjectManager.HasUnsavedChanges))
                     return;
 
                 AppTitleUnsavedIndicatorTextBlock.Visibility = m.NewValue
@@ -340,6 +405,7 @@ namespace MediaBase
             return scaleFactorPercent / 100.0;
         }
 
+        // TODO: Make these rectangles more accurate to allow for the most draggable area possible
         private void SetDragRegionForCustomTitleBar(AppWindow appWindow)
         {
             if (!AppWindowTitleBar.IsCustomizationSupported() ||
@@ -356,11 +422,12 @@ namespace MediaBase
             RectInt32 dragRect;
             dragRect.X = (int)((LeftPaddingColumn.ActualWidth +
                                 IconColumn.ActualWidth +
-                                MenuColumn.ActualWidth) * scaleAdjustment);
+                                MenuColumn.ActualWidth +
+                                ToggleColumn.ActualWidth) * scaleAdjustment);
             dragRect.Y = 0;
             dragRect.Width = (int)((LeftDragColumn.ActualWidth +
-                                    AppTitleProjectNameTextBlock.ActualWidth +
                                     AppTitleUnsavedIndicatorTextBlock.ActualWidth +
+                                    AppTitleProjectNameTextBlock.ActualWidth +
                                     RightDragColumn.ActualWidth) * scaleAdjustment);
             dragRect.Height = (int)(AppTitleBar.ActualHeight * scaleAdjustment);
             dragRects.Add(dragRect);

@@ -1,18 +1,18 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
-using JLR.Utility.WinUI.ViewModel;
 
 namespace MediaBase.ViewModel
 {
     /// <summary>
     /// Represents metadata used to further describe a multimedia object.
     /// </summary>
-    public interface IMediaMetadata
+    public interface IMediaMetadata : IGroupable
     {
         /// <inheritdoc cref="ViewModelElement.Name"/>
         string Name { get; set; }

@@ -5,16 +5,127 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    xmlns:local="using:MediaBase.Controls"
-    xmlns:xaml="using:Microsoft.UI.Xaml"
-    xmlns:win2d="using:Microsoft.Graphics.Canvas.UI.Xaml"
-    xmlns:toolkit_controls="using:CommunityToolkit.WinUI.UI.Controls"
-    xmlns:toolkit_converters="using:CommunityToolkit.WinUI.UI.Converters"
+    xmlns:sys="using:System"
     xmlns:controls="using:JLR.Utility.WinUI.Controls"
-    xmlns:viewmodel="using:MediaBase.ViewModel"
+    xmlns:win2d="using:Microsoft.Graphics.Canvas.UI.Xaml"
+    xmlns:geometry="using:Microsoft.Graphics.Canvas.Geometry"
     Loaded="UserControl_Loaded"
     Unloaded="UserControl_Unloaded">
 
+    <UserControl.Resources>
+        <!-- Keyframe -->
+        <controls:MarkerStyle x:Key="MarkerStyle_KeyframeDefault"
+                                 StrokeThickness="0"
+                                 TailStrokeThickness="1.0">
+            <controls:MarkerStyle.Geometry>
+                <PathGeometry>
+                    <PathGeometry.Figures>
+                        <PathFigure IsClosed="True" IsFilled="True" StartPoint="5,0">
+                            <PathFigure.Segments>
+                                <LineSegment Point="10,7.5"/>
+                                <LineSegment Point="5,15"/>
+                                <LineSegment Point="0,7.5"/>
+                            </PathFigure.Segments>
+                        </PathFigure>
+                    </PathGeometry.Figures>
+                </PathGeometry>
+            </controls:MarkerStyle.Geometry>
+
+            <controls:MarkerStyle.Fill>
+                <SolidColorBrush Color="RoyalBlue"/>
+            </controls:MarkerStyle.Fill>
+
+            <controls:MarkerStyle.TailStroke>
+                <SolidColorBrush Color="RoyalBlue"/>
+            </controls:MarkerStyle.TailStroke>
+
+            <controls:MarkerStyle.TailStrokeStyle>
+                <geometry:CanvasStrokeStyle DashStyle="Dash"/>
+            </controls:MarkerStyle.TailStrokeStyle>
+        </controls:MarkerStyle>
+
+        <!-- Marker (Selected) -->
+        <controls:MarkerStyle x:Key="SelectedMarkerStyle_KeyframeDefault"
+                                 StrokeThickness="1.0"
+                                 TailStrokeThickness="2.0">
+            <controls:MarkerStyle.Fill>
+                <SolidColorBrush Color="White"/>
+            </controls:MarkerStyle.Fill>
+
+            <controls:MarkerStyle.Stroke>
+                <SolidColorBrush Color="RoyalBlue"/>
+            </controls:MarkerStyle.Stroke>
+
+            <controls:MarkerStyle.TailStroke>
+                <SolidColorBrush Color="White"/>
+            </controls:MarkerStyle.TailStroke>
+
+            <controls:MarkerStyle.TailStrokeStyle>
+                <geometry:CanvasStrokeStyle DashStyle="Dash"/>
+            </controls:MarkerStyle.TailStrokeStyle>
+        </controls:MarkerStyle>
+
+        <!-- Track Span -->
+        <controls:TimespanMarkerStyle x:Key="TimespanMarkerStyle_KeyframeDefault"
+                                         SpanStrokeThickness="0"
+                                         SpanStartTailStrokeThickness="1.0"
+                                         SpanEndTailStrokeThickness="0">
+            <controls:TimespanMarkerStyle.SpanFill>
+                <SolidColorBrush Color="RoyalBlue"/>
+            </controls:TimespanMarkerStyle.SpanFill>
+
+            <controls:TimespanMarkerStyle.SpanLabel>
+                <SolidColorBrush Color="White"/>
+            </controls:TimespanMarkerStyle.SpanLabel>
+
+            <controls:TimespanMarkerStyle.SpanStartTailStroke>
+                <SolidColorBrush Color="RoyalBlue"/>
+            </controls:TimespanMarkerStyle.SpanStartTailStroke>
+
+            <controls:TimespanMarkerStyle.SpanStartTailStrokeStyle>
+                <geometry:CanvasStrokeStyle DashStyle="Dash"/>
+            </controls:TimespanMarkerStyle.SpanStartTailStrokeStyle>
+        </controls:TimespanMarkerStyle>
+
+        <!-- Track Span (Selected) -->
+        <controls:TimespanMarkerStyle x:Key="SelectedTimespanMarkerStyle_KeyframeDefault"
+                                         SpanStrokeThickness="2.0"
+                                         SpanStartTailStrokeThickness="2.0"
+                                         SpanEndTailStrokeThickness="2.0">
+            <controls:TimespanMarkerStyle.SpanFill>
+                <SolidColorBrush Color="White"/>
+            </controls:TimespanMarkerStyle.SpanFill>
+
+            <controls:TimespanMarkerStyle.SpanLabel>
+                <SolidColorBrush Color="RoyalBlue"/>
+            </controls:TimespanMarkerStyle.SpanLabel>
+
+            <controls:TimespanMarkerStyle.SpanStroke>
+                <SolidColorBrush Color="RoyalBlue"/>
+            </controls:TimespanMarkerStyle.SpanStroke>
+
+            <controls:TimespanMarkerStyle.SpanStartTailStroke>
+                <SolidColorBrush Color="White"/>
+            </controls:TimespanMarkerStyle.SpanStartTailStroke>
+
+            <controls:TimespanMarkerStyle.SpanEndTailStroke>
+                <SolidColorBrush Color="White"/>
+            </controls:TimespanMarkerStyle.SpanEndTailStroke>
+
+            <controls:TimespanMarkerStyle.SpanStrokeStyle>
+                <geometry:CanvasStrokeStyle DashStyle="Solid"/>
+            </controls:TimespanMarkerStyle.SpanStrokeStyle>
+
+            <controls:TimespanMarkerStyle.SpanStartTailStrokeStyle>
+                <geometry:CanvasStrokeStyle DashStyle="Dash"/>
+            </controls:TimespanMarkerStyle.SpanStartTailStrokeStyle>
+
+            <controls:TimespanMarkerStyle.SpanEndTailStrokeStyle>
+                <geometry:CanvasStrokeStyle DashStyle="Dash"/>
+            </controls:TimespanMarkerStyle.SpanEndTailStrokeStyle>
+        </controls:TimespanMarkerStyle>
+    </UserControl.Resources>
+    
     <Grid Background="{x:Bind Background}"
           BorderBrush="{x:Bind BorderBrush}"
           BorderThickness="{x:Bind BorderThickness}"
@@ -25,9 +136,9 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-
+        
         <!-- Swap Chain -->
-        <Border x:Name="RenderAreaBorder" Grid.Row="0" Grid.Column="0"
+        <Border x:Name="RenderAreaBorder" Grid.Row="0"
                 BorderBrush="Transparent" BorderThickness="0" CornerRadius="0"
                 PointerEntered="RenderAreaBorder_PointerEntered"
                 PointerExited="RenderAreaBorder_PointerExited"
@@ -41,19 +152,35 @@
                                         MinWidth="320" MinHeight="240"
                                         SizeChanged="SwapChainCanvas_SizeChanged"/>
         </Border>
-
+        
         <!-- Timeline -->
-        <controls:MediaTimeline x:Name="Timeline" Grid.Row="1" Grid.Column="0"
-                                MinHeight="75" Height="75"
-                                ZoomBarHeight="18"
-                                MarkerHeight="18"
+        <controls:MediaTimeline x:Name="Timeline" Grid.Row="1" MinHeight="75"
                                 PositionElementRelativeHeight="1.0"
                                 SelectionInOutElementsRelativeHeight="1.0"
-                                MarkerBrush="DarkOrange"
+                                ZoomBarHeight="15"
                                 PositionFollowMode="Advance"
+                                AutoRemoveEmptyTracks="True"
                                 Visibility="Collapsed"
-                                FramesPerSecond="{x:Bind FramesPerSecond, Mode=OneWay}"
-                                SelectedMarker="{x:Bind ViewModel.SelectedMarker, Mode=TwoWay}"/>
+                                FramesPerSecond="{x:Bind RefreshRate, Mode=OneWay}"
+                                SelectedMarker="{x:Bind ViewModel.SelectedMarker, Mode=TwoWay}"
+                                PositionChanged="Timeline_PositionChanged"
+                                SelectionChanged="Timeline_SelectionChanged"
+                                ZoomChanged="Timeline_ZoomChanged"
+                                TimelineValueDragStarted="Timeline_DragStarted"
+                                TimelineValueDragCompleted="Timeline_DragCompleted">
+            <controls:MediaTimeline.MarkerStyleGroups>
+                <controls:MarkerStyleGroup x:Key="MarkerDefault"
+                                           Style="{StaticResource MarkerStyle_Default}"
+                                           SelectedStyle="{StaticResource SelectedMarkerStyle_Default}"
+                                           TimespanMarkerStyle="{StaticResource TimespanMarkerStyle_Default}"
+                                           SelectedTimespanMarkerStyle="{StaticResource SelectedTimespanMarkerStyle_Default}"/>
+                <controls:MarkerStyleGroup x:Key="KeyframeDefault"
+                                           Style="{StaticResource MarkerStyle_KeyframeDefault}"
+                                           SelectedStyle="{StaticResource SelectedMarkerStyle_KeyframeDefault}"
+                                           TimespanMarkerStyle="{StaticResource TimespanMarkerStyle_KeyframeDefault}"
+                                           SelectedTimespanMarkerStyle="{StaticResource SelectedTimespanMarkerStyle_KeyframeDefault}"/>
+            </controls:MediaTimeline.MarkerStyleGroups>
+        </controls:MediaTimeline>
 
         <!-- Command Bar -->
         <CommandBar x:Name="EditorCommandBar" Grid.Row="2"
@@ -62,39 +189,80 @@
                     FlowDirection="RightToLeft"
                     Visibility="Collapsed">
             <CommandBar.PrimaryCommands>
-                <AppBarButton x:Name="CategoryActionButton" Width="40"
-                              Command="{x:Bind ViewModel.ToolsCategoryActionCommand}"/>
-                <AppBarToggleButton x:Name="Category4ToggleButton" Width="40"
-                                    Command="{x:Bind ViewModel.ToolsMark4Command}"
+                <AppBarButton x:Name="BatchActionButton" Width="40"
+                              Command="{x:Bind ViewModel.ToolsBatchActionCommand}"/>
+                <AppBarToggleButton x:Name="Group4ToggleButton" Width="40"
+                                    Command="{x:Bind ViewModel.ToolsToggleGroup4Command}"
                                     CommandParameter="4"
-                                    IsChecked="{x:Bind ViewModel.ActiveMediaSource.IsCategory4, Mode=OneWay}"/>
-                <AppBarToggleButton x:Name="Category3ToggleButton" Width="40"
-                                    Command="{x:Bind ViewModel.ToolsMark3Command}"
+                                    IsChecked="{x:Bind ViewModel.ActiveMediaSource.GroupFlags,
+                                                       Converter={StaticResource GroupMaskToBooleanConverter},
+                                                       ConverterParameter=4,
+                                                       Mode=OneWay}"/>
+                <AppBarToggleButton x:Name="Group3ToggleButton" Width="40"
+                                    Command="{x:Bind ViewModel.ToolsToggleGroup3Command}"
                                     CommandParameter="3"
-                                    IsChecked="{x:Bind ViewModel.ActiveMediaSource.IsCategory3, Mode=OneWay}"/>
-                <AppBarToggleButton x:Name="Category2ToggleButton" Width="40"
-                                    Command="{x:Bind ViewModel.ToolsMark2Command}"
+                                    IsChecked="{x:Bind ViewModel.ActiveMediaSource.GroupFlags,
+                                                       Converter={StaticResource GroupMaskToBooleanConverter},
+                                                       ConverterParameter=3,
+                                                       Mode=OneWay}"/>
+                <AppBarToggleButton x:Name="Group2ToggleButton" Width="40"
+                                    Command="{x:Bind ViewModel.ToolsToggleGroup2Command}"
                                     CommandParameter="2"
-                                    IsChecked="{x:Bind ViewModel.ActiveMediaSource.IsCategory2, Mode=OneWay}"/>
-                <AppBarToggleButton x:Name="Category1ToggleButton" Width="40"
-                                    Command="{x:Bind ViewModel.ToolsMark1Command}"
+                                    IsChecked="{x:Bind ViewModel.ActiveMediaSource.GroupFlags,
+                                                       Converter={StaticResource GroupMaskToBooleanConverter},
+                                                       ConverterParameter=2,
+                                                       Mode=OneWay}"/>
+                <AppBarToggleButton x:Name="Group1ToggleButton" Width="40"
+                                    Command="{x:Bind ViewModel.ToolsToggleGroup1Command}"
                                     CommandParameter="1"
-                                    IsChecked="{x:Bind ViewModel.ActiveMediaSource.IsCategory1, Mode=OneWay}"/>
+                                    IsChecked="{x:Bind ViewModel.ActiveMediaSource.GroupFlags,
+                                                       Converter={StaticResource GroupMaskToBooleanConverter},
+                                                       ConverterParameter=1,
+                                                       Mode=OneWay}"/>
                 <AppBarSeparator/>
-                <AppBarToggleButton x:Name="TogglePanAndZoomLockButton" Width="40"
+                <AppBarElementContainer x:Name="OpacitySlider" Width="100"
+                                        HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                        HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center">
+                    <Slider Minimum="0" Maximum="1" IsDirectionReversed="True"
+                            StepFrequency="0.01" SmallChange="0.01" LargeChange="0.1"
+                            Value="{x:Bind FrameOpacity, Mode=TwoWay}"/>
+                </AppBarElementContainer>
+                <AppBarSeparator x:Name="OpacityAdjustmentSeparator"/>
+                <AppBarToggleButton x:Name="HoldCurrentPanAndZoomToggleButton" Width="40"
                                     Command="{x:Bind ViewModel.EditorTogglePanAndZoomLockCommand}"
-                                    IsChecked="{x:Bind IsLockPanAndZoom, Mode=TwoWay}"/>
+                                    IsChecked="{x:Bind IsHoldCurrentPanAndZoom, Mode=TwoWay}"/>
                 <AppBarButton x:Name="CenterFrameButton" Width="40"
-                              Command="{x:Bind ViewModel.EditorCenterFrameCommand}"/>
+                              Command="{x:Bind ViewModel.EditorCenterFrameCommand}"
+                              Visibility="{x:Bind IsPanAndZoomEnabled,
+                                                  Converter={StaticResource BoolToVisibilityConverter},
+                                                  ConverterParameter=False,
+                                                  Mode=OneWay}"/>
                 <AppBarButton x:Name="FrameZoomFullButton" Width="40"
-                              Command="{x:Bind ViewModel.EditorFrameZoomFullCommand}"/>
+                              Command="{x:Bind ViewModel.EditorFrameZoomFullCommand}"
+                              Visibility="{x:Bind IsPanAndZoomEnabled,
+                                                  Converter={StaticResource BoolToVisibilityConverter},
+                                                  ConverterParameter=False,
+                                                  Mode=OneWay}"/>
                 <AppBarButton x:Name="FrameZoomFitButton" Width="40"
-                              Command="{x:Bind ViewModel.EditorFrameZoomFitCommand}"/>
+                              Command="{x:Bind ViewModel.EditorFrameZoomFitCommand}"
+                              Visibility="{x:Bind IsPanAndZoomEnabled,
+                                                  Converter={StaticResource BoolToVisibilityConverter},
+                                                  ConverterParameter=False,
+                                                  Mode=OneWay}"/>
                 <AppBarButton x:Name="TimelineZoomOutButton" Width="40"
                               Command="{x:Bind ViewModel.EditorTimelineZoomOutCommand}"/>
                 <AppBarButton x:Name="TimelineZoomInButton" Width="40"
                               Command="{x:Bind ViewModel.EditorTimelineZoomInCommand}"/>
                 <AppBarSeparator x:Name="ZoomAndPanButtonSeparator"/>
+                <AppBarElementContainer x:Name="PlaybackRateText" Width="40"
+                                        HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                        HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
+                    <TextBlock TextAlignment="Center"
+                               FontFamily="Segoe UI"
+                               FontSize="18"
+                               FontWeight="Bold"
+                               Text="{x:Bind PlaybackRate, Mode=OneWay}"/>
+                </AppBarElementContainer>
                 <AppBarButton x:Name="PlaybackRateIncreaseButton" Width="40"
                               Command="{x:Bind ViewModel.EditorPlaybackRateIncreaseCommand}"/>
                 <AppBarButton x:Name="PlaybackRateNormalButton" Width="40"
@@ -103,20 +271,20 @@
                               Command="{x:Bind ViewModel.EditorPlaybackRateDecreaseCommand}"/>
                 <AppBarSeparator x:Name="PlaybackRateButtonSeparator"/>
                 <AppBarButton x:Name="DeleteMarkerButton" Width="40"
-                              Command="{x:Bind ViewModel.ProjectDeleteMarkerCommand}"/>
+                              Command="{x:Bind ViewModel.GeneralDeleteMarkerCommand}"/>
                 <AppBarButton x:Name="CutSelectedButton" Width="40"
                               Command="{x:Bind ViewModel.EditorCutSelectedCommand}"/>
                 <AppBarButton x:Name="NewKeyframeButton" Width="40"
                               Command="{x:Bind ViewModel.EditorNewKeyframeCommand}"/>
-                <AppBarButton x:Name="NewClipButton" Width="40"
-                              Command="{x:Bind ViewModel.EditorNewClipCommand}"/>
                 <AppBarButton x:Name="NewMarkerButton" Width="40"
                               Command="{x:Bind ViewModel.EditorNewMarkerCommand}"/>
-                <AppBarToggleButton x:Name="ToggleActiveSelectionButton" Width="40"
+                <AppBarButton x:Name="NewTrackButton" Width="40"
+                              Command="{x:Bind ViewModel.EditorAddTrackCommmand}"/>
+                <AppBarToggleButton x:Name="ActiveSelectionToggleButton" Width="40"
                                     Command="{x:Bind ViewModel.EditorToggleActiveSelectionCommand}"
                                     IsChecked="{x:Bind Timeline.IsSelectionEnabled, Mode=TwoWay}"/>
                 <AppBarSeparator x:Name="TrimAndEditButtonSeparator"/>
-                <AppBarToggleButton x:Name="TogglePlaybackLoopingButton" Width="40"
+                <AppBarToggleButton x:Name="LoopingToggleButton" Width="40"
                                     Command="{x:Bind ViewModel.EditorToggleLoopingCommand}"
                                     IsChecked="{x:Bind IsLoopingEnabled, Mode=TwoWay}"/>
                 <AppBarButton x:Name="NextMarkerButton" Width="40"

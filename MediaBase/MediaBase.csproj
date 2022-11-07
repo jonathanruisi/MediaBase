@@ -18,11 +18,13 @@
     <None Remove="Assets\Logo_Package.scale-400.png" />
     <None Remove="Assets\Logo_Tile_Medium.scale-400.png" />
     <None Remove="Controls\MediaEditor.xaml" />
-    <None Remove="Controls\ProjectBrowser.xaml" />
-    <None Remove="Controls\PropertyEditor.xaml" />
-    <None Remove="Dialogs\BatchActionDialog.xaml" />
-    <None Remove="General\VisualResourceDictionary.xaml" />
-    <None Remove="Windows\LogWindow.xaml" />
+    <None Remove="Controls\MediaPropertiesControl.xaml" />
+    <None Remove="Controls\SystemBrowser.xaml" />
+    <None Remove="Controls\WorkspaceBrowser.xaml" />
+    <None Remove="Dialogs\GroupActionDialog.xaml" />
+    <None Remove="Dialogs\MarkerDialog.xaml" />
+    <None Remove="General\MediaBaseResourceDictionary.xaml" />
+    <None Remove="Window\LogWindow.xaml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -32,7 +34,7 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.1" />
     <PackageReference Include="Microsoft.Graphics.Win2D" Version="1.0.4" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.1.5" />
-    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.22621.1" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.22621.755" />
     <PackageReference Include="Microsoft.Xaml.Behaviors.WinUI.Managed" Version="2.0.9" />
     <PackageReference Include="Nito.AsyncEx.Coordination" Version="5.1.2" />
     <PackageReference Include="PInvoke.User32" Version="0.7.124" />
@@ -46,26 +48,36 @@
     <ProjectCapability Include="Msix" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Utility.NET\Utility.NET\Utility.NET.csproj" />
     <ProjectReference Include="..\..\Utility.NET\Utility.WinUI\Utility.WinUI.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Page Update="Windows\LogWindow.xaml">
+    <Page Update="General\MediaBaseResourceDictionary.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Page Update="General\VisualResourceDictionary.xaml">
+    <Page Update="Controls\WorkspaceBrowser.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Page Update="Dialogs\BatchActionDialog.xaml">
+    <CustomAdditionalCompileInputs Remove="Controls\SystemBrowser.xaml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Remove="Controls\SystemBrowser.xaml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Controls\MediaPropertiesControl.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Page Update="Controls\PropertyEditor.xaml">
+    <Page Update="Dialogs\MarkerDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Dialogs\GroupActionDialog.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
@@ -75,7 +87,7 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Page Update="Controls\ProjectBrowser.xaml">
+    <Page Update="Windows\LogWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
