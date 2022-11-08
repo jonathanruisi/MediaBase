@@ -3,7 +3,7 @@
   <Class Name="MediaBase.ViewModel.ProjectManager">
     <Position X="10.75" Y="7.25" Width="4" />
     <TypeIdentifier>
-      <HashCode>GDWrwl40G2lzGQmUzJ0xCAgmMqbGjkBGGa1AQES6kws=</HashCode>
+      <HashCode>GDWrwl40G2l7GQmUzJ0xCAwmMqbGjkBGGa1AUES6kws=</HashCode>
       <FileName>ViewModel\ProjectManager.cs</FileName>
     </TypeIdentifier>
     <ShowAsAssociation>
@@ -30,16 +30,16 @@
     <Lollipop Position="0.2" />
   </Class>
   <Class Name="MediaBase.ViewModel.ImageSource">
-    <Position X="28.5" Y="16.25" Width="2.25" />
+    <Position X="28.5" Y="16.75" Width="2.25" />
     <TypeIdentifier>
-      <HashCode>AAAAAAAAAAAAAABAAAAAAEAAAAAAAAAACABQAAAAABA=</HashCode>
+      <HashCode>AAAAAAAAAAAAAABAAAAAAEQAAAAAAAAACABQAAAIABA=</HashCode>
       <FileName>ViewModel\ImageSource.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Class Name="MediaBase.ViewModel.Keyframe">
     <Position X="15.5" Y="11.75" Width="2" />
     <TypeIdentifier>
-      <HashCode>AAAAAgAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAA=</HashCode>
+      <HashCode>AACAAgAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAA=</HashCode>
       <FileName>ViewModel\Keyframe.cs</FileName>
     </TypeIdentifier>
   </Class>
@@ -69,7 +69,7 @@
   <Class Name="MediaBase.ViewModel.MultimediaSource">
     <Position X="29.75" Y="7.25" Width="2.5" />
     <TypeIdentifier>
-      <HashCode>EAiCJYBAAkECGAAAAJhAAEhAAAIAQEGACAAQAAIAAIA=</HashCode>
+      <HashCode>EAiCJYBAAkECGAAAAJhAAEhAAAIAQEGAiAAQAEIIAIA=</HashCode>
       <FileName>ViewModel\MultimediaSource.cs</FileName>
     </TypeIdentifier>
     <Lollipop Position="0.2" />
@@ -90,16 +90,16 @@
     <Lollipop Position="0.2" />
   </Class>
   <Class Name="MediaBase.ViewModel.VideoSource">
-    <Position X="31.5" Y="16.25" Width="2.25" />
+    <Position X="31.5" Y="16.75" Width="2.25" />
     <TypeIdentifier>
       <HashCode>AACACAAAAAIBACAAAAAAEUEAAIAIAAABCQIQAAAAABA=</HashCode>
       <FileName>ViewModel\VideoSource.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Class Name="MediaBase.Controls.MediaEditor">
-    <Position X="0.5" Y="3" Width="4.25" />
+    <Position X="0.5" Y="3.25" Width="4.25" />
     <TypeIdentifier>
-      <HashCode>GNi67YROWiA1Dy8OkHWkOG3iOK7wOqtVmkR8GP31YIc=</HashCode>
+      <HashCode>GJi67YZOWiA1Dy8OkHWkOG3iOK70OqtVmkR8GP31YIc=</HashCode>
       <FileName>Controls\MediaEditor.xaml.cs</FileName>
     </TypeIdentifier>
     <ShowAsAssociation>
@@ -108,7 +108,7 @@
     <Lollipop Position="0.2" />
   </Class>
   <Class Name="MediaBase.Controls.SystemBrowser">
-    <Position X="16.25" Y="18.25" Width="2.75" />
+    <Position X="6.25" Y="14.75" Width="2.75" />
     <TypeIdentifier>
       <HashCode>CAAAAAAAAAAAAAAAAAFCAARAEAAAAAAAAAAAQAAAAAA=</HashCode>
       <FileName>Controls\SystemBrowser.xaml.cs</FileName>
@@ -119,7 +119,7 @@
     <Lollipop Position="0.2" />
   </Class>
   <Class Name="MediaBase.Controls.WorkspaceBrowser">
-    <Position X="5.75" Y="18.25" Width="4" />
+    <Position X="15.75" Y="18.75" Width="4" />
     <TypeIdentifier>
       <HashCode>AAAIEAAAAAAAAAAAAAAAAABCEAAAAAAAEAABAAAAgAA=</HashCode>
       <FileName>Controls\WorkspaceBrowser.xaml.cs</FileName>
@@ -130,7 +130,7 @@
     <Lollipop Position="0.2" />
   </Class>
   <Interface Name="MediaBase.ViewModel.IMultimediaItem">
-    <Position X="8" Y="14.5" Width="1.5" />
+    <Position X="8" Y="19" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AAACAAAAAAAAAAAAAAAAAEQAAAAAAAAACAAQAAAAAAA=</HashCode>
       <FileName>ViewModel\IMultimediaItem.cs</FileName>

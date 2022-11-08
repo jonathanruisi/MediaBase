@@ -26,16 +26,7 @@ namespace MediaBase.Controls
         #region Event Handlers
         private void UserControl_Loaded(object sender, RoutedEventArgs e)
         {
-            var messenger = App.Current.Services.GetService<IMessenger>();
-
-            messenger.Register<PropertyChangedMessage<MultimediaSource>>(this, (r, m) =>
-            {
-                if (m.Sender != ViewModel || m.PropertyName != nameof(ViewModel.ActiveMediaSource))
-                    return;
-
-                // TODO: Set marker listview's itemssource to the markers collection
-                // TODO: Set keyframe listview's itemssource to the markers collection (need data template to isolated keyframe markers?)
-            });
+            
         }
         #endregion
     }

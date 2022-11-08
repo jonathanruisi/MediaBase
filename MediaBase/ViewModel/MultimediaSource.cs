@@ -141,6 +141,9 @@ namespace MediaBase.ViewModel
 
         [ViewModelCollection(nameof(Tracks), "Track")]
         public ObservableCollection<string> Tracks { get; }
+
+        [ViewModelCollection(nameof(RelatedMedia), "Relation", true)]
+        public ObservableCollection<Guid> RelatedMedia { get; }
         #endregion
 
         #region Constructors
@@ -174,6 +177,9 @@ namespace MediaBase.ViewModel
 
             Tracks = new ObservableCollection<string>();
             Tracks.CollectionChanged += Tracks_CollectionChanged;
+
+            RelatedMedia = new ObservableCollection<Guid>();
+            RelatedMedia.CollectionChanged += RelatedMedia_CollectionChanged;
         }
         #endregion
 
@@ -288,6 +294,30 @@ namespace MediaBase.ViewModel
             Messenger.Send(trackMessage, nameof(Tracks));
             NotifySerializedCollectionChanged(nameof(Tracks));
         }
+
+        private void RelatedMedia_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            var reatedMediaMessage = new CollectionChangedMessage<Guid>(this, nameof(RelatedMedia), e.Action)
+            {
+                OldStartingIndex = e.OldStartingIndex,
+                NewStartingIndex = e.NewStartingIndex
+            };
+
+            if (e.OldItems != null)
+            {
+                foreach (Guid oldRelation in e.OldItems)
+                    reatedMediaMessage.OldValue.Add(oldRelation);
+            }
+
+            if (e.NewItems != null)
+            {
+                foreach (Guid newRelation in e.NewItems)
+                    reatedMediaMessage.NewValue.Add(newRelation);
+            }
+
+            Messenger.Send(reatedMediaMessage, nameof(RelatedMedia));
+            NotifySerializedCollectionChanged(nameof(RelatedMedia));
+        }
         #endregion
 
         #region Interface Implementation (IMultimediaItem)
@@ -342,7 +372,7 @@ namespace MediaBase.ViewModel
         #region Method Overrides (ViewModelElement)
         protected override object CustomPropertyParser(string propertyName, string content)
         {
-            if (propertyName is (nameof(Id)) or (nameof(SourceId)))
+            if (propertyName is (nameof(Id)) or (nameof(SourceId)) or "Relation")
                 return Guid.Parse(content);
 
             return null;
