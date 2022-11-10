@@ -95,9 +95,11 @@ namespace MediaBase.ViewModel
             Adjustments = new Dictionary<KeyframeAdjustment, string>();
         }
 
-        protected override object CustomPropertyParser(string propertyName, string content)
+        protected override object CustomPropertyParser(string propertyName, string content, params string[] args)
         {
-            if (propertyName == "Adjustment")
+            if (propertyName == nameof(Adjustments) &&
+                args.Length > 0 &&
+                args[0] == "Adjustment")
             {
                 var kvpStrings = content[1..^1].Split(',', StringSplitOptions.TrimEntries);
                 return KeyValuePair.Create(Enum.Parse(typeof(KeyframeAdjustment), kvpStrings[0]), (object)kvpStrings[1]);

@@ -16,7 +16,6 @@ using JLR.Utility.WinUI.Dialogs;
 using JLR.Utility.WinUI.Messaging;
 using JLR.Utility.WinUI.ViewModel;
 
-using MediaBase.Controls;
 using MediaBase.Dialogs;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -215,6 +214,7 @@ namespace MediaBase.ViewModel
         public XamlUICommand WorkspaceRemoveSelectedCommand { get; private set; }
         public XamlUICommand WorkspaceRenameItemCommand { get; private set; }
         public XamlUICommand WorkspaceSelectMultipleCommand { get; private set; }
+        public XamlUICommand WorkspaceSetItemRelationshipCommand { get; private set; }
 
         // Tools
         public XamlUICommand ToolsToggleGroup1Command { get; private set; }
@@ -611,12 +611,12 @@ namespace MediaBase.ViewModel
 
         private void WorkspaceNewFolderCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = ActiveWorkspaceBrowserNode is MediaFolder;
+            args.CanExecute = ActiveWorkspaceBrowserNode is MediaFolder or Project;
         }
 
         private void WorkspaceImportCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            if (ActiveWorkspaceBrowserNode is MediaFolder)
+            if (ActiveWorkspaceBrowserNode is MediaFolder or Project)
             {
                 var request = Messenger.Send<RequestMessage<bool>, string>("AreSystemBrowserNodesSelected");
                 args.CanExecute = request.HasReceivedResponse && request.Response;
@@ -634,12 +634,23 @@ namespace MediaBase.ViewModel
 
         private void WorkspaceRemoveSelectedCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = Projects.Any(x => x.DepthFirstEnumerable().Any(y => y.IsSelected && y is not Project));
+            var request = Messenger.Send<CollectionRequestMessage<TreeViewNode>, string>("GetSelectedWorkspaceBrowserNodes");
+            args.CanExecute = request.Responses.Any(x => x is not null && x.Content is not Project);
         }
 
         private void WorkspaceRenameItemCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
             args.CanExecute = ActiveWorkspaceBrowserNode is not null;
+        }
+
+        private void WorkspaceSetItemRelationshipCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            var request = Messenger.Send<CollectionRequestMessage<TreeViewNode>, string>("GetSelectedWorkspaceBrowserNodes");
+            var validSelectionCount = request.Responses.Count(x => x is not null && x.Content is IMultimediaItem);
+            args.CanExecute = (ActiveMediaSource != null &&
+                               ActiveWorkspaceBrowserNode != null &&
+                               !ActiveMediaSource.RelatedMedia.Contains((IMultimediaItem)ActiveWorkspaceBrowserNode)) ||
+                              validSelectionCount >= 2;
         }
 
         private void ToolsToggleGroupCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
@@ -871,13 +882,13 @@ namespace MediaBase.ViewModel
             var result = await dlg.ShowAsync();
             if (result == ContentDialogResult.Primary)
             {
-                ((MediaFolder)ActiveWorkspaceBrowserNode).Children.Add(new MediaFolder(dlg.Text));
+                ((ViewModelNode)ActiveWorkspaceBrowserNode).Children.Add(new MediaFolder(dlg.Text));
             }
         }
 
         private async void WorkspaceImportCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            if (((MediaFolder)ActiveWorkspaceBrowserNode).Root is not Project parentProject)
+            if (((ViewModelNode)ActiveWorkspaceBrowserNode).Root is not Project parentProject)
                 throw new Exception("Unable to find target project");
 
             int fileCount = 0, folderCount = 0;
@@ -904,13 +915,13 @@ namespace MediaBase.ViewModel
             // Recursively import top-level folders
             foreach (var folder in folderList)
             {
-                await AddFolder(folder, (MediaFolder)ActiveWorkspaceBrowserNode);
+                await AddFolder(folder, (ViewModelNode)ActiveWorkspaceBrowserNode);
             }
 
             // Import all top-level files
             foreach (var file in fileList)
             {
-                AddFile(file, (MediaFolder)ActiveWorkspaceBrowserNode);
+                AddFile(file, (ViewModelNode)ActiveWorkspaceBrowserNode);
             }
 
             // Import complete - display results
@@ -926,7 +937,7 @@ namespace MediaBase.ViewModel
             });
 
             // Make imported items ready
-            await MakeItemsReadyAsync((MediaFolder)ActiveWorkspaceBrowserNode);
+            await MakeItemsReadyAsync((ViewModelNode)ActiveWorkspaceBrowserNode);
 
             bool HasSelectedAncestor(TreeViewNode node)
             {
@@ -941,7 +952,7 @@ namespace MediaBase.ViewModel
                 return false;
             }
 
-            void AddFile(StorageFile sourceFile, MediaFolder destinationFolder)
+            void AddFile(StorageFile sourceFile, ViewModelNode destinationFolder)
             {
                 if (parentProject.MediaFileDictionary.ContainsKey(sourceFile.Path))
                 {
@@ -986,7 +997,7 @@ namespace MediaBase.ViewModel
                 }
             }
 
-            async Task AddFolder(StorageFolder sourceFolder, MediaFolder destinationFolder)
+            async Task AddFolder(StorageFolder sourceFolder, ViewModelNode destinationFolder)
             {
                 Messenger.Send(new SetInfoBarMessage
                 {
@@ -1022,10 +1033,11 @@ namespace MediaBase.ViewModel
 
         private void WorkspaceRemoveSelectedCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            var nodesToRemove = Projects
-                .SelectMany(x => x.DepthFirstEnumerable()
-                .Where(y => y.IsSelected && (y.Parent == null || !y.Parent.IsSelected)))
-                .ToList();
+            var request = Messenger.Send<CollectionRequestMessage<TreeViewNode>, string>("GetSelectedWorkspaceBrowserNodes");
+            var nodesToRemove = request.Responses.Where(x => x.Parent == null || !request.Responses.Contains(x.Parent))
+                                                 .Select(x => x.Content)
+                                                 .Cast<ViewModelElement>()
+                                                 .ToList();
 
             foreach (var node in nodesToRemove)
             {
@@ -1049,6 +1061,31 @@ namespace MediaBase.ViewModel
             if (result == ContentDialogResult.Primary)
             {
                 ActiveWorkspaceBrowserNode.Name = dlg.Text;
+            }
+        }
+
+        private void WorkspaceSetItemRelationshipCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            var request = Messenger.Send<CollectionRequestMessage<TreeViewNode>, string>("GetSelectedWorkspaceBrowserNodes");
+            var selectedItems = request.Responses.Select(x => x.Content)
+                                                 .OfType<MultimediaSource>()
+                                                 .ToList();
+
+            if (selectedItems.Count >= 2)
+            {
+                foreach (var outerItem in selectedItems)
+                {
+                    foreach (var innerItem in selectedItems)
+                    {
+                        if (innerItem != outerItem && !outerItem.RelatedMedia.Contains(innerItem))
+                            outerItem.RelatedMedia.Add(innerItem);
+                    }
+                }
+            }
+            else
+            {
+                ActiveMediaSource.RelatedMedia.Add((MultimediaSource)ActiveWorkspaceBrowserNode);
+                ((MultimediaSource)ActiveWorkspaceBrowserNode).RelatedMedia.Add(ActiveMediaSource);
             }
         }
 
@@ -1258,9 +1295,13 @@ namespace MediaBase.ViewModel
         #endregion
 
         #region Method Overrides (ViewModelElement)
-        protected override object HijackDeserialization(string propertyName, ref XmlReader reader)
+        protected override object HijackDeserialization(string propertyName,
+                                                        ref XmlReader reader,
+                                                        params string[] args)
         {
-            if (propertyName == nameof(Project))
+            if (propertyName == nameof(Projects) &&
+                args.Length > 0 &&
+                args[0] == nameof(Project))
             {
                 reader.MoveToFirstAttribute();
                 var name = reader.ReadContentAsString();
@@ -1275,9 +1316,14 @@ namespace MediaBase.ViewModel
             return null;
         }
 
-        protected override void HijackSerialization(string propertyName, object value, ref XmlWriter writer)
+        protected override void HijackSerialization(string propertyName,
+                                                    object value,
+                                                    ref XmlWriter writer,
+                                                    params string[] args)
         {
-            if (propertyName == nameof(Project))
+            if (propertyName == nameof(Projects) &&
+                args.Length > 0 &&
+                args[0] == nameof(Project))
             {
                 if (value is not Project project)
                     throw new Exception("Argument passed to custom serializer could not be cast to Project");
@@ -1285,7 +1331,7 @@ namespace MediaBase.ViewModel
                 if (project.File == null || !project.File.IsAvailable)
                     throw new Exception("Project does not have an associated save file");
 
-                writer.WriteStartElement(propertyName);
+                writer.WriteStartElement(args[0]);
                 writer.WriteAttributeString(nameof(project.Name), project.Name);
                 writer.WriteElementString(nameof(project.Path), project.Path);
                 writer.WriteEndElement();
@@ -1308,7 +1354,7 @@ namespace MediaBase.ViewModel
             // Media item added/removed
             Messenger.Register<CollectionChangedMessage<ViewModelElement>, string>(this, nameof(ViewModelNode.Children), (r, m) =>
             {
-                if (m.Sender is not MediaFolder folder)
+                if (m.Sender is not ViewModelNode)
                     return;
 
                 if (m.Action is NotifyCollectionChangedAction.Remove or
@@ -1387,7 +1433,7 @@ namespace MediaBase.ViewModel
         #region Private Properties
         private bool IsActiveMediaSourceFromSystemBrowser =>
             ActiveMediaSource.Parent == null &&
-            ActiveMediaSource == ActiveSystemBrowserNode.Content;
+            ActiveMediaSource == ActiveSystemBrowserNode?.Content;
         #endregion
 
         #region Private Methods
@@ -1662,6 +1708,14 @@ namespace MediaBase.ViewModel
                 Label = "Toggle Multi-Select",
                 Description = "Toggle multiple selection mode",
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xE762 }
+            };
+
+            // Workspace: Set Relationship
+            WorkspaceSetItemRelationshipCommand = new XamlUICommand
+            {
+                Label = "Set Relationship",
+                Description = "Create a relationship between multiple selected items",
+                IconSource = new SymbolIconSource { Symbol = (Symbol)0xF003 }
             };
 
             // Tools: Batch Action
@@ -2219,6 +2273,11 @@ namespace MediaBase.ViewModel
                 WorkspaceRenameItemCommand_CanExecuteRequested;
             WorkspaceRenameItemCommand.ExecuteRequested +=
                 WorkspaceRenameItemCommand_ExecuteRequested;
+
+            WorkspaceSetItemRelationshipCommand.CanExecuteRequested +=
+                WorkspaceSetItemRelationshipCommand_CanExecuteRequested;
+            WorkspaceSetItemRelationshipCommand.ExecuteRequested +=
+                WorkspaceSetItemRelationshipCommand_ExecuteRequested;
 
             // Tools
             ToolsToggleGroup1Command.CanExecuteRequested +=

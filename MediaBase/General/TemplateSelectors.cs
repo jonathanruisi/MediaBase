@@ -63,16 +63,18 @@ namespace MediaBase
         public DataTemplate FolderTemplate { get; set; }
         public DataTemplate ImageTemplate { get; set; }
         public DataTemplate VideoTemplate { get; set; }
+        public DataTemplate PlaylistTemplate { get; set; }
 
         protected override DataTemplate SelectTemplateCore(object item)
         {
             return item switch
             {
-                Project => ProjectTemplate,
+                Project     => ProjectTemplate,
                 MediaFolder => FolderTemplate,
                 ImageSource => ImageTemplate,
                 VideoSource => VideoTemplate,
-                _ => null,
+                Playlist    => PlaylistTemplate,
+                _ => null
             };
         }
     }

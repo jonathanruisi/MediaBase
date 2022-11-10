@@ -19,7 +19,7 @@ namespace MediaBase.ViewModel
     /// MediaBASE project ViewModel.
     /// </summary>
     [ViewModelType("Project")]
-    public sealed class Project : MediaFolder
+    public sealed class Project : ViewModelNode
     {
         #region Fields
         private StorageFile _file;
@@ -72,8 +72,9 @@ namespace MediaBase.ViewModel
         #region Constructors
         public Project() : this(string.Empty) { }
 
-        public Project(string name) : base(name)
+        public Project(string name)
         {
+            Name = name;
             _file = null;
             _path = string.Empty;
             MediaFileDictionary = new Dictionary<string, Guid>();
@@ -175,9 +176,11 @@ namespace MediaBase.ViewModel
         #endregion
 
         #region Method Overrides (ViewModelElement)
-        protected override object CustomPropertyParser(string propertyName, string content)
+        protected override object CustomPropertyParser(string propertyName, string content, params string[] args)
         {
-            if (propertyName == "FileReference")
+            if (propertyName == nameof(MediaFileDictionary) &&
+                args.Length > 0 &&
+                args[0] == "FileReference")
             {
                 var kvpStrings = content[1..^1].Split(',', StringSplitOptions.TrimEntries);
                 return KeyValuePair.Create((object)kvpStrings[0], (object)Guid.Parse(kvpStrings[1]));

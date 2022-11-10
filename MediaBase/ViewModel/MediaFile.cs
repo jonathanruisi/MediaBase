@@ -15,7 +15,6 @@ namespace MediaBase.ViewModel
     /// <summary>
     /// Represents a multimedia file.
     /// </summary>
-    [ViewModelType(nameof(MediaFile))]
     public abstract class MediaFile : ViewModelElement, IMultimediaItem
     {
         #region Fields
@@ -142,7 +141,7 @@ namespace MediaBase.ViewModel
         #endregion
 
         #region Method Overrides (ViewModelElement)
-        protected override object CustomPropertyParser(string propertyName, string content)
+        protected override object CustomPropertyParser(string propertyName, string content, params string[] args)
         {
             if (propertyName == nameof(Id))
                 return Guid.Parse(content);

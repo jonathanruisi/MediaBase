@@ -1,4 +1,7 @@
-﻿using CommunityToolkit.Mvvm.Messaging;
+﻿using System.Linq;
+
+using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging.Messages;
 
 using JLR.Utility.WinUI;
 using JLR.Utility.WinUI.ViewModel;
@@ -36,6 +39,27 @@ namespace MediaBase.Controls
             messenger.Register<GeneralMessage, string>(this, "CollapseAllTreeViewNodes", (r, m) =>
             {
                 ((WorkspaceBrowser)r).WorkspaceBrowserTreeView.CollapseAllNodes();
+            });
+
+            messenger.Register<CollectionRequestMessage<TreeViewNode>, string>(this, "GetSelectedWorkspaceBrowserNodes", (r, m) =>
+            {
+                if (((WorkspaceBrowser)r).WorkspaceBrowserTreeView.SelectionMode == TreeViewSelectionMode.Single)
+                {
+                    m.Reply(((WorkspaceBrowser)r).WorkspaceBrowserTreeView.SelectedNode);
+                }
+                else if (((WorkspaceBrowser)r).WorkspaceBrowserTreeView.SelectionMode == TreeViewSelectionMode.Multiple)
+                {
+                    foreach (var node in ((WorkspaceBrowser)r).WorkspaceBrowserTreeView.SelectedNodes)
+                    {
+                        m.Reply(node);
+                    }
+                }
+            });
+
+            messenger.Register<GeneralMessage, string>(this, "ClearWorkspaceBrowserSelection", (r, m) =>
+            {
+                ((WorkspaceBrowser)r).WorkspaceBrowserTreeView.SelectedNode = null;
+                ((WorkspaceBrowser)r).WorkspaceBrowserTreeView.SelectedNodes.Clear();
             });
         }
         #endregion
@@ -84,9 +108,15 @@ namespace MediaBase.Controls
         private void WorkspaceSelectMultipleCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
             if (WorkspaceBrowserTreeView.SelectionMode == TreeViewSelectionMode.Single)
+            {
+                WorkspaceBrowserTreeView.SelectedNode = null;
                 WorkspaceBrowserTreeView.SelectionMode = TreeViewSelectionMode.Multiple;
+            }
             else
+            {
+                WorkspaceBrowserTreeView.SelectedNodes.Clear();
                 WorkspaceBrowserTreeView.SelectionMode = TreeViewSelectionMode.Single;
+            }
         }
         #endregion
 

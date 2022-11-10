@@ -1,15 +1,11 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using System.ComponentModel;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 
-using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 
 using JLR.Utility.WinUI.Messaging;
@@ -22,24 +18,13 @@ namespace MediaBase.ViewModel
     /// </summary>
     public abstract class MultimediaSource : ViewModelElement, IMultimediaItem, IMediaMetadata, IVideoProperties
     {
-        #region Constants
-        /// <summary>
-        /// Indicates the default refresh rate of the current display.
-        /// </summary>
-        /// <remarks>
-        /// TODO: That value should be retrievable using an API call.
-        /// </remarks>
-        public static readonly int DefaultFrameRate = 120;
-        #endregion
-
         #region Fields
         private Guid _id, _sourceId;
         private IMultimediaItem _source;
-        private int _rating;
+        private int _rating, _groupFlags;
         private uint _widthInPixels, _heightInPixels;
         private double _framesPerSecond;
         private decimal _duration;
-        private int _groupFlags;
         #endregion
 
         #region Properties
@@ -142,8 +127,8 @@ namespace MediaBase.ViewModel
         [ViewModelCollection(nameof(Tracks), "Track")]
         public ObservableCollection<string> Tracks { get; }
 
-        [ViewModelCollection(nameof(RelatedMedia), "Relation", true)]
-        public ObservableCollection<Guid> RelatedMedia { get; }
+        [ViewModelCollection(nameof(RelatedMedia), hijackSerdes: true)]
+        public ObservableCollection<IMultimediaItem> RelatedMedia { get; }
         #endregion
 
         #region Constructors
@@ -178,7 +163,7 @@ namespace MediaBase.ViewModel
             Tracks = new ObservableCollection<string>();
             Tracks.CollectionChanged += Tracks_CollectionChanged;
 
-            RelatedMedia = new ObservableCollection<Guid>();
+            RelatedMedia = new ObservableCollection<IMultimediaItem>();
             RelatedMedia.CollectionChanged += RelatedMedia_CollectionChanged;
         }
         #endregion
@@ -263,6 +248,7 @@ namespace MediaBase.ViewModel
                 }
             }
 
+            // TODO: Use grouping instead
             if (isKeyframeNotify)
                 OnPropertyChanged(nameof(Keyframes));
             if (isNonKeyframeMarkerNotify)
@@ -297,7 +283,7 @@ namespace MediaBase.ViewModel
 
         private void RelatedMedia_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
-            var reatedMediaMessage = new CollectionChangedMessage<Guid>(this, nameof(RelatedMedia), e.Action)
+            var reatedMediaMessage = new CollectionChangedMessage<IMultimediaItem>(this, nameof(RelatedMedia), e.Action)
             {
                 OldStartingIndex = e.OldStartingIndex,
                 NewStartingIndex = e.NewStartingIndex
@@ -305,13 +291,13 @@ namespace MediaBase.ViewModel
 
             if (e.OldItems != null)
             {
-                foreach (Guid oldRelation in e.OldItems)
+                foreach (IMultimediaItem oldRelation in e.OldItems)
                     reatedMediaMessage.OldValue.Add(oldRelation);
             }
 
             if (e.NewItems != null)
             {
-                foreach (Guid newRelation in e.NewItems)
+                foreach (IMultimediaItem newRelation in e.NewItems)
                     reatedMediaMessage.NewValue.Add(newRelation);
             }
 
@@ -370,12 +356,54 @@ namespace MediaBase.ViewModel
         #endregion
 
         #region Method Overrides (ViewModelElement)
-        protected override object CustomPropertyParser(string propertyName, string content)
+        protected override object CustomPropertyParser(string propertyName, string content, params string[] args)
         {
-            if (propertyName is (nameof(Id)) or (nameof(SourceId)) or "Relation")
+            if (propertyName == nameof(Id) ||
+                propertyName == nameof(SourceId) ||
+                (args.Length > 0 && args[0] == "RelatedMediaId"))
                 return Guid.Parse(content);
 
             return null;
+        }
+
+        protected override object HijackDeserialization(string propertyName,
+                                                        ref XmlReader reader,
+                                                        params string[] args)
+        {
+            if (propertyName == nameof(RelatedMedia) && args.Length > 0)
+            {
+                reader.MoveToFirstAttribute();
+                var id = Guid.Parse(reader.ReadContentAsString());
+                reader.ReadEndElement();
+
+                var result = (IMultimediaItem)InstantiateObjectFromXmlTagName(args[0]);
+                result.Id = id;
+                return result;
+            }
+
+            return null;
+        }
+
+        protected override void HijackSerialization(string propertyName,
+                                                    object value,
+                                                    ref XmlWriter writer,
+                                                    params string[] args)
+        {
+            if (propertyName == nameof(RelatedMedia) && args.Length > 0)
+            {
+                if (value is not IMultimediaItem media)
+                    throw new Exception(
+                        "Argument passed to custom serializer could not be cast to IMultimediaItem");
+
+                var xmlTag = GetXmlTagForType(value.GetType());
+                if (string.IsNullOrEmpty(xmlTag))
+                    throw new Exception(
+                        "Argument passed to custom serializer is not recognized as a ViewModelElement serializable type");
+
+                writer.WriteStartElement(xmlTag);
+                writer.WriteAttributeString(nameof(media.Id), media.Id.ToString());
+                writer.WriteEndElement();
+            }
         }
         #endregion
     }

@@ -55,6 +55,8 @@
             <MenuFlyoutSeparator/>
             <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceRenameItemCommand}"/>
             <MenuFlyoutSeparator/>
+            <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceSetItemRelationshipCommand}"/>
+            <MenuFlyoutSeparator/>
             <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceSelectMultipleCommand}"/>
         </MenuFlyout>
 
@@ -286,11 +288,97 @@
             </TreeViewItem>
         </DataTemplate>
 
+        <DataTemplate x:Key="PlaylistNodeDataTemplate"
+                      x:DataType="viewmodel:Playlist">
+            <TreeViewItem IsSelected="{x:Bind IsSelected, Mode=TwoWay}"
+                          IsEnabled="{x:Bind IsReady, Mode=OneWay}"
+                          ContextFlyout="{StaticResource MenuFlyout_WorkspaceBrowserMediaItemActions}"
+                          RightTapped="WorkspaceBrowserTreeView_RightTapped">
+                <TreeViewItem.Content>
+                    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" Width="27" Margin="-27,0,0,0"
+                                    Orientation="Horizontal"
+                                    FlowDirection="RightToLeft">
+                            <!-- Rating Indicator -->
+                            <Rectangle Width="3" Height="20" Stretch="Fill"
+                                       Margin="2,0"
+                                       Fill="{x:Bind Rating,
+                                                     Converter={StaticResource RatingToBrushConverter},
+                                                     Mode=OneWay}"/>
+
+                            <!-- Not Ready Indicator -->
+                            <FontIcon Glyph="&#xE783;"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center"
+                                      Foreground="{StaticResource RedBrush}"
+                                      Visibility="{x:Bind IsReady,
+                                                          Converter={StaticResource BoolToVisibilityConverter},
+                                                          ConverterParameter=True,
+                                                          Mode=OneWay}"/>
+                        </StackPanel>
+
+                        <!-- Playlist Icon -->
+                        <FontIcon Grid.Column="1"
+                                  FontFamily="Segoe Fluent Icons"
+                                  Glyph="&#xE71D;"
+                                  Margin="0,0,6,0"/>
+
+                        <!-- Media Name -->
+                        <TextBlock Grid.Column="2"
+                                   HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Left"
+                                   Text="{x:Bind Name, Mode=OneWay}"/>
+
+                        <Ellipse Grid.Column="3"
+                                 Fill="Gold" Width="10" Height="10" Stretch="Fill" StrokeThickness="0"
+                                 VerticalAlignment="Center" Margin="0,0,2,0"
+                                 Visibility="{x:Bind GroupFlags,
+                                                     Converter={StaticResource GroupMaskToVisibilityConverter},
+                                                     ConverterParameter=1,
+                                                     Mode=OneWay}"/>
+
+                        <Ellipse Grid.Column="4"
+                                 Fill="CornflowerBlue" Width="10" Height="10" Stretch="Fill" StrokeThickness="0"
+                                 VerticalAlignment="Center" Margin="0,0,2,0"
+                                 Visibility="{x:Bind GroupFlags,
+                                                     Converter={StaticResource GroupMaskToVisibilityConverter},
+                                                     ConverterParameter=2,
+                                                     Mode=OneWay}"/>
+
+                        <Ellipse Grid.Column="5"
+                                 Fill="IndianRed" Width="10" Height="10" Stretch="Fill" StrokeThickness="0"
+                                 VerticalAlignment="Center" Margin="0,0,2,0"
+                                 Visibility="{x:Bind GroupFlags,
+                                                     Converter={StaticResource GroupMaskToVisibilityConverter},
+                                                     ConverterParameter=3,
+                                                     Mode=OneWay}"/>
+
+                        <Ellipse Grid.Column="6"
+                                 Fill="ForestGreen" Width="10" Height="10" Stretch="Fill" StrokeThickness="0"
+                                 VerticalAlignment="Center" Margin="0,0,2,0"
+                                 Visibility="{x:Bind GroupFlags,
+                                                     Converter={StaticResource GroupMaskToVisibilityConverter},
+                                                     ConverterParameter=4,
+                                                     Mode=OneWay}"/>
+                    </Grid>
+                </TreeViewItem.Content>
+            </TreeViewItem>
+        </DataTemplate>
+
         <mediabase:WorkspaceItemTemplateSelector x:Key="WorkspaceItemTemplateSelector"
                                                  ProjectTemplate="{StaticResource ProjectNodeDataTemplate}"
                                                  FolderTemplate="{StaticResource FolderNodeDataTemplate}"
                                                  ImageTemplate="{StaticResource ImageNodeDataTemplate}"
-                                                 VideoTemplate="{StaticResource VideoNodeDataTemplate}"/>
+                                                 VideoTemplate="{StaticResource VideoNodeDataTemplate}"
+                                                 PlaylistTemplate="{StaticResource  PlaylistNodeDataTemplate}"/>
     </UserControl.Resources>
 
     <Grid Background="{x:Bind Background}"

@@ -46,9 +46,16 @@ namespace MediaBase.Controls
 
             messenger.Register<CollectionRequestMessage<TreeViewNode>, string>(this, "GetSelectedSystemBrowserNodes", (r, m) =>
             {
-                foreach (var node in ((SystemBrowser)r).SystemBrowserTreeView.SelectedNodes)
+                if (((SystemBrowser)r).SystemBrowserTreeView.SelectionMode == TreeViewSelectionMode.Single)
                 {
-                    m.Reply(node);
+                    m.Reply(((SystemBrowser)r).SystemBrowserTreeView.SelectedNode);
+                }
+                else if (((SystemBrowser)r).SystemBrowserTreeView.SelectionMode == TreeViewSelectionMode.Multiple)
+                {
+                    foreach (var node in ((SystemBrowser)r).SystemBrowserTreeView.SelectedNodes)
+                    {
+                        m.Reply(node);
+                    }
                 }
             });
 
@@ -66,6 +73,7 @@ namespace MediaBase.Controls
 
             messenger.Register<GeneralMessage, string>(this, "ClearSystemBrowserSelection", (r, m) =>
             {
+                ((SystemBrowser)r).SystemBrowserTreeView.SelectedNode = null;
                 ((SystemBrowser)r).SystemBrowserTreeView.SelectedNodes.Clear();
             });
 

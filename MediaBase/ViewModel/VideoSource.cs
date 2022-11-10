@@ -255,13 +255,15 @@ namespace MediaBase.ViewModel
         #endregion
 
         #region Method Overrides (ViewModelElement)
-        protected override object CustomPropertyParser(string propertyName, string content)
+        protected override object CustomPropertyParser(string propertyName, string content, params string[] args)
         {
-            var baseProperty = base.CustomPropertyParser(propertyName, content);
+            var baseProperty = base.CustomPropertyParser(propertyName, content, args);
             if (baseProperty != null)
                 return baseProperty;
 
-            if (propertyName == "Cut")
+            if (propertyName == nameof(Cuts) &&
+                args.Length > 0 &&
+                args[0] == "Cut")
             {
                 var cutStrings = content.Split(':');
                 return (decimal.Parse(cutStrings[0]), decimal.Parse(cutStrings[1]));
@@ -270,13 +272,15 @@ namespace MediaBase.ViewModel
             return null;
         }
 
-        protected override string CustomPropertyWriter(string propertyName, object value)
+        protected override string CustomPropertyWriter(string propertyName, object value, params string[] args)
         {
-            var baseProperty = base.CustomPropertyWriter(propertyName, value);
+            var baseProperty = base.CustomPropertyWriter(propertyName, value, args);
             if (baseProperty != null)
                 return baseProperty;
 
-            if (propertyName == "Cut")
+            if (propertyName == nameof(Cuts) &&
+                args.Length > 0 &&
+                args[0] == "Cut")
             {
                 var (start, end) = ((decimal start, decimal end))value;
                 return $"{start}:{end}";
