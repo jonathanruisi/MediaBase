@@ -12,7 +12,7 @@ using JLR.Utility.WinUI.ViewModel;
 namespace MediaBase.ViewModel
 {
     [ViewModelType(nameof(Playlist))]
-    [ViewModelCollectionOverride(nameof(Children), nameof(Children), hijackSerdes: true)]
+    [ViewModelCollectionOverride(nameof(Children), nameof(Children), null, false, false, true)]
     public sealed class Playlist : ViewModelNode, IMultimediaItem, IMediaMetadata
     {
         #region Fields
@@ -146,6 +146,14 @@ namespace MediaBase.ViewModel
         #endregion
 
         #region Method Overrides (ViewModelElement)
+        protected override object CustomPropertyParser(string propertyName, string content, params string[] args)
+        {
+            if (propertyName != nameof(Id))
+                return null;
+
+            return Guid.Parse(content);
+        }
+
         protected override object HijackDeserialization(string propertyName,
                                                         ref XmlReader reader,
                                                         params string[] args)

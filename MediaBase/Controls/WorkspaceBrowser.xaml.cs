@@ -43,23 +43,15 @@ namespace MediaBase.Controls
 
             messenger.Register<CollectionRequestMessage<TreeViewNode>, string>(this, "GetSelectedWorkspaceBrowserNodes", (r, m) =>
             {
-                if (((WorkspaceBrowser)r).WorkspaceBrowserTreeView.SelectionMode == TreeViewSelectionMode.Single)
+                foreach (var node in ((WorkspaceBrowser)r).WorkspaceBrowserTreeView.GetSelectedNodes())
                 {
-                    m.Reply(((WorkspaceBrowser)r).WorkspaceBrowserTreeView.SelectedNode);
-                }
-                else if (((WorkspaceBrowser)r).WorkspaceBrowserTreeView.SelectionMode == TreeViewSelectionMode.Multiple)
-                {
-                    foreach (var node in ((WorkspaceBrowser)r).WorkspaceBrowserTreeView.SelectedNodes)
-                    {
-                        m.Reply(node);
-                    }
+                    m.Reply(node);
                 }
             });
 
             messenger.Register<GeneralMessage, string>(this, "ClearWorkspaceBrowserSelection", (r, m) =>
             {
-                ((WorkspaceBrowser)r).WorkspaceBrowserTreeView.SelectedNode = null;
-                ((WorkspaceBrowser)r).WorkspaceBrowserTreeView.SelectedNodes.Clear();
+                ((WorkspaceBrowser)r).WorkspaceBrowserTreeView.ClearSelectedNodes();
             });
         }
         #endregion
