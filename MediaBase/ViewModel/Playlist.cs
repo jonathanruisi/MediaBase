@@ -61,14 +61,19 @@ namespace MediaBase.ViewModel
         #endregion
 
         #region Constructors
-        public Playlist() : this(Guid.NewGuid()) { }
+        public Playlist() : this(null, Guid.NewGuid()) { }
 
-        public Playlist(Guid id)
+        public Playlist(string name) : this(name, Guid.NewGuid()) { }
+
+        public Playlist(Guid id) : this(null, id) { }
+
+        public Playlist(string name, Guid id)
         {
             _id = id;
             _contentType = MediaContentType.None;
             _rating = 0;
             _groupFlags = 0;
+            Name = name;
 
             Tags = new ObservableCollection<string>();
             Tags.CollectionChanged += Tags_CollectionChanged;
