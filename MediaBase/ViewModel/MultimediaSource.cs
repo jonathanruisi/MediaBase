@@ -347,6 +347,19 @@ namespace MediaBase.ViewModel
                     Duration = properties.Duration;
                 }
 
+                // Lookup related media
+                for (var i = 0; i < RelatedMedia.Count; i++)
+                {
+                    if (!RelatedMedia[i].IsReady)
+                    {
+                        var response = Messenger.Send(new MediaLookupRequestMessage(RelatedMedia[i].Id));
+                        if (response != null && response.Response != null)
+                        {
+                            RelatedMedia[i] = response.Response;
+                        }
+                    }
+                }
+
                 return true;
             }
 
@@ -372,11 +385,12 @@ namespace MediaBase.ViewModel
         {
             if (propertyName == nameof(RelatedMedia) && args.Length > 0)
             {
+                var elementName = reader.Name;
                 reader.MoveToFirstAttribute();
                 var id = Guid.Parse(reader.ReadContentAsString());
-                reader.ReadEndElement();
+                reader.Read();
 
-                var result = (IMultimediaItem)InstantiateObjectFromXmlTagName(args[0]);
+                var result = (IMultimediaItem)InstantiateObjectFromXmlTagName(elementName);
                 result.Id = id;
                 return result;
             }
