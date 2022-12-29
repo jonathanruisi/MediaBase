@@ -146,7 +146,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="250" x:Name="SystemBrowserColumn"/>
                 <ColumnDefinition Width="Auto" x:Name="SystemBrowserResizeColumn"/>
-                <ColumnDefinition Width="250" x:Name="WorkspaceBrowserColumn"/>
+                <ColumnDefinition Width="400" x:Name="WorkspaceBrowserColumn"/>
                 <ColumnDefinition Width="Auto" x:Name="WorkspaceBrowserResizeColumn"/>
                 <ColumnDefinition Width="250" x:Name="MediaPropertiesColumn"/>
                 <ColumnDefinition Width="Auto" x:Name="MediaPropertiesResizeColumn"/>

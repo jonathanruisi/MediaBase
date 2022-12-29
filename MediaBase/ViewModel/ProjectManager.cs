@@ -46,8 +46,10 @@ namespace MediaBase.ViewModel
 
         #region Fields
         private StorageFile _file;
+        private Project _activeProject;
         private TreeViewNode _activeSystemBrowserNode;
         private ViewModelElement _activeWorkspaceBrowserNode;
+        private ViewModelNode _activeWorkspaceBrowserFolder;
         private MultimediaSource _activeMediaSource;
         private Marker _selectedMarker;
         private string _description;
@@ -63,6 +65,12 @@ namespace MediaBase.ViewModel
         {
             get => _file;
             set => SetProperty(ref _file, value);
+        }
+
+        public Project ActiveProject
+        {
+            get => _activeProject;
+            set => SetProperty(ref _activeProject, value, true);
         }
 
         /// <summary>
@@ -101,6 +109,19 @@ namespace MediaBase.ViewModel
                     ToolsToggleGroup2Command.NotifyCanExecuteChanged();
                     ToolsToggleGroup3Command.NotifyCanExecuteChanged();
                     ToolsToggleGroup4Command.NotifyCanExecuteChanged();
+                }
+            }
+        }
+
+        public ViewModelNode ActiveWorkspaceBrowserFolder
+        {
+            get => _activeWorkspaceBrowserFolder;
+            set
+            {
+                if (SetProperty(ref _activeWorkspaceBrowserFolder, value))
+                {
+                    WorkspaceNewFolderCommand.NotifyCanExecuteChanged();
+                    WorkspaceMoveUpOneLevelCommand.NotifyCanExecuteChanged();
                 }
             }
         }
@@ -213,8 +234,8 @@ namespace MediaBase.ViewModel
         public XamlUICommand WorkspaceRemoveItemCommand { get; private set; }
         public XamlUICommand WorkspaceRemoveSelectedCommand { get; private set; }
         public XamlUICommand WorkspaceRenameItemCommand { get; private set; }
-        public XamlUICommand WorkspaceSelectMultipleCommand { get; private set; }
         public XamlUICommand WorkspaceSetItemRelationshipCommand { get; private set; }
+        public XamlUICommand WorkspaceMoveUpOneLevelCommand { get; private set; }
 
         // Tools
         public XamlUICommand ToolsToggleGroup1Command { get; private set; }
@@ -253,8 +274,10 @@ namespace MediaBase.ViewModel
         {
             Name = DefaultName;
             _description = DefaultTitle;
+            _activeProject = null;
             _activeSystemBrowserNode = null;
             _activeWorkspaceBrowserNode = null;
+            _activeWorkspaceBrowserFolder = null;
             _activeMediaSource = null;
             _selectedMarker = null;
             _hasUnsavedChanges = false;
@@ -314,10 +337,47 @@ namespace MediaBase.ViewModel
             IsActive = true;
 
             // Open each project in the workspace
+            int successCount = 0, failCount = 0;
             foreach (var project in Projects)
             {
                 if (await OpenProject(project) == false)
-                    App.ShowMessageBoxAsync($"Unable to read project file: {project.Path}", "Project File Error");
+                    failCount++;
+                else
+                    successCount++;
+            }
+
+            if (successCount == 0)
+            {
+                Messenger.Send(new SetInfoBarMessage
+                {
+                    Title = "Done",
+                    Message = $"None of the {Projects.Count} projects loaded successfully",
+                    Severity = InfoBarSeverity.Error,
+                    IsCloseable = true
+                });
+                ActiveProject = null;
+            }
+            else if (successCount == Projects.Count)
+            {
+                Messenger.Send(new SetInfoBarMessage
+                {
+                    Title = "Done",
+                    Message = $"{Projects.Count} projects loaded successfully",
+                    Severity = InfoBarSeverity.Success,
+                    IsCloseable = true
+                });
+                ActiveProject = Projects.Count > 0 ? Projects[0] : null;
+            }
+            else
+            {
+                Messenger.Send(new SetInfoBarMessage
+                {
+                    Title = "Done",
+                    Message = $"{successCount} out of {Projects.Count} projects loaded successfully",
+                    Severity = InfoBarSeverity.Warning,
+                    IsCloseable = true
+                });
+                ActiveProject = Projects.Count > 0 ? Projects[0] : null;
             }
         }
 
@@ -336,18 +396,41 @@ namespace MediaBase.ViewModel
             {
                 if (project.File.Path == existingProject.Path)
                 {
-                    App.ShowMessageBoxAsync("This project already exists in this workspace.", "Duplicate Project");
+                    Messenger.Send(new SetInfoBarMessage
+                    {
+                        Title = "Duplicate Project",
+                        Message = "This project already exists in this workspace",
+                        Severity = InfoBarSeverity.Warning,
+                        IsCloseable = true
+                    });
+                    ActiveProject = existingProject;
                     return;
                 }
             }
 
             if (await OpenProject(project) == false)
             {
-                App.ShowMessageBoxAsync($"Unable to read project file: {project.Path}", "Project File Error");
+                Messenger.Send(new SetInfoBarMessage
+                {
+                    Title = "Project File Error",
+                    Message = $"Unable to read project file: {project.Path}",
+                    Severity = InfoBarSeverity.Error,
+                    IsCloseable = true
+                });
                 return;
             }
 
             Projects.Add(project);
+
+            Messenger.Send(new SetInfoBarMessage
+            {
+                Title = "Done",
+                Message = $"{project.Name} loaded successfully",
+                Severity = InfoBarSeverity.Success,
+                IsCloseable = true
+            });
+
+            ActiveProject = project;
         }
 
         /// <summary>
@@ -511,11 +594,25 @@ namespace MediaBase.ViewModel
         private void Projects_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
             if (Projects.Count == 0)
+            {
                 Description = DefaultTitle;
+                //ActiveProject = null;
+            }
             else if (Projects.Count == 1)
+            {
                 Description = Projects[0].Name;
+                //ActiveProject = Projects[0];
+            }
             else
+            {
                 Description = $"{Name}: {Projects.Count} Projects";
+                /*if (e.Action == NotifyCollectionChangedAction.Remove)
+                {
+                    ActiveProject = e.OldStartingIndex < Projects.Count
+                        ? Projects[e.OldStartingIndex]
+                        : Projects.Last();
+                }*/
+            }
 
             if (IsActive)
                 HasUnsavedChanges = true;
@@ -575,18 +672,17 @@ namespace MediaBase.ViewModel
 
         private void ProjectSaveCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = (ActiveWorkspaceBrowserNode is Project project && project.HasUnsavedChanges) ||
-                              (Projects.Count == 1 && Projects[0].HasUnsavedChanges);
+            args.CanExecute = ActiveProject is not null && ActiveProject.HasUnsavedChanges;
         }
 
         private void ProjectSaveAsCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = ActiveWorkspaceBrowserNode is Project || Projects.Count == 1;
+            args.CanExecute = ActiveProject is not null;
         }
 
         private void ProjectCloseCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = ActiveWorkspaceBrowserNode is Project || Projects.Count == 1;
+            args.CanExecute = ActiveProject is not null;
         }
 
         private void WorkspaceOpenCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
@@ -611,12 +707,12 @@ namespace MediaBase.ViewModel
 
         private void WorkspaceNewFolderCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = ActiveWorkspaceBrowserNode is MediaFolder or Project;
+            args.CanExecute = ActiveWorkspaceBrowserFolder is not null;
         }
 
         private void WorkspaceImportCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            if (ActiveWorkspaceBrowserNode is MediaFolder or Project)
+            if (ActiveWorkspaceBrowserFolder is not null)
             {
                 var request = Messenger.Send<RequestMessage<bool>, string>("AreSystemBrowserNodesSelected");
                 args.CanExecute = request.HasReceivedResponse && request.Response;
@@ -629,7 +725,7 @@ namespace MediaBase.ViewModel
 
         private void WorkspaceRemoveItemCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = ActiveWorkspaceBrowserNode is not null and not Project;
+            args.CanExecute = ActiveWorkspaceBrowserNode is not null;
         }
 
         private void WorkspaceRemoveSelectedCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
@@ -653,6 +749,11 @@ namespace MediaBase.ViewModel
                               validSelectionCount >= 2;
         }
 
+        private void WorkspaceMoveUpOneLevelCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = ActiveWorkspaceBrowserFolder is not null;
+        }
+
         private void ToolsToggleGroupCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
             args.CanExecute = ActiveMediaSource != null;
@@ -660,7 +761,7 @@ namespace MediaBase.ViewModel
 
         private void ToolsBatchActionCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = ActiveSystemBrowserNode != null;
+            args.CanExecute = ActiveSystemBrowserNode is not null;
         }
 
         private void ToolsAnimateImageCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
@@ -756,52 +857,34 @@ namespace MediaBase.ViewModel
 
         private async void ProjectSaveCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            Project project = null;
-            if (ActiveWorkspaceBrowserNode is Project)
-                project = ActiveWorkspaceBrowserNode as Project;
-            else if (Projects.Count == 1)
-                project = Projects[0];
-
-            if (project.File == null || !project.File.IsAvailable)
+            if (ActiveProject.File == null || !ActiveProject.File.IsAvailable)
             {
-                if (await project.PromptSaveLocation() == false)
+                if (await ActiveProject.PromptSaveLocation() == false)
                     return;
             }
 
-            await project.SaveAsync();
+            await ActiveProject.SaveAsync();
         }
 
         private async void ProjectSaveAsCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            Project project = null;
-            if (ActiveWorkspaceBrowserNode is Project)
-                project = ActiveWorkspaceBrowserNode as Project;
-            else if (Projects.Count == 1)
-                project = Projects[0];
-
-            if (await project.PromptSaveLocation())
-                await project.SaveAsync();
+            if (await ActiveProject.PromptSaveLocation())
+                await ActiveProject.SaveAsync();
         }
 
         private async void ProjectCloseCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            Project project = null;
-            if (ActiveWorkspaceBrowserNode is Project)
-                project = ActiveWorkspaceBrowserNode as Project;
-            else if (Projects.Count == 1)
-                project = Projects[0];
-
-            if (await project.PromptSaveChanges() == false)
+            if (await ActiveProject.PromptSaveChanges() == false)
                 return;
 
-            if (ActiveMediaSource != null && ActiveMediaSource.Root == project)
+            if (ActiveMediaSource != null && ActiveMediaSource.Root == ActiveProject)
                 ActiveMediaSource = null;
 
             Messenger.Send<GeneralMessage, string>("CollapseAllTreeViewNodes");
 
-            project.IsActive = false;
-            CloseProject(project);
-            Projects.Remove(project);
+            ActiveProject.IsActive = false;
+            CloseProject(ActiveProject);
+            Projects.Remove(ActiveProject);
             ActiveWorkspaceBrowserNode = null;
         }
 
@@ -882,13 +965,13 @@ namespace MediaBase.ViewModel
             var result = await dlg.ShowAsync();
             if (result == ContentDialogResult.Primary)
             {
-                ((ViewModelNode)ActiveWorkspaceBrowserNode).Children.Add(new MediaFolder(dlg.Text));
+                ActiveWorkspaceBrowserFolder.Children.Add(new MediaFolder(dlg.Text));
             }
         }
 
         private async void WorkspaceImportCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            if (((ViewModelNode)ActiveWorkspaceBrowserNode).Root is not Project parentProject)
+            if (ActiveWorkspaceBrowserFolder.Root is not Project parentProject)
                 throw new Exception("Unable to find target project");
 
             int fileCount = 0, folderCount = 0;
@@ -915,13 +998,13 @@ namespace MediaBase.ViewModel
             // Recursively import top-level folders
             foreach (var folder in folderList)
             {
-                await AddFolder(folder, (ViewModelNode)ActiveWorkspaceBrowserNode);
+                await AddFolder(folder, ActiveWorkspaceBrowserFolder);
             }
 
             // Import all top-level files
             foreach (var file in fileList)
             {
-                AddFile(file, (ViewModelNode)ActiveWorkspaceBrowserNode);
+                AddFile(file, ActiveWorkspaceBrowserFolder);
             }
 
             // Import complete - display results
@@ -937,7 +1020,7 @@ namespace MediaBase.ViewModel
             });
 
             // Make imported items ready
-            await MakeItemsReadyAsync((ViewModelNode)ActiveWorkspaceBrowserNode);
+            await MakeItemsReadyAsync(ActiveWorkspaceBrowserFolder);
 
             bool HasSelectedAncestor(TreeViewNode node)
             {
@@ -1087,6 +1170,11 @@ namespace MediaBase.ViewModel
                 ActiveMediaSource.RelatedMedia.Add((MultimediaSource)ActiveWorkspaceBrowserNode);
                 ((MultimediaSource)ActiveWorkspaceBrowserNode).RelatedMedia.Add(ActiveMediaSource);
             }
+        }
+
+        private void WorkspaceMoveUpOneLevelCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            ActiveWorkspaceBrowserFolder = ActiveWorkspaceBrowserFolder.Parent;
         }
 
         private void ToolsToggleGroupCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
@@ -1450,6 +1538,14 @@ namespace MediaBase.ViewModel
             if (project.File == null || !project.File.IsAvailable)
                 return false;
 
+            Messenger.Send(new SetInfoBarMessage
+            {
+                Title = project.Name,
+                Message = "Loading...",
+                Severity = InfoBarSeverity.Informational,
+                IsCloseable = false
+            });
+
             XmlReader reader = null;
             try
             {
@@ -1464,7 +1560,6 @@ namespace MediaBase.ViewModel
             {
                 reader.Close();
             }
-            project.IsActive = true;
 
             // Add file references to MediaItemDatabase
             foreach (var path in project.MediaFileDictionary.Keys)
@@ -1491,6 +1586,7 @@ namespace MediaBase.ViewModel
                 }
             }
 
+            project.IsActive = true;
             return true;
         }
 
@@ -1702,20 +1798,20 @@ namespace MediaBase.ViewModel
                 IconSource = new SymbolIconSource { Symbol = Symbol.Rename }
             };
 
-            // Workspace: Toggle Multiple Selection
-            WorkspaceSelectMultipleCommand = new XamlUICommand
-            {
-                Label = "Toggle Multi-Select",
-                Description = "Toggle multiple selection mode",
-                IconSource = new SymbolIconSource { Symbol = (Symbol)0xE762 }
-            };
-
             // Workspace: Set Relationship
             WorkspaceSetItemRelationshipCommand = new XamlUICommand
             {
                 Label = "Set Relationship",
                 Description = "Create a relationship between multiple selected items",
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xF003 }
+            };
+
+            // Workspace: Move up a level
+            WorkspaceMoveUpOneLevelCommand = new XamlUICommand
+            {
+                Label = "Up One Level",
+                Description = "Navigate to parent folder",
+                IconSource = new SymbolIconSource { Symbol = (Symbol)0xE70E }
             };
 
             // Tools: Batch Action
@@ -2278,6 +2374,11 @@ namespace MediaBase.ViewModel
                 WorkspaceSetItemRelationshipCommand_CanExecuteRequested;
             WorkspaceSetItemRelationshipCommand.ExecuteRequested +=
                 WorkspaceSetItemRelationshipCommand_ExecuteRequested;
+
+            WorkspaceMoveUpOneLevelCommand.CanExecuteRequested +=
+                WorkspaceMoveUpOneLevelCommand_CanExecuteRequested;
+            WorkspaceMoveUpOneLevelCommand.ExecuteRequested +=
+                WorkspaceMoveUpOneLevelCommand_ExecuteRequested;
 
             // Tools
             ToolsToggleGroup1Command.CanExecuteRequested +=

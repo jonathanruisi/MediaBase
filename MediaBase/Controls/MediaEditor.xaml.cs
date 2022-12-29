@@ -2124,13 +2124,13 @@ namespace MediaBase.Controls
 
                 if (m.NewValue.Duration > 0)
                 {
-                    Timeline.SetSelectionFromMarker(m.NewValue);
-                    Timeline.IsSelectionEnabled = true;
-                    Timeline.IsSelectionAdjustmentEnabled = true;
+                    ((MediaEditor)r).Timeline.SetSelectionFromMarker(m.NewValue);
+                    ((MediaEditor)r).Timeline.IsSelectionEnabled = true;
+                    ((MediaEditor)r).Timeline.IsSelectionAdjustmentEnabled = true;
                 }
                 else
                 {
-                    Timeline.IsSelectionEnabled = false;
+                    ((MediaEditor)r).Timeline.IsSelectionEnabled = false;
                 }
             });
 
