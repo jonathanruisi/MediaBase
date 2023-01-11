@@ -225,16 +225,74 @@ namespace MediaBase
         {
             if (WorkspaceBrowserPanel.Visibility == Visibility.Visible)
             {
-                _workspaceBrowserWidth = WorkspaceBrowserColumn.Width;
-                WorkspaceBrowserColumn.Width = new GridLength(0);
+                if (PlaylistEditorPanel.Visibility == Visibility.Visible)
+                {
+                    Grid.SetRow(PlaylistEditorPanel, 0);
+                    Grid.SetRowSpan(PlaylistEditorPanel, 3);
+                    PlaylistEditorGridSplitter.Visibility = Visibility.Collapsed;
+                }
+                else
+                {
+                    Grid.SetRowSpan(WorkspaceBrowserPanel, 3);
+                    _workspaceBrowserWidth = WorkspaceBrowserColumn.Width;
+                    WorkspaceBrowserColumn.Width = new GridLength(0);
+                    WorkspaceBrowserGridSplitter.Visibility = Visibility.Collapsed;
+                }
                 WorkspaceBrowserPanel.Visibility = Visibility.Collapsed;
-                WorkspaceBrowserGridSplitter.Visibility = Visibility.Collapsed;
             }
             else
             {
-                WorkspaceBrowserColumn.Width = _workspaceBrowserWidth;
+                if (PlaylistEditorPanel.Visibility == Visibility.Visible)
+                {
+                    Grid.SetRow(PlaylistEditorPanel, 2);
+                    Grid.SetRowSpan(PlaylistEditorPanel, 1);
+                    PlaylistEditorGridSplitter.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    Grid.SetRowSpan(WorkspaceBrowserPanel, 3);
+                    WorkspaceBrowserColumn.Width = _workspaceBrowserWidth;
+                    WorkspaceBrowserGridSplitter.Visibility = Visibility.Visible;
+                }
                 WorkspaceBrowserPanel.Visibility = Visibility.Visible;
-                WorkspaceBrowserGridSplitter.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void PlaylistEditorToggle_Click(object sender, RoutedEventArgs e)
+        {
+            if (PlaylistEditorPanel.Visibility == Visibility.Visible)
+            {
+                if (WorkspaceBrowserPanel.Visibility == Visibility.Visible)
+                {
+                    Grid.SetRowSpan(WorkspaceBrowserPanel, 3);
+                    PlaylistEditorGridSplitter.Visibility = Visibility.Collapsed;
+                }
+                else
+                {
+                    Grid.SetRow(PlaylistEditorPanel, 2);
+                    Grid.SetRowSpan(PlaylistEditorPanel, 1);
+                    _workspaceBrowserWidth = WorkspaceBrowserColumn.Width;
+                    WorkspaceBrowserColumn.Width = new GridLength(0);
+                    WorkspaceBrowserGridSplitter.Visibility = Visibility.Collapsed;
+
+                }
+                PlaylistEditorPanel.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                if (WorkspaceBrowserPanel.Visibility == Visibility.Visible)
+                {
+                    Grid.SetRowSpan(WorkspaceBrowserPanel, 1);
+                    PlaylistEditorGridSplitter.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    Grid.SetRow(PlaylistEditorPanel, 0);
+                    Grid.SetRowSpan(PlaylistEditorPanel, 3);
+                    WorkspaceBrowserColumn.Width = _workspaceBrowserWidth;
+                    WorkspaceBrowserGridSplitter.Visibility = Visibility.Visible;
+                }
+                PlaylistEditorPanel.Visibility = Visibility.Visible;
             }
         }
 

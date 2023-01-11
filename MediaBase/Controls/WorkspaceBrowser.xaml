@@ -7,124 +7,65 @@
     mc:Ignorable="d"
     xmlns:mediabase="using:MediaBase"
     xmlns:viewmodel="using:MediaBase.ViewModel"
-    xmlns:interactivity="using:Microsoft.Xaml.Interactivity"
-    xmlns:interactions_core="using:Microsoft.Xaml.Interactions.Core"
     Loaded="UserControl_Loaded">
 
     <UserControl.Resources>
         <!-- Context Flyouts -->
         <MenuFlyout x:Key="MenuFlyout_WorkspaceBrowserActions">
-            <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectNewCommand}"/>
-            <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectOpenCommand}"/>
-            <MenuFlyoutSeparator/>
-            <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceRemoveSelectedCommand}"/>
-            <MenuFlyoutSeparator/>
-            <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceSelectMultipleCommand}"/>
-        </MenuFlyout>
-        
-        <MenuFlyout x:Key="MenuFlyout_WorkspaceBrowserProjectActions">
-            <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectSaveCommand}"/>
-            <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectSaveAsCommand}"/>
-            <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectCloseCommand}"/>
-            <MenuFlyoutSeparator/>
             <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceNewFolderCommand}"/>
             <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceImportCommand}"/>
             <MenuFlyoutSeparator/>
+            <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceNewPlaylistCommand}"/>
+            <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceAddSelectedToPlaylistCommand}"/>
+            <MenuFlyoutSeparator/>
             <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceRemoveSelectedCommand}"/>
-            <MenuFlyoutSeparator/>
-            <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceRenameItemCommand}"/>
-            <MenuFlyoutSeparator/>
-            <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceSelectMultipleCommand}"/>
         </MenuFlyout>
 
         <MenuFlyout x:Key="MenuFlyout_WorkspaceBrowserFolderActions">
             <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceNewFolderCommand}"/>
             <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceImportCommand}"/>
             <MenuFlyoutSeparator/>
+            <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceNewPlaylistCommand}"/>
+            <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceAddItemToPlaylistCommand}"/>
+            <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceAddSelectedToPlaylistCommand}"/>
+            <MenuFlyoutSeparator/>
             <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceRemoveItemCommand}"/>
             <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceRemoveSelectedCommand}"/>
             <MenuFlyoutSeparator/>
             <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceRenameItemCommand}"/>
-            <MenuFlyoutSeparator/>
-            <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceSelectMultipleCommand}"/>
         </MenuFlyout>
 
         <MenuFlyout x:Key="MenuFlyout_WorkspaceBrowserMediaItemActions">
+            <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceNewFolderCommand}"/>
+            <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceImportCommand}"/>
+            <MenuFlyoutSeparator/>
+            <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceNewPlaylistCommand}"/>
+            <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceAddItemToPlaylistCommand}"/>
+            <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceAddSelectedToPlaylistCommand}"/>
+            <MenuFlyoutSeparator/>
             <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceRemoveItemCommand}"/>
             <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceRemoveSelectedCommand}"/>
             <MenuFlyoutSeparator/>
             <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceRenameItemCommand}"/>
-            <MenuFlyoutSeparator/>
-            <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceSetItemRelationshipCommand}"/>
-            <MenuFlyoutSeparator/>
-            <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceSelectMultipleCommand}"/>
         </MenuFlyout>
 
         <!-- Data Templates -->
-        <DataTemplate x:Key="ProjectNodeDataTemplate"
-                      x:DataType="viewmodel:Project">
-            <TreeViewItem ItemsSource="{x:Bind Children}"
-                          IsSelected="{x:Bind IsSelected, Mode=TwoWay}"
-                          ContextFlyout="{StaticResource MenuFlyout_WorkspaceBrowserProjectActions}"
-                          RightTapped="WorkspaceBrowserTreeView_RightTapped">
-                <TreeViewItem.Content>
-                    <StackPanel Orientation="Horizontal">
-                        <FontIcon Margin="0,0,6,0"
-                                  FontFamily="Segoe Fluent Icons"
-                                  Glyph="&#xF156;"
-                                  Foreground="{x:Bind HasUnsavedChanges,
-                                                      Converter={StaticResource TrueToRedBrushConverter},
-                                                      Mode=OneWay}"/>
-                        <TextBlock HorizontalAlignment="Left"
-                                   VerticalAlignment="Center"
-                                   Text="{x:Bind Name, Mode=OneWay}"/>
-                    </StackPanel>
-                </TreeViewItem.Content>
-            </TreeViewItem>
-        </DataTemplate>
-
-        <DataTemplate x:Key="FolderNodeDataTemplate"
+        <DataTemplate x:Key="FolderDataTemplate"
                       x:DataType="viewmodel:MediaFolder">
-            <TreeViewItem x:Name="Item"
-                          ItemsSource="{x:Bind Children}"
+            <ListViewItem AllowDrop="True"
                           IsSelected="{x:Bind IsSelected, Mode=TwoWay}"
                           ContextFlyout="{StaticResource MenuFlyout_WorkspaceBrowserFolderActions}"
-                          RightTapped="WorkspaceBrowserTreeView_RightTapped">
-                <TreeViewItem.Content>
-                    <StackPanel Orientation="Horizontal">
-                        <FontIcon x:Name="Symbol"
-                                  Margin="0,0,6,0"
-                                  FontFamily="Segoe Fluent Icons">
-                            <interactivity:Interaction.Behaviors>
-                                <interactions_core:DataTriggerBehavior Binding="{Binding ElementName=Item, Path=IsExpanded}"
-                                                                       Value="True">
-                                    <interactions_core:ChangePropertyAction TargetObject="{Binding ElementName=Symbol}"
-                                                                            PropertyName="Glyph"
-                                                                            Value="&#xED43;"/>
-                                </interactions_core:DataTriggerBehavior>
-                                <interactions_core:DataTriggerBehavior Binding="{Binding ElementName=Item, Path=IsExpanded}"
-                                                                       Value="False">
-                                    <interactions_core:ChangePropertyAction TargetObject="{Binding ElementName=Symbol}"
-                                                                            PropertyName="Glyph"
-                                                                            Value="&#xED41;"/>
-                                </interactions_core:DataTriggerBehavior>
-                            </interactivity:Interaction.Behaviors>
-                        </FontIcon>
-                        <TextBlock HorizontalAlignment="Left"
-                                   VerticalAlignment="Center"
-                                   Text="{x:Bind Name, Mode=OneWay}"/>
-                    </StackPanel>
-                </TreeViewItem.Content>
-            </TreeViewItem>
+                          RightTapped="WorkspaceBrowserListView_RightTapped"
+                          Content="{x:Bind Name}"/>
         </DataTemplate>
 
-        <DataTemplate x:Key="ImageNodeDataTemplate"
+        <DataTemplate x:Key="ImageDataTemplate"
                       x:DataType="viewmodel:ImageSource">
-            <TreeViewItem IsSelected="{x:Bind IsSelected, Mode=TwoWay}"
+            <ListViewItem IsSelected="{x:Bind IsSelected, Mode=TwoWay}"
                           IsEnabled="{x:Bind IsReady, Mode=OneWay}"
                           ContextFlyout="{StaticResource MenuFlyout_WorkspaceBrowserMediaItemActions}"
-                          RightTapped="WorkspaceBrowserTreeView_RightTapped">
-                <TreeViewItem.Content>
+                          RightTapped="WorkspaceBrowserListView_RightTapped">
+                <ListViewItem.Content>
                     <Grid HorizontalAlignment="Stretch" VerticalAlignment="Center">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
@@ -136,7 +77,7 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <StackPanel Grid.Column="0" Width="27" Margin="-27,0,0,0"
+                        <StackPanel Grid.Column="0"
                                     Orientation="Horizontal"
                                     FlowDirection="RightToLeft">
                             <!-- Rating Indicator -->
@@ -145,7 +86,7 @@
                                        Fill="{x:Bind Rating,
                                                      Converter={StaticResource RatingToBrushConverter},
                                                      Mode=OneWay}"/>
-                            
+
                             <!-- Not Ready Indicator -->
                             <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center"
                                       Glyph="&#xE783;"
@@ -199,17 +140,17 @@
                                                      ConverterParameter=4,
                                                      Mode=OneWay}"/>
                     </Grid>
-                </TreeViewItem.Content>
-            </TreeViewItem>
+                </ListViewItem.Content>
+            </ListViewItem>
         </DataTemplate>
 
-        <DataTemplate x:Key="VideoNodeDataTemplate"
+        <DataTemplate x:Key="VideoDataTemplate"
                       x:DataType="viewmodel:VideoSource">
-            <TreeViewItem IsSelected="{x:Bind IsSelected, Mode=TwoWay}"
+            <ListViewItem IsSelected="{x:Bind IsSelected, Mode=TwoWay}"
                           IsEnabled="{x:Bind IsReady, Mode=OneWay}"
                           ContextFlyout="{StaticResource MenuFlyout_WorkspaceBrowserMediaItemActions}"
-                          RightTapped="WorkspaceBrowserTreeView_RightTapped">
-                <TreeViewItem.Content>
+                          RightTapped="WorkspaceBrowserListView_RightTapped">
+                <ListViewItem.Content>
                     <Grid HorizontalAlignment="Stretch" VerticalAlignment="Center">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
@@ -221,7 +162,7 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <StackPanel Grid.Column="0" Width="27" Margin="-27,0,0,0"
+                        <StackPanel Grid.Column="0"
                                     Orientation="Horizontal"
                                     FlowDirection="RightToLeft">
                             <!-- Rating Indicator -->
@@ -232,8 +173,8 @@
                                                      Mode=OneWay}"/>
 
                             <!-- Not Ready Indicator -->
-                            <FontIcon Glyph="&#xE783;"
-                                      HorizontalAlignment="Center" VerticalAlignment="Center"
+                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center"
+                                      Glyph="&#xE783;"
                                       Foreground="{StaticResource RedBrush}"
                                       Visibility="{x:Bind IsReady,
                                                           Converter={StaticResource BoolToVisibilityConverter},
@@ -284,17 +225,17 @@
                                                      ConverterParameter=4,
                                                      Mode=OneWay}"/>
                     </Grid>
-                </TreeViewItem.Content>
-            </TreeViewItem>
+                </ListViewItem.Content>
+            </ListViewItem>
         </DataTemplate>
 
-        <DataTemplate x:Key="PlaylistNodeDataTemplate"
+        <DataTemplate x:Key="PlaylistDataTemplate"
                       x:DataType="viewmodel:Playlist">
-            <TreeViewItem IsSelected="{x:Bind IsSelected, Mode=TwoWay}"
+            <ListViewItem IsSelected="{x:Bind IsSelected, Mode=TwoWay}"
                           IsEnabled="{x:Bind IsReady, Mode=OneWay}"
                           ContextFlyout="{StaticResource MenuFlyout_WorkspaceBrowserMediaItemActions}"
-                          RightTapped="WorkspaceBrowserTreeView_RightTapped">
-                <TreeViewItem.Content>
+                          RightTapped="WorkspaceBrowserListView_RightTapped">
+                <ListViewItem.Content>
                     <Grid HorizontalAlignment="Stretch" VerticalAlignment="Center">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
@@ -306,7 +247,7 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <StackPanel Grid.Column="0" Width="27" Margin="-27,0,0,0"
+                        <StackPanel Grid.Column="0"
                                     Orientation="Horizontal"
                                     FlowDirection="RightToLeft">
                             <!-- Rating Indicator -->
@@ -317,8 +258,8 @@
                                                      Mode=OneWay}"/>
 
                             <!-- Not Ready Indicator -->
-                            <FontIcon Glyph="&#xE783;"
-                                      HorizontalAlignment="Center" VerticalAlignment="Center"
+                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center"
+                                      Glyph="&#xE783;"
                                       Foreground="{StaticResource RedBrush}"
                                       Visibility="{x:Bind IsReady,
                                                           Converter={StaticResource BoolToVisibilityConverter},
@@ -369,16 +310,15 @@
                                                      ConverterParameter=4,
                                                      Mode=OneWay}"/>
                     </Grid>
-                </TreeViewItem.Content>
-            </TreeViewItem>
+                </ListViewItem.Content>
+            </ListViewItem>
         </DataTemplate>
 
         <mediabase:WorkspaceItemTemplateSelector x:Key="WorkspaceItemTemplateSelector"
-                                                 ProjectTemplate="{StaticResource ProjectNodeDataTemplate}"
-                                                 FolderTemplate="{StaticResource FolderNodeDataTemplate}"
-                                                 ImageTemplate="{StaticResource ImageNodeDataTemplate}"
-                                                 VideoTemplate="{StaticResource VideoNodeDataTemplate}"
-                                                 PlaylistTemplate="{StaticResource  PlaylistNodeDataTemplate}"/>
+                                                 FolderTemplate="{StaticResource FolderDataTemplate}"
+                                                 ImageTemplate="{StaticResource ImageDataTemplate}"
+                                                 VideoTemplate="{StaticResource VideoDataTemplate}"
+                                                 PlaylistTemplate="{StaticResource PlaylistDataTemplate}"/>
     </UserControl.Resources>
 
     <Grid Background="{x:Bind Background}"
@@ -387,14 +327,53 @@
           CornerRadius="{x:Bind CornerRadius}"
           HorizontalAlignment="{x:Bind HorizontalAlignment}"
           VerticalAlignment="{x:Bind VerticalAlignment}">
-        <TreeView x:Name="WorkspaceBrowserTreeView"
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <CommandBar x:Name="WorkspaceBrowserCommandBar" Grid.Row="0" Grid.Column="0"
+                    DefaultLabelPosition="Collapsed"
+                    IsDynamicOverflowEnabled="False"
+                    FlowDirection="RightToLeft">
+            <CommandBar.PrimaryCommands>
+                <AppBarButton Width="40" Command="{x:Bind ViewModel.WorkspaceNewFolderCommand}"/>
+                <AppBarButton Width="40" Command="{x:Bind ViewModel.WorkspaceMoveUpOneLevelCommand}"/>
+            </CommandBar.PrimaryCommands>
+        </CommandBar>
+
+        <ComboBox x:Name="ProjectSelectionComboBox" Grid.Row="0" Grid.Column="1"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                  VerticalAlignment="Center" Margin="0,0,6,0"
+                  ItemsSource="{x:Bind ViewModel.Projects}"
+                  DisplayMemberPath="Name"
+                  PlaceholderText="No Project Selected"
+                  SelectionChanged="ProjectSelectionComboBox_SelectionChanged"/>
+
+        <ListView x:Name="WorkspaceBrowserListView" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
                   HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                  SelectionMode="Single"
-                  ItemsSource="{x:Bind ViewModel.Projects, Mode=OneWay}"
+                  SelectionMode="Extended"
+                  IsItemClickEnabled="False"
+                  IsRightTapEnabled="True"
+                  IsDoubleTapEnabled="True"
+                  AllowDrop="True"
+                  CanDrag="True"
+                  CanDragItems="True"
+                  CanReorderItems="True"
+                  ReorderMode="Enabled"
+                  ItemsSource="{x:Bind ViewModel.ActiveWorkspaceBrowserFolder.Children, Mode=OneWay}"
                   ItemTemplateSelector="{StaticResource WorkspaceItemTemplateSelector}"
                   ContextFlyout="{StaticResource MenuFlyout_WorkspaceBrowserActions}"
-                  ItemInvoked="WorkspaceBrowserTreeView_ItemInvoked"
-                  RightTapped="WorkspaceBrowserTreeView_RightTapped"
-                  Expanding="WorkspaceBrowserTreeView_Expanding"/>
+                  Visibility="{x:Bind ViewModel.ActiveWorkspaceBrowserFolder,
+                                      Converter={StaticResource ObjectToVisibilityConverter},
+                                      ConverterParameter=false,
+                                      Mode=OneWay}"
+                  RightTapped="WorkspaceBrowserListView_RightTapped"
+                  DoubleTapped="WorkspaceBrowserListView_DoubleTapped"
+                  SelectionChanged="WorkspaceBrowserListView_SelectionChanged"/>
     </Grid>
 </UserControl>

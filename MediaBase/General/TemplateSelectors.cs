@@ -59,7 +59,6 @@ namespace MediaBase
 
     public class WorkspaceItemTemplateSelector : DataTemplateSelector
     {
-        public DataTemplate ProjectTemplate { get; set; }
         public DataTemplate FolderTemplate { get; set; }
         public DataTemplate ImageTemplate { get; set; }
         public DataTemplate VideoTemplate { get; set; }
@@ -69,7 +68,6 @@ namespace MediaBase
         {
             return item switch
             {
-                Project     => ProjectTemplate,
                 MediaFolder => FolderTemplate,
                 ImageSource => ImageTemplate,
                 VideoSource => VideoTemplate,

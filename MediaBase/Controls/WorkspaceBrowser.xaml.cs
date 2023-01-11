@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
@@ -12,6 +13,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 
 namespace MediaBase.Controls
 {
@@ -26,8 +29,6 @@ namespace MediaBase.Controls
         {
             InitializeComponent();
             DataContext = App.Current.Services.GetService<ProjectManager>();
-
-            InitializeCommands();
         }
         #endregion
 
@@ -36,51 +37,63 @@ namespace MediaBase.Controls
         {
             var messenger = App.Current.Services.GetService<IMessenger>();
 
-            messenger.Register<GeneralMessage, string>(this, "CollapseAllTreeViewNodes", (r, m) =>
+            messenger.Register<RequestMessage<bool>, string>(this, "AreWorkspaceBrowserItemsSelected", (r, m) =>
             {
-                ((WorkspaceBrowser)r).WorkspaceBrowserTreeView.CollapseAllNodes();
+                m.Reply(((WorkspaceBrowser)r).WorkspaceBrowserListView.SelectedItems.Any());
             });
 
-            messenger.Register<CollectionRequestMessage<TreeViewNode>, string>(this, "GetSelectedWorkspaceBrowserNodes", (r, m) =>
+            messenger.Register<CollectionRequestMessage<ViewModelElement>, string>(this, "GetSelectedWorkspaceBrowserItems", (r, m) =>
             {
-                if (((WorkspaceBrowser)r).WorkspaceBrowserTreeView.SelectionMode == TreeViewSelectionMode.Single)
+                foreach (var element in ((WorkspaceBrowser)r).WorkspaceBrowserListView.SelectedItems.OfType<ViewModelElement>())
                 {
-                    m.Reply(((WorkspaceBrowser)r).WorkspaceBrowserTreeView.SelectedNode);
-                }
-                else if (((WorkspaceBrowser)r).WorkspaceBrowserTreeView.SelectionMode == TreeViewSelectionMode.Multiple)
-                {
-                    foreach (var node in ((WorkspaceBrowser)r).WorkspaceBrowserTreeView.SelectedNodes)
-                    {
-                        m.Reply(node);
-                    }
+                    m.Reply(element);
                 }
             });
 
             messenger.Register<GeneralMessage, string>(this, "ClearWorkspaceBrowserSelection", (r, m) =>
             {
-                ((WorkspaceBrowser)r).WorkspaceBrowserTreeView.SelectedNode = null;
-                ((WorkspaceBrowser)r).WorkspaceBrowserTreeView.SelectedNodes.Clear();
+                ((WorkspaceBrowser)r).WorkspaceBrowserListView.ClearSelectedItems();
+            });
+            
+            messenger.Register<GeneralMessage, string>(this, "ScrollActiveMediaSourceIntoView", (r, m) =>
+            {
+                if (ViewModel.ActiveProject != ViewModel.ActiveMediaSource.Root)
+                    ViewModel.ActiveProject = (Project)ViewModel.ActiveMediaSource.Root;
+
+                if (ViewModel.ActiveWorkspaceBrowserFolder != ViewModel.ActiveMediaSource.Parent)
+                    ViewModel.ActiveWorkspaceBrowserFolder = ViewModel.ActiveMediaSource.Parent;
+
+                ((WorkspaceBrowser)r).WorkspaceBrowserListView.ScrollIntoView(ViewModel.ActiveMediaSource, ScrollIntoViewAlignment.Leading);
+            });
+
+            // ViewModel.ActiveProject changed
+            messenger.Register<PropertyChangedMessage<Project>>(this, (r, m) =>
+            {
+                if (m.Sender != ViewModel ||
+                    m.PropertyName != nameof(ViewModel.ActiveProject))
+                    return;
+
+                ((WorkspaceBrowser)r).ProjectSelectionComboBox.SelectedItem = m.NewValue;
             });
         }
         #endregion
 
-        #region Event Handlers (TreeView)
-        private void WorkspaceBrowserTreeView_ItemInvoked(TreeView sender, TreeViewItemInvokedEventArgs args)
+        #region Event Handlers
+        private async void ProjectSelectionComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (args.InvokedItem is not ViewModelElement node)
+            ViewModel.ActiveWorkspaceBrowserNode = null;
+            if (ProjectSelectionComboBox.SelectedItem is Project project)
             {
-                ViewModel.ActiveWorkspaceBrowserNode = null;
-                return;
+                ViewModel.ActiveWorkspaceBrowserFolder = project;
+                await ProjectManager.MakeItemsReadyAsync(project);
             }
-
-            ViewModel.ActiveWorkspaceBrowserNode = node;
-            if (node is MultimediaSource multimediaSource)
-                ViewModel.ActiveMediaSource = multimediaSource;
+            else
+                ViewModel.ActiveWorkspaceBrowserFolder = null;
         }
 
-        private void WorkspaceBrowserTreeView_RightTapped(object sender, RightTappedRoutedEventArgs e)
+        private void WorkspaceBrowserListView_RightTapped(object sender, RightTappedRoutedEventArgs e)
         {
-            if (sender is TreeViewItem item)
+            if (sender is ListViewItem item)
                 ViewModel.ActiveWorkspaceBrowserNode = item.DataContext as ViewModelElement;
             else
                 ViewModel.ActiveWorkspaceBrowserNode = null;
@@ -88,45 +101,37 @@ namespace MediaBase.Controls
             e.Handled = true;
         }
 
-        private async void WorkspaceBrowserTreeView_Expanding(TreeView sender, TreeViewExpandingEventArgs args)
+        private async void WorkspaceBrowserListView_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
         {
-            if (args.Item is not ViewModelNode node)
+            if (WorkspaceBrowserListView.SelectedItem is not ViewModelElement element)
+            {
+                ViewModel.ActiveWorkspaceBrowserNode = null;
                 return;
-
-            await ProjectManager.MakeItemsReadyAsync(node);
-        }
-        #endregion
-
-        #region Event Handlers (Commands - CanExecuteRequested)
-        private void WorkspaceSelectMultipleCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
-        {
-            args.CanExecute = ViewModel != null && ViewModel.IsActive;
-        }
-        #endregion
-
-        #region Event Handlers (Commands - ExecuteRequested)
-        private void WorkspaceSelectMultipleCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
-        {
-            if (WorkspaceBrowserTreeView.SelectionMode == TreeViewSelectionMode.Single)
-            {
-                WorkspaceBrowserTreeView.SelectedNode = null;
-                WorkspaceBrowserTreeView.SelectionMode = TreeViewSelectionMode.Multiple;
             }
-            else
-            {
-                WorkspaceBrowserTreeView.SelectedNodes.Clear();
-                WorkspaceBrowserTreeView.SelectionMode = TreeViewSelectionMode.Single;
-            }
-        }
-        #endregion
 
-        #region Private Methods
-        private void InitializeCommands()
+            ViewModel.ActiveWorkspaceBrowserNode = element;
+            if (ViewModel.ActiveWorkspaceBrowserNode is MultimediaSource multimediaSource)
+                ViewModel.ActiveMediaSource = multimediaSource;
+            else if (ViewModel.ActiveWorkspaceBrowserNode is MediaFolder folder)
+            {
+                ViewModel.ActiveWorkspaceBrowserFolder = folder;
+
+                // TODO: Do this somewhere else?
+                await ProjectManager.MakeItemsReadyAsync(ViewModel.ActiveWorkspaceBrowserFolder);
+            }
+            else if (ViewModel.ActiveWorkspaceBrowserNode is Playlist playlist)
+            {
+                ViewModel.ActivePlaylist = playlist;
+                ViewModel.ActiveMediaSource = null; // TODO: Probably don't need this. Just being cautious.
+                ViewModel.PlaylistMoveFirst();
+            }
+
+            e.Handled = true;
+        }
+
+        private void WorkspaceBrowserListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            ViewModel.WorkspaceSelectMultipleCommand.CanExecuteRequested +=
-                WorkspaceSelectMultipleCommand_CanExecuteRequested;
-            ViewModel.WorkspaceSelectMultipleCommand.ExecuteRequested +=
-                WorkspaceSelectMultipleCommand_ExecuteRequested;
+            
         }
         #endregion
     }

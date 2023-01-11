@@ -19,6 +19,7 @@
     <None Remove="Assets\Logo_Tile_Medium.scale-400.png" />
     <None Remove="Controls\MediaEditor.xaml" />
     <None Remove="Controls\MediaPropertiesControl.xaml" />
+    <None Remove="Controls\PlaylistEditor.xaml" />
     <None Remove="Controls\SystemBrowser.xaml" />
     <None Remove="Controls\WorkspaceBrowser.xaml" />
     <None Remove="Dialogs\GroupActionDialog.xaml" />
@@ -31,9 +32,9 @@
     <PackageReference Include="CommunityToolkit.HighPerformance" Version="8.0.0" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.0.0" />
     <PackageReference Include="CommunityToolkit.WinUI.UI.Controls" Version="7.1.2" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
     <PackageReference Include="Microsoft.Graphics.Win2D" Version="1.0.4" />
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.1.5" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.2.221109.1" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.22621.755" />
     <PackageReference Include="Microsoft.Xaml.Behaviors.WinUI.Managed" Version="2.0.9" />
     <PackageReference Include="Nito.AsyncEx.Coordination" Version="5.1.2" />
@@ -65,6 +66,11 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Remove="Controls\SystemBrowser.xaml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Controls\PlaylistEditor.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Page Update="Controls\MediaPropertiesControl.xaml">

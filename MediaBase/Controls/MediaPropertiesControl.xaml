@@ -12,10 +12,11 @@
 
     <UserControl.Resources>
         <!-- Data Templates -->
-        <DataTemplate x:Key="ImageNodeDataTemplate"
+        <DataTemplate x:Key="ImageDataTemplate"
                       x:DataType="viewmodel:ImageSource">
             <ListViewItem IsSelected="{x:Bind IsSelected, Mode=TwoWay}"
-                          IsEnabled="{x:Bind IsReady, Mode=OneWay}">
+                          IsEnabled="{x:Bind IsReady, Mode=OneWay}"
+                          RightTapped="RelatedMediaList_RightTapped">
                 <ListViewItem.Content>
                     <Grid HorizontalAlignment="Stretch" VerticalAlignment="Center">
                         <Grid.ColumnDefinitions>
@@ -28,7 +29,7 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <StackPanel Grid.Column="0" Width="27" Margin="-27,0,0,0"
+                        <StackPanel Grid.Column="0"
                                     Orientation="Horizontal"
                                     FlowDirection="RightToLeft">
                             <!-- Rating Indicator -->
@@ -95,10 +96,11 @@
             </ListViewItem>
         </DataTemplate>
 
-        <DataTemplate x:Key="VideoNodeDataTemplate"
+        <DataTemplate x:Key="VideoDataTemplate"
                       x:DataType="viewmodel:VideoSource">
             <ListViewItem IsSelected="{x:Bind IsSelected, Mode=TwoWay}"
-                          IsEnabled="{x:Bind IsReady, Mode=OneWay}">
+                          IsEnabled="{x:Bind IsReady, Mode=OneWay}"
+                          RightTapped="RelatedMediaList_RightTapped">
                 <ListViewItem.Content>
                     <Grid HorizontalAlignment="Stretch" VerticalAlignment="Center">
                         <Grid.ColumnDefinitions>
@@ -111,7 +113,7 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <StackPanel Grid.Column="0" Width="27" Margin="-27,0,0,0"
+                        <StackPanel Grid.Column="0"
                                     Orientation="Horizontal"
                                     FlowDirection="RightToLeft">
                             <!-- Rating Indicator -->
@@ -178,10 +180,11 @@
             </ListViewItem>
         </DataTemplate>
 
-        <DataTemplate x:Key="PlaylistNodeDataTemplate"
+        <DataTemplate x:Key="PlaylistDataTemplate"
                       x:DataType="viewmodel:Playlist">
             <ListViewItem IsSelected="{x:Bind IsSelected, Mode=TwoWay}"
-                          IsEnabled="{x:Bind IsReady, Mode=OneWay}">
+                          IsEnabled="{x:Bind IsReady, Mode=OneWay}"
+                          RightTapped="RelatedMediaList_RightTapped">
                 <ListViewItem.Content>
                     <Grid HorizontalAlignment="Stretch" VerticalAlignment="Center">
                         <Grid.ColumnDefinitions>
@@ -194,7 +197,7 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <StackPanel Grid.Column="0" Width="27" Margin="-27,0,0,0"
+                        <StackPanel Grid.Column="0"
                                     Orientation="Horizontal"
                                     FlowDirection="RightToLeft">
                             <!-- Rating Indicator -->
@@ -262,9 +265,9 @@
         </DataTemplate>
 
         <mediabase:WorkspaceItemTemplateSelector x:Key="WorkspaceItemTemplateSelector"
-                                                 ImageTemplate="{StaticResource ImageNodeDataTemplate}"
-                                                 VideoTemplate="{StaticResource VideoNodeDataTemplate}"
-                                                 PlaylistTemplate="{StaticResource  PlaylistNodeDataTemplate}"/>
+                                                 ImageTemplate="{StaticResource ImageDataTemplate}"
+                                                 VideoTemplate="{StaticResource VideoDataTemplate}"
+                                                 PlaylistTemplate="{StaticResource PlaylistDataTemplate}"/>
     </UserControl.Resources>
 
     <Grid Background="{x:Bind Background}"
@@ -376,9 +379,25 @@
                   Visibility="{x:Bind ViewModel.ActiveMediaSource,
                                       Converter={StaticResource ObjectToVisibilityConverter},
                                       Mode=OneWay}">
-            <ListView x:Name="RelatedMediaList" SelectionMode="Extended" MinHeight="100"
+            <ListView x:Name="RelatedMediaList" MinHeight="100"
+                      HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                      SelectionMode="Extended"
+                      IsItemClickEnabled="False"
+                      IsRightTapEnabled="True"
+                      IsDoubleTapEnabled="True"
+                      AllowDrop="True"
+                      CanDrag="False"
+                      CanDragItems="False"
+                      CanReorderItems="True"
+                      ReorderMode="Enabled"
+                      ItemsSource="{x:Bind ViewModel.ActiveMediaSource.RelatedMedia, Mode=OneWay}"
                       ItemTemplateSelector="{StaticResource WorkspaceItemTemplateSelector}"
-                      ItemsSource="{x:Bind ViewModel.ActiveMediaSource.RelatedMedia, Mode=OneWay}"/>
+                      Visibility="{x:Bind ViewModel.ActiveMediaSource,
+                                          Converter={StaticResource ObjectToVisibilityConverter},
+                                          ConverterParameter=false,
+                                          Mode=OneWay}"
+                      RightTapped="RelatedMediaList_RightTapped"
+                      DoubleTapped="RelatedMediaList_DoubleTapped"/>
         </Expander>
     </Grid>
 </UserControl>
