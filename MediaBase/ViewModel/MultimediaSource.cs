@@ -127,7 +127,9 @@ namespace MediaBase.ViewModel
         [ViewModelCollection(nameof(Tracks), "Track")]
         public ObservableCollection<string> Tracks { get; }
 
-        [ViewModelCollection(nameof(RelatedMedia), hijackSerdes: true)]
+        [ViewModelCollection(nameof(RelatedMediaIds), "Id", true)]
+        public ObservableCollection<Guid> RelatedMediaIds { get; }
+
         public ObservableCollection<IMultimediaItem> RelatedMedia { get; }
         #endregion
 
@@ -165,6 +167,9 @@ namespace MediaBase.ViewModel
 
             RelatedMedia = new ObservableCollection<IMultimediaItem>();
             RelatedMedia.CollectionChanged += RelatedMedia_CollectionChanged;
+
+            RelatedMediaIds = new ObservableCollection<Guid>();
+            RelatedMediaIds.CollectionChanged += RelatedMediaIds_CollectionChanged;
         }
         #endregion
 
@@ -178,13 +183,31 @@ namespace MediaBase.ViewModel
             return (GroupFlags & (1 << group)) != 0;
         }
 
+        public void SetGroupFlag(int group)
+        {
+            group--;
+            if (group is < 0 or > 7)
+                throw new ArgumentOutOfRangeException(nameof(group));
+
+            GroupFlags |= 1 << group;
+        }
+
+        public void ClearGroupFlag(int group)
+        {
+            group--;
+            if (group is < 0 or > 7)
+                throw new ArgumentOutOfRangeException(nameof(group));
+
+            GroupFlags &= ~(1 << group);
+        }
+
         public void ToggleGroupFlag(int group)
         {
             group--;
             if (group is < 0 or > 7)
                 throw new ArgumentOutOfRangeException(nameof(group));
 
-            GroupFlags ^= (1 << group);
+            GroupFlags ^= 1 << group;
         }
         #endregion
 
@@ -281,6 +304,11 @@ namespace MediaBase.ViewModel
             NotifySerializedCollectionChanged(nameof(Tracks));
         }
 
+        private void RelatedMediaIds_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            NotifySerializedCollectionChanged(nameof(RelatedMediaIds));
+        }
+
         private void RelatedMedia_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
             var reatedMediaMessage = new CollectionChangedMessage<IMultimediaItem>(this, nameof(RelatedMedia), e.Action)
@@ -292,17 +320,24 @@ namespace MediaBase.ViewModel
             if (e.OldItems != null)
             {
                 foreach (IMultimediaItem oldRelation in e.OldItems)
+                {
                     reatedMediaMessage.OldValue.Add(oldRelation);
+                    if (RelatedMediaIds.Contains(oldRelation.Id))
+                        RelatedMediaIds.Remove(oldRelation.Id);
+                }
             }
 
             if (e.NewItems != null)
             {
                 foreach (IMultimediaItem newRelation in e.NewItems)
+                {
                     reatedMediaMessage.NewValue.Add(newRelation);
+                    if (!RelatedMediaIds.Contains(newRelation.Id))
+                        RelatedMediaIds.Add(newRelation.Id);
+                }
             }
 
             Messenger.Send(reatedMediaMessage, nameof(RelatedMedia));
-            NotifySerializedCollectionChanged(nameof(RelatedMedia));
         }
         #endregion
 
@@ -347,17 +382,16 @@ namespace MediaBase.ViewModel
                     Duration = properties.Duration;
                 }
 
-                // Lookup related media
-                for (var i = 0; i < RelatedMedia.Count; i++)
+                // Add references to the RelatedMedia collection based on its ID
+                foreach (var id in RelatedMediaIds)
                 {
-                    if (!RelatedMedia[i].IsReady)
-                    {
-                        var response = Messenger.Send(new MediaLookupRequestMessage(RelatedMedia[i].Id));
-                        if (response != null && response.Response != null)
-                        {
-                            RelatedMedia[i] = response.Response;
-                        }
-                    }
+                    // Only perform the lookup if the reference is missing
+                    if (RelatedMedia.Any(x => x.Id == id))
+                        continue;
+
+                    var response = Messenger.Send(new MediaLookupRequestMessage(id));
+                    if (response != null && response.Response != null)
+                        RelatedMedia.Add(response.Response);
                 }
 
                 return true;
@@ -373,51 +407,10 @@ namespace MediaBase.ViewModel
         {
             if (propertyName == nameof(Id) ||
                 propertyName == nameof(SourceId) ||
-                (args.Length > 0 && args[0] == "RelatedMediaId"))
+                (args.Length > 0 && args[0] == "Id"))
                 return Guid.Parse(content);
 
             return null;
-        }
-
-        protected override object HijackDeserialization(string propertyName,
-                                                        ref XmlReader reader,
-                                                        params string[] args)
-        {
-            if (propertyName == nameof(RelatedMedia) && args.Length > 0)
-            {
-                var elementName = reader.Name;
-                reader.MoveToFirstAttribute();
-                var id = Guid.Parse(reader.ReadContentAsString());
-                reader.Read();
-
-                var result = (IMultimediaItem)InstantiateObjectFromXmlTagName(elementName);
-                result.Id = id;
-                return result;
-            }
-
-            return null;
-        }
-
-        protected override void HijackSerialization(string propertyName,
-                                                    object value,
-                                                    ref XmlWriter writer,
-                                                    params string[] args)
-        {
-            if (propertyName == nameof(RelatedMedia) && args.Length > 0)
-            {
-                if (value is not IMultimediaItem media)
-                    throw new Exception(
-                        "Argument passed to custom serializer could not be cast to IMultimediaItem");
-
-                var xmlTag = GetXmlTagForType(value.GetType());
-                if (string.IsNullOrEmpty(xmlTag))
-                    throw new Exception(
-                        "Argument passed to custom serializer is not recognized as a ViewModelElement serializable type");
-
-                writer.WriteStartElement(xmlTag);
-                writer.WriteAttributeString(nameof(media.Id), media.Id.ToString());
-                writer.WriteEndElement();
-            }
         }
         #endregion
     }

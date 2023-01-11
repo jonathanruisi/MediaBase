@@ -7,19 +7,16 @@
     mc:Ignorable="d"
     xmlns:mediabase="using:MediaBase"
     xmlns:viewmodel="using:MediaBase.ViewModel"
-    xmlns:interactivity="using:Microsoft.Xaml.Interactivity"
-    xmlns:interactions_core="using:Microsoft.Xaml.Interactions.Core"
     Loaded="UserControl_Loaded">
 
     <UserControl.Resources>
         <!-- Context Flyouts -->
         <MenuFlyout x:Key="MenuFlyout_WorkspaceBrowserActions">
-            <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectSaveCommand}"/>
-            <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectSaveAsCommand}"/>
-            <MenuFlyoutItem Command="{x:Bind ViewModel.ProjectCloseCommand}"/>
-            <MenuFlyoutSeparator/>
             <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceNewFolderCommand}"/>
             <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceImportCommand}"/>
+            <MenuFlyoutSeparator/>
+            <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceNewPlaylistCommand}"/>
+            <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceAddSelectedToPlaylistCommand}"/>
             <MenuFlyoutSeparator/>
             <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceRemoveSelectedCommand}"/>
         </MenuFlyout>
@@ -28,6 +25,10 @@
             <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceNewFolderCommand}"/>
             <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceImportCommand}"/>
             <MenuFlyoutSeparator/>
+            <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceNewPlaylistCommand}"/>
+            <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceAddItemToPlaylistCommand}"/>
+            <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceAddSelectedToPlaylistCommand}"/>
+            <MenuFlyoutSeparator/>
             <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceRemoveItemCommand}"/>
             <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceRemoveSelectedCommand}"/>
             <MenuFlyoutSeparator/>
@@ -35,12 +36,17 @@
         </MenuFlyout>
 
         <MenuFlyout x:Key="MenuFlyout_WorkspaceBrowserMediaItemActions">
+            <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceNewFolderCommand}"/>
+            <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceImportCommand}"/>
+            <MenuFlyoutSeparator/>
+            <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceNewPlaylistCommand}"/>
+            <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceAddItemToPlaylistCommand}"/>
+            <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceAddSelectedToPlaylistCommand}"/>
+            <MenuFlyoutSeparator/>
             <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceRemoveItemCommand}"/>
             <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceRemoveSelectedCommand}"/>
             <MenuFlyoutSeparator/>
             <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceRenameItemCommand}"/>
-            <MenuFlyoutSeparator/>
-            <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceSetItemRelationshipCommand}"/>
         </MenuFlyout>
 
         <!-- Data Templates -->

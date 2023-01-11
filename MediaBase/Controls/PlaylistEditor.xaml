@@ -1,0 +1,212 @@
+<UserControl
+    x:Class="MediaBase.Controls.PlaylistEditor"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    xmlns:mediabase="using:MediaBase"
+    xmlns:viewmodel="using:MediaBase.ViewModel"
+    Loaded="UserControl_Loaded">
+
+    <UserControl.Resources>
+        <!-- Context Flyouts -->
+        <MenuFlyout x:Key="MenuFlyout_PlaylistEditorActions">
+            <MenuFlyoutItem Command="{x:Bind ViewModel.PlaylistRemoveSelectedCommand}"/>
+        </MenuFlyout>
+
+        <!-- Data Templates -->
+        <DataTemplate x:Key="ImageDataTemplate"
+                      x:DataType="viewmodel:ImageSource">
+            <ListViewItem IsSelected="{x:Bind IsSelected, Mode=TwoWay}"
+                          IsEnabled="{x:Bind IsReady, Mode=OneWay}">
+                <ListViewItem.Content>
+                    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0"
+                                    Orientation="Horizontal"
+                                    FlowDirection="RightToLeft">
+                            <!-- Rating Indicator -->
+                            <Rectangle Width="3" Height="20" Stretch="Fill"
+                                       Margin="2,0"
+                                       Fill="{x:Bind Rating,
+                                                     Converter={StaticResource RatingToBrushConverter},
+                                                     Mode=OneWay}"/>
+
+                            <!-- Not Ready Indicator -->
+                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center"
+                                      Glyph="&#xE783;"
+                                      Foreground="{StaticResource RedBrush}"
+                                      Visibility="{x:Bind IsReady,
+                                                          Converter={StaticResource BoolToVisibilityConverter},
+                                                          ConverterParameter=True,
+                                                          Mode=OneWay}"/>
+                        </StackPanel>
+
+                        <!-- Image Icon -->
+                        <FontIcon Grid.Column="1"
+                                  FontFamily="Segoe Fluent Icons"
+                                  Glyph="&#xEB9F;"
+                                  Margin="0,0,6,0"/>
+
+                        <!-- Media Name -->
+                        <TextBlock Grid.Column="2"
+                                   HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Left"
+                                   Text="{x:Bind Name, Mode=OneWay}"/>
+
+                        <Ellipse Grid.Column="3"
+                                 Fill="Gold" Width="10" Height="10" Stretch="Fill" StrokeThickness="0"
+                                 VerticalAlignment="Center" Margin="0,0,2,0"
+                                 Visibility="{x:Bind GroupFlags,
+                                                     Converter={StaticResource GroupMaskToVisibilityConverter},
+                                                     ConverterParameter=1,
+                                                     Mode=OneWay}"/>
+
+                        <Ellipse Grid.Column="4"
+                                 Fill="CornflowerBlue" Width="10" Height="10" Stretch="Fill" StrokeThickness="0"
+                                 VerticalAlignment="Center" Margin="0,0,2,0"
+                                 Visibility="{x:Bind GroupFlags,
+                                                     Converter={StaticResource GroupMaskToVisibilityConverter},
+                                                     ConverterParameter=2,
+                                                     Mode=OneWay}"/>
+
+                        <Ellipse Grid.Column="5"
+                                 Fill="IndianRed" Width="10" Height="10" Stretch="Fill" StrokeThickness="0"
+                                 VerticalAlignment="Center" Margin="0,0,2,0"
+                                 Visibility="{x:Bind GroupFlags,
+                                                     Converter={StaticResource GroupMaskToVisibilityConverter},
+                                                     ConverterParameter=3,
+                                                     Mode=OneWay}"/>
+
+                        <Ellipse Grid.Column="6"
+                                 Fill="ForestGreen" Width="10" Height="10" Stretch="Fill" StrokeThickness="0"
+                                 VerticalAlignment="Center" Margin="0,0,2,0"
+                                 Visibility="{x:Bind GroupFlags,
+                                                     Converter={StaticResource GroupMaskToVisibilityConverter},
+                                                     ConverterParameter=4,
+                                                     Mode=OneWay}"/>
+                    </Grid>
+                </ListViewItem.Content>
+            </ListViewItem>
+        </DataTemplate>
+
+        <DataTemplate x:Key="VideoDataTemplate"
+                      x:DataType="viewmodel:VideoSource">
+            <ListViewItem IsSelected="{x:Bind IsSelected, Mode=TwoWay}"
+                          IsEnabled="{x:Bind IsReady, Mode=OneWay}">
+                <ListViewItem.Content>
+                    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0"
+                                    Orientation="Horizontal"
+                                    FlowDirection="RightToLeft">
+                            <!-- Rating Indicator -->
+                            <Rectangle Width="3" Height="20" Stretch="Fill"
+                                       Margin="2,0"
+                                       Fill="{x:Bind Rating,
+                                                     Converter={StaticResource RatingToBrushConverter},
+                                                     Mode=OneWay}"/>
+
+                            <!-- Not Ready Indicator -->
+                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center"
+                                      Glyph="&#xE783;"
+                                      Foreground="{StaticResource RedBrush}"
+                                      Visibility="{x:Bind IsReady,
+                                                          Converter={StaticResource BoolToVisibilityConverter},
+                                                          ConverterParameter=True,
+                                                          Mode=OneWay}"/>
+                        </StackPanel>
+
+                        <!-- Video Icon -->
+                        <FontIcon Grid.Column="1"
+                                  FontFamily="Segoe Fluent Icons"
+                                  Glyph="&#xE8B2;"
+                                  Margin="0,0,6,0"/>
+
+                        <!-- Media Name -->
+                        <TextBlock Grid.Column="2"
+                                   HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Left"
+                                   Text="{x:Bind Name, Mode=OneWay}"/>
+
+                        <Ellipse Grid.Column="3"
+                                 Fill="Gold" Width="10" Height="10" Stretch="Fill" StrokeThickness="0"
+                                 VerticalAlignment="Center" Margin="0,0,2,0"
+                                 Visibility="{x:Bind GroupFlags,
+                                                     Converter={StaticResource GroupMaskToVisibilityConverter},
+                                                     ConverterParameter=1,
+                                                     Mode=OneWay}"/>
+
+                        <Ellipse Grid.Column="4"
+                                 Fill="CornflowerBlue" Width="10" Height="10" Stretch="Fill" StrokeThickness="0"
+                                 VerticalAlignment="Center" Margin="0,0,2,0"
+                                 Visibility="{x:Bind GroupFlags,
+                                                     Converter={StaticResource GroupMaskToVisibilityConverter},
+                                                     ConverterParameter=2,
+                                                     Mode=OneWay}"/>
+
+                        <Ellipse Grid.Column="5"
+                                 Fill="IndianRed" Width="10" Height="10" Stretch="Fill" StrokeThickness="0"
+                                 VerticalAlignment="Center" Margin="0,0,2,0"
+                                 Visibility="{x:Bind GroupFlags,
+                                                     Converter={StaticResource GroupMaskToVisibilityConverter},
+                                                     ConverterParameter=3,
+                                                     Mode=OneWay}"/>
+
+                        <Ellipse Grid.Column="6"
+                                 Fill="ForestGreen" Width="10" Height="10" Stretch="Fill" StrokeThickness="0"
+                                 VerticalAlignment="Center" Margin="0,0,2,0"
+                                 Visibility="{x:Bind GroupFlags,
+                                                     Converter={StaticResource GroupMaskToVisibilityConverter},
+                                                     ConverterParameter=4,
+                                                     Mode=OneWay}"/>
+                    </Grid>
+                </ListViewItem.Content>
+            </ListViewItem>
+        </DataTemplate>
+
+        <mediabase:WorkspaceItemTemplateSelector x:Key="PlaylistItemTemplateSelector"
+                                                 ImageTemplate="{StaticResource ImageDataTemplate}"
+                                                 VideoTemplate="{StaticResource VideoDataTemplate}"/>
+    </UserControl.Resources>
+
+    <Grid>
+        <ListView x:Name="PlaylistEditorListView"
+                  HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                  SelectionMode="Extended"
+                  IsItemClickEnabled="False"
+                  IsRightTapEnabled="False"
+                  IsDoubleTapEnabled="True"
+                  AllowDrop="True"
+                  CanDrag="True"
+                  CanDragItems="True"
+                  CanReorderItems="True"
+                  ReorderMode="Enabled"
+                  ItemsSource="{x:Bind ViewModel.ActivePlaylist.Children, Mode=OneWay}"
+                  ItemTemplateSelector="{StaticResource PlaylistItemTemplateSelector}"
+                  ContextFlyout="{StaticResource MenuFlyout_PlaylistEditorActions}"
+                  Visibility="{x:Bind ViewModel.ActivePlaylist,
+                                      Converter={StaticResource ObjectToVisibilityConverter},
+                                      ConverterParameter=false,
+                                      Mode=OneWay}"
+                  DoubleTapped="PlaylistEditorListView_DoubleTapped"
+                  SelectionChanged="PlaylistEditorListView_SelectionChanged"/>
+    </Grid>
+</UserControl>

@@ -42,6 +42,9 @@ namespace MediaBase.Controls
             if (RelatedMediaList.SelectedItem is MultimediaSource multimediaSource)
                 ViewModel.ActiveMediaSource = multimediaSource;
 
+            App.Current.Services.GetService<IMessenger>()
+                .Send<GeneralMessage, string>("ScrollActiveMediaSourceIntoView");
+
             e.Handled = true;
         }
         #endregion

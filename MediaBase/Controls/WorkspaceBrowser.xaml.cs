@@ -37,6 +37,35 @@ namespace MediaBase.Controls
         {
             var messenger = App.Current.Services.GetService<IMessenger>();
 
+            messenger.Register<RequestMessage<bool>, string>(this, "AreWorkspaceBrowserItemsSelected", (r, m) =>
+            {
+                m.Reply(((WorkspaceBrowser)r).WorkspaceBrowserListView.SelectedItems.Any());
+            });
+
+            messenger.Register<CollectionRequestMessage<ViewModelElement>, string>(this, "GetSelectedWorkspaceBrowserItems", (r, m) =>
+            {
+                foreach (var element in ((WorkspaceBrowser)r).WorkspaceBrowserListView.SelectedItems.OfType<ViewModelElement>())
+                {
+                    m.Reply(element);
+                }
+            });
+
+            messenger.Register<GeneralMessage, string>(this, "ClearWorkspaceBrowserSelection", (r, m) =>
+            {
+                ((WorkspaceBrowser)r).WorkspaceBrowserListView.ClearSelectedItems();
+            });
+            
+            messenger.Register<GeneralMessage, string>(this, "ScrollActiveMediaSourceIntoView", (r, m) =>
+            {
+                if (ViewModel.ActiveProject != ViewModel.ActiveMediaSource.Root)
+                    ViewModel.ActiveProject = (Project)ViewModel.ActiveMediaSource.Root;
+
+                if (ViewModel.ActiveWorkspaceBrowserFolder != ViewModel.ActiveMediaSource.Parent)
+                    ViewModel.ActiveWorkspaceBrowserFolder = ViewModel.ActiveMediaSource.Parent;
+
+                ((WorkspaceBrowser)r).WorkspaceBrowserListView.ScrollIntoView(ViewModel.ActiveMediaSource, ScrollIntoViewAlignment.Leading);
+            });
+
             // ViewModel.ActiveProject changed
             messenger.Register<PropertyChangedMessage<Project>>(this, (r, m) =>
             {
@@ -50,10 +79,14 @@ namespace MediaBase.Controls
         #endregion
 
         #region Event Handlers
-        private void ProjectSelectionComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private async void ProjectSelectionComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            ViewModel.ActiveWorkspaceBrowserNode = null;
             if (ProjectSelectionComboBox.SelectedItem is Project project)
+            {
                 ViewModel.ActiveWorkspaceBrowserFolder = project;
+                await ProjectManager.MakeItemsReadyAsync(project);
+            }
             else
                 ViewModel.ActiveWorkspaceBrowserFolder = null;
         }
@@ -85,6 +118,12 @@ namespace MediaBase.Controls
 
                 // TODO: Do this somewhere else?
                 await ProjectManager.MakeItemsReadyAsync(ViewModel.ActiveWorkspaceBrowserFolder);
+            }
+            else if (ViewModel.ActiveWorkspaceBrowserNode is Playlist playlist)
+            {
+                ViewModel.ActivePlaylist = playlist;
+                ViewModel.ActiveMediaSource = null; // TODO: Probably don't need this. Just being cautious.
+                ViewModel.PlaylistMoveFirst();
             }
 
             e.Handled = true;

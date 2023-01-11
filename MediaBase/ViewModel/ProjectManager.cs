@@ -51,6 +51,7 @@ namespace MediaBase.ViewModel
         private ViewModelElement _activeWorkspaceBrowserNode;
         private ViewModelNode _activeWorkspaceBrowserFolder;
         private MultimediaSource _activeMediaSource;
+        private Playlist _activePlaylist;
         private Marker _selectedMarker;
         private string _description;
         private bool _hasUnsavedChanges;
@@ -113,6 +114,10 @@ namespace MediaBase.ViewModel
             }
         }
 
+        /// <summary>
+        /// Gets or sets a reference to the currently active folder
+        /// in the current project's structure.
+        /// </summary>
         public ViewModelNode ActiveWorkspaceBrowserFolder
         {
             get => _activeWorkspaceBrowserFolder;
@@ -147,7 +152,10 @@ namespace MediaBase.ViewModel
                 {
                     _activeMediaSource.IsSelected = true;
                     if (_activeMediaSource.Parent != null)
+                    {
                         ActiveWorkspaceBrowserNode = _activeMediaSource;
+                        ActiveWorkspaceBrowserFolder = _activeMediaSource.Parent;
+                    }
                 }
 
                 GeneralPreviousCommand.NotifyCanExecuteChanged();
@@ -157,6 +165,15 @@ namespace MediaBase.ViewModel
                 ToolsToggleGroup3Command.NotifyCanExecuteChanged();
                 ToolsToggleGroup4Command.NotifyCanExecuteChanged();
             }
+        }
+
+        /// <summary>
+        /// Gets or sets a reference to the currently active playlist.
+        /// </summary>
+        public Playlist ActivePlaylist
+        {
+            get => _activePlaylist;
+            set => SetProperty(ref _activePlaylist, value);
         }
 
         /// <summary>
@@ -230,12 +247,18 @@ namespace MediaBase.ViewModel
         public XamlUICommand WorkspaceSaveAsCommand { get; private set; }
         public XamlUICommand WorkspaceCloseCommand { get; private set; }
         public XamlUICommand WorkspaceNewFolderCommand { get; private set; }
+        public XamlUICommand WorkspaceNewPlaylistCommand { get; private set; }
         public XamlUICommand WorkspaceImportCommand { get; private set; }
         public XamlUICommand WorkspaceRemoveItemCommand { get; private set; }
         public XamlUICommand WorkspaceRemoveSelectedCommand { get; private set; }
         public XamlUICommand WorkspaceRenameItemCommand { get; private set; }
+        public XamlUICommand WorkspaceAddItemToPlaylistCommand { get; private set; }
+        public XamlUICommand WorkspaceAddSelectedToPlaylistCommand { get; private set; }
         public XamlUICommand WorkspaceSetItemRelationshipCommand { get; private set; }
         public XamlUICommand WorkspaceMoveUpOneLevelCommand { get; private set; }
+
+        // Playlist
+        public XamlUICommand PlaylistRemoveSelectedCommand { get; private set; }
 
         // Tools
         public XamlUICommand ToolsToggleGroup1Command { get; private set; }
@@ -308,6 +331,7 @@ namespace MediaBase.ViewModel
             newProject.IsActive = true;
 
             Projects.Add(newProject);
+            ActiveProject = newProject;
         }
 
         public async Task OpenWorkspaceFromFile(StorageFile file)
@@ -588,30 +612,65 @@ namespace MediaBase.ViewModel
             var workspaceBrowserMediaList = ActiveMediaSource.Parent.Children.OfType<MultimediaSource>().ToList();
             return (workspaceBrowserMediaList.IndexOf(ActiveMediaSource) + 1, workspaceBrowserMediaList.Count);
         }
+
+        public bool PlaylistMoveFirst()
+        {
+            if (ActivePlaylist == null || ActivePlaylist.Children.Count == 0)
+                return false;
+
+            ActiveMediaSource = (MultimediaSource)ActivePlaylist.Children[0];
+            return true;
+        }
+
+        public bool PlaylistMovePrevious()
+        {
+            if (!IsActiveMediaSourceFromActivePlaylist)
+                return false;
+
+            var playlistIndex = ActivePlaylist.Children.IndexOf(ActiveMediaSource);
+            if (playlistIndex == 0)
+                return false;
+
+            playlistIndex--;
+            ActiveMediaSource = null;
+            ActiveMediaSource = (MultimediaSource)ActivePlaylist.Children[playlistIndex];
+
+            return true;
+        }
+
+        public bool PlaylistMoveNext()
+        {
+            if (!IsActiveMediaSourceFromActivePlaylist)
+                return false;
+
+            var playlistIndex = ActivePlaylist.Children.IndexOf(ActiveMediaSource);
+            if (playlistIndex >= ActivePlaylist.Children.Count - 1)
+                return false;
+
+            playlistIndex++;
+            ActiveMediaSource = null;
+            ActiveMediaSource = (MultimediaSource)ActivePlaylist.Children[playlistIndex];
+
+            return true;
+        }
         #endregion
 
         #region Event Handlers (General)
         private void Projects_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
+            ActiveWorkspaceBrowserFolder = null;
+
             if (Projects.Count == 0)
             {
                 Description = DefaultTitle;
-                //ActiveProject = null;
             }
             else if (Projects.Count == 1)
             {
                 Description = Projects[0].Name;
-                //ActiveProject = Projects[0];
             }
             else
             {
                 Description = $"{Name}: {Projects.Count} Projects";
-                /*if (e.Action == NotifyCollectionChangedAction.Remove)
-                {
-                    ActiveProject = e.OldStartingIndex < Projects.Count
-                        ? Projects[e.OldStartingIndex]
-                        : Projects.Last();
-                }*/
             }
 
             if (IsActive)
@@ -710,6 +769,11 @@ namespace MediaBase.ViewModel
             args.CanExecute = ActiveWorkspaceBrowserFolder is not null;
         }
 
+        private void WorkspaceNewPlaylistCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = ActiveWorkspaceBrowserFolder is not null;
+        }
+
         private void WorkspaceImportCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
             if (ActiveWorkspaceBrowserFolder is not null)
@@ -730,8 +794,8 @@ namespace MediaBase.ViewModel
 
         private void WorkspaceRemoveSelectedCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            var request = Messenger.Send<CollectionRequestMessage<TreeViewNode>, string>("GetSelectedWorkspaceBrowserNodes");
-            args.CanExecute = request.Responses.Any(x => x is not null && x.Content is not Project);
+            var request = Messenger.Send<RequestMessage<bool>, string>("AreWorkspaceBrowserItemsSelected");
+            args.CanExecute = request.HasReceivedResponse && request.Response;
         }
 
         private void WorkspaceRenameItemCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
@@ -739,19 +803,42 @@ namespace MediaBase.ViewModel
             args.CanExecute = ActiveWorkspaceBrowserNode is not null;
         }
 
+        private void WorkspaceAddItemToPlaylistCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = ActivePlaylist is not null &&
+                              ActiveWorkspaceBrowserNode is not Playlist &&
+                              !(ActiveWorkspaceBrowserNode is ImageSource image && !image.IsAnimated);
+        }
+
+        private void WorkspaceAddSelectedToPlaylistCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            var request = Messenger.Send<RequestMessage<bool>, string>("AreWorkspaceBrowserItemsSelected");
+            args.CanExecute = request.HasReceivedResponse && request.Response && ActivePlaylist is not null;
+        }
+
         private void WorkspaceSetItemRelationshipCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            var request = Messenger.Send<CollectionRequestMessage<TreeViewNode>, string>("GetSelectedWorkspaceBrowserNodes");
-            var validSelectionCount = request.Responses.Count(x => x is not null && x.Content is IMultimediaItem);
-            args.CanExecute = (ActiveMediaSource != null &&
-                               ActiveWorkspaceBrowserNode != null &&
-                               !ActiveMediaSource.RelatedMedia.Contains((IMultimediaItem)ActiveWorkspaceBrowserNode)) ||
-                              validSelectionCount >= 2;
+            var selectedItemCount = 0;
+            for (var i = 0; i < Projects.Count && ActiveMediaSource != null && selectedItemCount == 0; i++)
+            {
+                selectedItemCount += Projects[i].DepthFirstEnumerable()
+                                                .OfType<MultimediaSource>()
+                                                .Where(x => x != ActiveMediaSource && x.CheckGroupFlag(1))
+                                                .Count(); // TODO: Don't hard code to group 1
+            }
+
+            args.CanExecute = ActiveMediaSource != null && selectedItemCount > 0;
         }
 
         private void WorkspaceMoveUpOneLevelCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
-            args.CanExecute = ActiveWorkspaceBrowserFolder is not null;
+            args.CanExecute = ActiveWorkspaceBrowserFolder is not null && ActiveWorkspaceBrowserFolder != ActiveWorkspaceBrowserFolder.Root;
+        }
+
+        private void PlaylistRemoveSelectedCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            var request = Messenger.Send<RequestMessage<bool>, string>("ArePlaylistEditorItemsSelected");
+            args.CanExecute = ActivePlaylist != null && request.HasReceivedResponse && request.Response;
         }
 
         private void ToolsToggleGroupCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
@@ -869,7 +956,7 @@ namespace MediaBase.ViewModel
         private async void ProjectSaveAsCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
             if (await ActiveProject.PromptSaveLocation())
-                await ActiveProject.SaveAsync();
+                await ActiveProject.SaveAsync(ActiveProject.File);
         }
 
         private async void ProjectCloseCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
@@ -885,7 +972,7 @@ namespace MediaBase.ViewModel
             ActiveProject.IsActive = false;
             CloseProject(ActiveProject);
             Projects.Remove(ActiveProject);
-            ActiveWorkspaceBrowserNode = null;
+            ActiveProject = null;
         }
 
         private async void WorkspaceOpenCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
@@ -948,6 +1035,7 @@ namespace MediaBase.ViewModel
             Messenger.Send<GeneralMessage, string>("CollapseAllTreeViewNodes");
 
             IsActive = false;
+            ActiveProject = null;
             IsActive = true;
         }
 
@@ -966,6 +1054,26 @@ namespace MediaBase.ViewModel
             if (result == ContentDialogResult.Primary)
             {
                 ActiveWorkspaceBrowserFolder.Children.Add(new MediaFolder(dlg.Text));
+            }
+        }
+
+        private async void WorkspaceNewPlaylistCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            var dlg = new TextPromptDialog
+            {
+                Title = "New Playlist",
+                PromptText = "Enter a name for the new playlist",
+                PrimaryButtonText = "OK",
+                CloseButtonText = "Cancel",
+                XamlRoot = App.Window.Content.XamlRoot
+            };
+
+            var result = await dlg.ShowAsync();
+            if (result == ContentDialogResult.Primary)
+            {
+                var playlist = new Playlist(dlg.Text);
+                await playlist.MakeReady();
+                ActiveWorkspaceBrowserFolder.Children.Add(playlist);
             }
         }
 
@@ -1116,15 +1224,14 @@ namespace MediaBase.ViewModel
 
         private void WorkspaceRemoveSelectedCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            var request = Messenger.Send<CollectionRequestMessage<TreeViewNode>, string>("GetSelectedWorkspaceBrowserNodes");
-            var nodesToRemove = request.Responses.Where(x => x.Parent == null || !request.Responses.Contains(x.Parent))
-                                                 .Select(x => x.Content)
+            var request = Messenger.Send<CollectionRequestMessage<ViewModelElement>, string>("GetSelectedWorkspaceBrowserItems");
+            var itemsToRemove = request.Responses.Where(x => x.Parent == null || !request.Responses.Contains(x.Parent))
                                                  .Cast<ViewModelElement>()
                                                  .ToList();
 
-            foreach (var node in nodesToRemove)
+            foreach (var item in itemsToRemove)
             {
-                node.Parent.Remove(node);
+                item.Parent.Remove(item);
             }
         }
 
@@ -1147,15 +1254,53 @@ namespace MediaBase.ViewModel
             }
         }
 
+        private void WorkspaceAddItemToPlaylistCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            ActivePlaylist.Children.Add(ActiveWorkspaceBrowserNode);
+        }
+
+        private void WorkspaceAddSelectedToPlaylistCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            var request = Messenger.Send<CollectionRequestMessage<ViewModelElement>, string>("GetSelectedWorkspaceBrowserItems");
+            var itemsToAdd = request.Responses.Where(x => x.Parent == null || !request.Responses.Contains(x.Parent))
+                                              .Cast<ViewModelElement>();
+
+            foreach (var item in itemsToAdd)
+            {
+                if (item is MediaFolder folder)
+                {
+                    foreach (var subitem in folder.DepthFirstEnumerable())
+                    {
+                        AddItemIfPossible(subitem);
+                    }
+                }
+                else
+                {
+                    AddItemIfPossible(item);
+                }
+            }
+
+            void AddItemIfPossible(ViewModelElement item)
+            {
+                if (item is not Playlist && !(item is ImageSource image && !image.IsAnimated))
+                    ActivePlaylist.Children.Add(item);
+            }
+        }
+
         private void WorkspaceSetItemRelationshipCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            var request = Messenger.Send<CollectionRequestMessage<TreeViewNode>, string>("GetSelectedWorkspaceBrowserNodes");
-            var selectedItems = request.Responses.Select(x => x.Content)
-                                                 .OfType<MultimediaSource>()
-                                                 .ToList();
-
-            if (selectedItems.Count >= 2)
+            var selectedItems = new List<MultimediaSource>();
+            foreach (var project in Projects)
             {
+                selectedItems.AddRange(project.DepthFirstEnumerable()
+                                              .OfType<MultimediaSource>()
+                                              .Where(x => x.CheckGroupFlag(1))); // TODO: Don't hard code to group 1
+            }
+            selectedItems.Remove(ActiveMediaSource);
+
+            if (selectedItems.Count > 0)
+            {
+                selectedItems.Insert(0, ActiveMediaSource);
                 foreach (var outerItem in selectedItems)
                 {
                     foreach (var innerItem in selectedItems)
@@ -1165,16 +1310,26 @@ namespace MediaBase.ViewModel
                     }
                 }
             }
-            else
+
+            foreach (var item in selectedItems)
             {
-                ActiveMediaSource.RelatedMedia.Add((MultimediaSource)ActiveWorkspaceBrowserNode);
-                ((MultimediaSource)ActiveWorkspaceBrowserNode).RelatedMedia.Add(ActiveMediaSource);
+                item.ClearGroupFlag(1);
             }
         }
 
         private void WorkspaceMoveUpOneLevelCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
             ActiveWorkspaceBrowserFolder = ActiveWorkspaceBrowserFolder.Parent;
+        }
+
+        private void PlaylistRemoveSelectedCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            var request = Messenger.Send<CollectionRequestMessage<ViewModelElement>, string>("GetSelectedPlaylistEditorItems");
+
+            foreach (var item in request.Responses)
+            {
+                ActivePlaylist.Children.Remove(item);
+            }
         }
 
         private void ToolsToggleGroupCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
@@ -1522,6 +1677,10 @@ namespace MediaBase.ViewModel
         private bool IsActiveMediaSourceFromSystemBrowser =>
             ActiveMediaSource.Parent == null &&
             ActiveMediaSource == ActiveSystemBrowserNode?.Content;
+
+        private bool IsActiveMediaSourceFromActivePlaylist =>
+            ActivePlaylist != null &&
+            ActivePlaylist.Children.Contains(ActiveMediaSource);
         #endregion
 
         #region Private Methods
@@ -1762,6 +1921,14 @@ namespace MediaBase.ViewModel
                 IsEnabled = true
             });
 
+            // Workspace: New Playlist
+            WorkspaceNewPlaylistCommand = new XamlUICommand
+            {
+                Label = "New Playlist...",
+                Description = "Create a new playlist at this location",
+                IconSource = new SymbolIconSource { Symbol = (Symbol)0xE71D }
+            };
+
             // Workspace: Import Item(s)
             WorkspaceImportCommand = new XamlUICommand
             {
@@ -1787,7 +1954,7 @@ namespace MediaBase.ViewModel
             WorkspaceRemoveSelectedCommand = new XamlUICommand
             {
                 Label = "Remove Selected",
-                Description = "Remove selected (checked) items"
+                Description = "Remove selected items"
             };
 
             // Workspace: Rename Item
@@ -1798,6 +1965,20 @@ namespace MediaBase.ViewModel
                 IconSource = new SymbolIconSource { Symbol = Symbol.Rename }
             };
 
+            // Workspace: Add Item To Playlist
+            WorkspaceAddItemToPlaylistCommand = new XamlUICommand
+            {
+                Label = "Add Item to Playlist",
+                Description = "Adds the current item to the playlist currently being edited"
+            };
+
+            // Workspace: Add Selected To Playlist
+            WorkspaceAddSelectedToPlaylistCommand = new XamlUICommand
+            {
+                Label = "Add Selected to Playlist",
+                Description = "Adds the selected items to the playlist currently being edited"
+            };
+
             // Workspace: Set Relationship
             WorkspaceSetItemRelationshipCommand = new XamlUICommand
             {
@@ -1806,12 +1987,19 @@ namespace MediaBase.ViewModel
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xF003 }
             };
 
-            // Workspace: Move up a level
+            // Workspace: Move Up a Level
             WorkspaceMoveUpOneLevelCommand = new XamlUICommand
             {
                 Label = "Up One Level",
                 Description = "Navigate to parent folder",
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xE70E }
+            };
+
+            // Playlist: Remove Selected
+            PlaylistRemoveSelectedCommand = new XamlUICommand
+            {
+                Label = "Remove Selected",
+                Description = "Remove selected items from playlist"
             };
 
             // Tools: Batch Action
@@ -2350,6 +2538,11 @@ namespace MediaBase.ViewModel
             WorkspaceNewFolderCommand.ExecuteRequested +=
                 WorkspaceNewFolderCommand_ExecuteRequested;
 
+            WorkspaceNewPlaylistCommand.CanExecuteRequested +=
+                WorkspaceNewPlaylistCommand_CanExecuteRequested;
+            WorkspaceNewPlaylistCommand.ExecuteRequested +=
+                WorkspaceNewPlaylistCommand_ExecuteRequested;
+
             WorkspaceImportCommand.CanExecuteRequested +=
                 WorkspaceImportCommand_CanExecuteRequested;
             WorkspaceImportCommand.ExecuteRequested +=
@@ -2370,6 +2563,16 @@ namespace MediaBase.ViewModel
             WorkspaceRenameItemCommand.ExecuteRequested +=
                 WorkspaceRenameItemCommand_ExecuteRequested;
 
+            WorkspaceAddItemToPlaylistCommand.CanExecuteRequested +=
+                WorkspaceAddItemToPlaylistCommand_CanExecuteRequested;
+            WorkspaceAddItemToPlaylistCommand.ExecuteRequested +=
+                WorkspaceAddItemToPlaylistCommand_ExecuteRequested;
+
+            WorkspaceAddSelectedToPlaylistCommand.CanExecuteRequested +=
+                WorkspaceAddSelectedToPlaylistCommand_CanExecuteRequested;
+            WorkspaceAddSelectedToPlaylistCommand.ExecuteRequested +=
+                WorkspaceAddSelectedToPlaylistCommand_ExecuteRequested;
+
             WorkspaceSetItemRelationshipCommand.CanExecuteRequested +=
                 WorkspaceSetItemRelationshipCommand_CanExecuteRequested;
             WorkspaceSetItemRelationshipCommand.ExecuteRequested +=
@@ -2379,6 +2582,12 @@ namespace MediaBase.ViewModel
                 WorkspaceMoveUpOneLevelCommand_CanExecuteRequested;
             WorkspaceMoveUpOneLevelCommand.ExecuteRequested +=
                 WorkspaceMoveUpOneLevelCommand_ExecuteRequested;
+
+            // Playlist
+            PlaylistRemoveSelectedCommand.CanExecuteRequested +=
+                PlaylistRemoveSelectedCommand_CanExecuteRequested;
+            PlaylistRemoveSelectedCommand.ExecuteRequested +=
+                PlaylistRemoveSelectedCommand_ExecuteRequested;
 
             // Tools
             ToolsToggleGroup1Command.CanExecuteRequested +=

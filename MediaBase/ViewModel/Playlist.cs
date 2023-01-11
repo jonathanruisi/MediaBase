@@ -6,6 +6,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Xml;
 
+using CommunityToolkit.Mvvm.Messaging;
+
 using JLR.Utility.WinUI.Messaging;
 using JLR.Utility.WinUI.ViewModel;
 
@@ -46,7 +48,7 @@ namespace MediaBase.ViewModel
 
         public bool IsReady
         {
-            get => _isReady;
+            get => Children.Count == 0 || _isReady;
             set => SetProperty(ref _isReady, value);
         }
 
@@ -109,19 +111,25 @@ namespace MediaBase.ViewModel
         #region Interface Implementation (IMultimediaItem)
         public async Task<bool> MakeReady()
         {
-            foreach (var source in Children.OfType<IMultimediaItem>())
-            {
-                if (await source.MakeReady() == false)
-                {
-                    IsReady = false;
-                    return false;
-                }
+            var isReady = true;
 
-                ContentType |= source.ContentType;
+            for (var i = 0; i < Children.Count; i++)
+            {
+                if (Children[i] is not IMultimediaItem)
+                    continue;
+
+                var response = Messenger.Send(new MediaLookupRequestMessage(((IMultimediaItem)Children[i]).Id));
+                if (response != null && response.Response != null)
+                    Children[i] = (ViewModelElement)response.Response;
+
+                if (await ((IMultimediaItem)Children[i]).MakeReady())
+                    ContentType |= ((IMultimediaItem)Children[i]).ContentType;
+                else
+                    isReady = false;
             }
 
-            IsReady = true;
-            return true;
+            IsReady = isReady;
+            return IsReady;
         }
         #endregion
 
@@ -133,6 +141,24 @@ namespace MediaBase.ViewModel
                 throw new ArgumentOutOfRangeException(nameof(group));
 
             return (GroupFlags & (1 << group)) != 0;
+        }
+
+        public void SetGroupFlag(int group)
+        {
+            group--;
+            if (group is < 0 or > 7)
+                throw new ArgumentOutOfRangeException(nameof(group));
+
+            GroupFlags |= 1 << group;
+        }
+
+        public void ClearGroupFlag(int group)
+        {
+            group--;
+            if (group is < 0 or > 7)
+                throw new ArgumentOutOfRangeException(nameof(group));
+
+            GroupFlags &= ~(1 << group);
         }
 
         public void ToggleGroupFlag(int group)
@@ -158,13 +184,15 @@ namespace MediaBase.ViewModel
                                                         ref XmlReader reader,
                                                         params string[] args)
         {
-            if (propertyName == nameof(Children) && args.Length > 0)
+            if (propertyName == nameof(Children))
             {
+                var typeString = reader.Name;
+
                 reader.MoveToFirstAttribute();
                 var id = Guid.Parse(reader.ReadContentAsString());
-                reader.ReadEndElement();
 
-                var result = (IMultimediaItem)InstantiateObjectFromXmlTagName(args[0]);
+                var result = (IMultimediaItem)InstantiateObjectFromXmlTagName(typeString);
+                reader.Read();
                 result.Id = id;
                 return result;
             }

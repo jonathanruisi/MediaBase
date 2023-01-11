@@ -19,6 +19,10 @@ namespace MediaBase.ViewModel
 
         bool CheckGroupFlag(int group);
 
+        void SetGroupFlag(int group);
+
+        void ClearGroupFlag(int group);
+
         void ToggleGroupFlag(int group);
     }
 }
