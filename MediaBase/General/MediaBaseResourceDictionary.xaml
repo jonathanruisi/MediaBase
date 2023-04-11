@@ -29,6 +29,8 @@
     <toolkit_converters:BoolToVisibilityConverter
         x:Key="BoolToVisibilityConverter"/>
 
+    <toolkit_converters:CollectionVisibilityConverter x:Key="CollectionVisibilityConverter"/>
+
     <local:GroupMaskToBooleanConverter x:Key="GroupMaskToBooleanConverter"/>
     <local:GroupMaskToVisibilityConverter x:Key="GroupMaskToVisibilityConverter"/>
     <local:MediaTypeToStringConverter x:Key="MediaTypeToStringConverter"/>

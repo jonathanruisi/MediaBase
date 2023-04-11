@@ -75,6 +75,9 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
                         <StackPanel Grid.Column="0"
@@ -139,6 +142,24 @@
                                                      Converter={StaticResource GroupMaskToVisibilityConverter},
                                                      ConverterParameter=4,
                                                      Mode=OneWay}"/>
+
+                        <TextBlock Grid.Column="7" Text="R" FontWeight="Bold" Foreground="#606060"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
+                                   Visibility="{x:Bind RelatedMediaIds,
+                                                       Converter={StaticResource CollectionVisibilityConverter},
+                                                       Mode=OneWay}"/>
+
+                        <TextBlock Grid.Column="8" Text="M" FontWeight="Bold" Foreground="#606060"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
+                                   Visibility="{x:Bind Markers,
+                                                       Converter={StaticResource CollectionVisibilityConverter},
+                                                       Mode=OneWay}"/>
+
+                        <TextBlock Grid.Column="9" Text="T" FontWeight="Bold" Foreground="#606060"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
+                                   Visibility="{x:Bind Tags,
+                                                       Converter={StaticResource CollectionVisibilityConverter},
+                                                       Mode=OneWay}"/>
                     </Grid>
                 </ListViewItem.Content>
             </ListViewItem>
@@ -156,6 +177,10 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
@@ -224,6 +249,30 @@
                                                      Converter={StaticResource GroupMaskToVisibilityConverter},
                                                      ConverterParameter=4,
                                                      Mode=OneWay}"/>
+
+                        <TextBlock Grid.Column="7" Text="R" FontWeight="Bold" Foreground="#606060"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
+                                   Visibility="{x:Bind RelatedMediaIds,
+                                                       Converter={StaticResource CollectionVisibilityConverter},
+                                                       Mode=OneWay}"/>
+
+                        <TextBlock Grid.Column="8" Text="M" FontWeight="Bold" Foreground="#606060"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
+                                   Visibility="{x:Bind Markers,
+                                                       Converter={StaticResource CollectionVisibilityConverter},
+                                                       Mode=OneWay}"/>
+
+                        <TextBlock Grid.Column="9" Text="C" FontWeight="Bold" Foreground="#606060"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
+                                   Visibility="{x:Bind Cuts,
+                                                       Converter={StaticResource CollectionVisibilityConverter},
+                                                       Mode=OneWay}"/>
+
+                        <TextBlock Grid.Column="10" Text="T" FontWeight="Bold" Foreground="#606060"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
+                                   Visibility="{x:Bind Tags,
+                                                       Converter={StaticResource CollectionVisibilityConverter},
+                                                       Mode=OneWay}"/>
                     </Grid>
                 </ListViewItem.Content>
             </ListViewItem>

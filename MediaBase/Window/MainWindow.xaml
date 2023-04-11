@@ -85,6 +85,8 @@
                         </MenuFlyoutSubItem>
                         <MenuFlyoutItem Command="{x:Bind ViewModel.ToolsBatchActionCommand}"/>
                         <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceSetItemRelationshipCommand}"/>
+                        <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceUnsetItemRelationshipCommand}"/>
+                        <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceUnsetAllItemRelationshipsCommand}"/>
                         <MenuFlyoutSeparator/>
                         <MenuFlyoutItem Command="{x:Bind ViewModel.ToolsAnimateImageCommand}"/>
                     </MenuBarItem>

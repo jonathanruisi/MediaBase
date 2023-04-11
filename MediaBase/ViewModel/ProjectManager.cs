@@ -255,6 +255,8 @@ namespace MediaBase.ViewModel
         public XamlUICommand WorkspaceAddItemToPlaylistCommand { get; private set; }
         public XamlUICommand WorkspaceAddSelectedToPlaylistCommand { get; private set; }
         public XamlUICommand WorkspaceSetItemRelationshipCommand { get; private set; }
+        public XamlUICommand WorkspaceUnsetItemRelationshipCommand { get; private set; }
+        public XamlUICommand WorkspaceUnsetAllItemRelationshipsCommand { get; private set; }
         public XamlUICommand WorkspaceMoveUpOneLevelCommand { get; private set; }
 
         // Playlist
@@ -660,6 +662,7 @@ namespace MediaBase.ViewModel
         {
             ActiveWorkspaceBrowserFolder = null;
 
+            // Change title based on number of projects in the workspace
             if (Projects.Count == 0)
             {
                 Description = DefaultTitle;
@@ -672,6 +675,10 @@ namespace MediaBase.ViewModel
             {
                 Description = $"{Name}: {Projects.Count} Projects";
             }
+
+            // Set the save KB accelerator based on the number of projects in the workspace
+            ProjectSaveCommand.KeyboardAccelerators[0].IsEnabled = Projects.Count == 1;
+            WorkspaceSaveCommand.KeyboardAccelerators[0].IsEnabled = Projects.Count != 1;
 
             if (IsActive)
                 HasUnsavedChanges = true;
@@ -711,7 +718,7 @@ namespace MediaBase.ViewModel
                 args.CanExecute = index != null &&
                                   index < ActiveSystemBrowserNode.Parent.Children.Count - 1 &&
                                   ActiveSystemBrowserNode.Parent.Children[(int)index + 1].Content is MultimediaSource;
-            }    
+            }
         }
 
         private void GeneralDeleteMarkerCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
@@ -828,6 +835,16 @@ namespace MediaBase.ViewModel
             }
 
             args.CanExecute = ActiveMediaSource != null && selectedItemCount > 0;
+        }
+
+        private void WorkspaceUnsetItemRelationshipCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = ActiveMediaSource != null && ActiveMediaSource.RelatedMediaIds.Count > 0;
+        }
+
+        private void WorkspaceUnsetAllItemRelationshipsCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = IsActive && Projects.Count > 0;
         }
 
         private void WorkspaceMoveUpOneLevelCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
@@ -1314,6 +1331,30 @@ namespace MediaBase.ViewModel
             foreach (var item in selectedItems)
             {
                 item.ClearGroupFlag(1);
+            }
+        }
+
+        private void WorkspaceUnsetItemRelationshipCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            foreach (var relatedItem in ActiveMediaSource.RelatedMedia.Cast<MultimediaSource>())
+            {
+                relatedItem.RelatedMedia.Remove(ActiveMediaSource);
+                relatedItem.RelatedMediaIds.Remove(ActiveMediaSource.Id);
+            }
+
+            ActiveMediaSource.RelatedMedia.Clear();
+            ActiveMediaSource.RelatedMediaIds.Clear();
+        }
+
+        private void WorkspaceUnsetAllItemRelationshipsCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            foreach (var project in Projects)
+            {
+                foreach (var mediaItem in project.DepthFirstEnumerable().OfType<MultimediaSource>().Where(x => x.RelatedMediaIds.Count > 0))
+                {
+                    mediaItem.RelatedMedia.Clear();
+                    mediaItem.RelatedMediaIds.Clear();
+                }
             }
         }
 
@@ -1844,6 +1885,13 @@ namespace MediaBase.ViewModel
                 IconSource = new SymbolIconSource { Symbol = Symbol.SaveLocal }
             };
 
+            ProjectSaveCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.S,
+                Modifiers = VirtualKeyModifiers.Control,
+                IsEnabled = false
+            });
+
             // Project: Save As
             ProjectSaveAsCommand = new XamlUICommand
             {
@@ -1987,6 +2035,34 @@ namespace MediaBase.ViewModel
                 IconSource = new SymbolIconSource { Symbol = (Symbol)0xF003 }
             };
 
+            WorkspaceSetItemRelationshipCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.R,
+                Modifiers = VirtualKeyModifiers.Control,
+                IsEnabled = true
+            });
+
+            // Workspace: Unset Relationship
+            WorkspaceUnsetItemRelationshipCommand = new XamlUICommand
+            {
+                Label = "Unset Relationship",
+                Description = "Remove relationships associated with selected item"
+            };
+
+            WorkspaceUnsetItemRelationshipCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.R,
+                Modifiers = VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift,
+                IsEnabled = true
+            });
+
+            // Workspace: Unset All Relationships
+            WorkspaceUnsetAllItemRelationshipsCommand = new XamlUICommand
+            {
+                Label = "Unset All Relationships",
+                Description = "Remove all relationships between items in the workspace"
+            };
+
             // Workspace: Move Up a Level
             WorkspaceMoveUpOneLevelCommand = new XamlUICommand
             {
@@ -2069,13 +2145,13 @@ namespace MediaBase.ViewModel
                 }
             };
 
-            ToolsToggleGroup1Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            ToolsToggleGroup2Command.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.Number2,
                 IsEnabled = true
             });
 
-            ToolsToggleGroup1Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            ToolsToggleGroup2Command.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.Number2,
                 Modifiers = VirtualKeyModifiers.Control,
@@ -2108,13 +2184,13 @@ namespace MediaBase.ViewModel
                 }
             };
 
-            ToolsToggleGroup1Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            ToolsToggleGroup3Command.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.Number3,
                 IsEnabled = true
             });
 
-            ToolsToggleGroup1Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            ToolsToggleGroup3Command.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.Number3,
                 Modifiers = VirtualKeyModifiers.Control,
@@ -2147,13 +2223,13 @@ namespace MediaBase.ViewModel
                 }
             };
 
-            ToolsToggleGroup1Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            ToolsToggleGroup4Command.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.Number4,
                 IsEnabled = true
             });
 
-            ToolsToggleGroup1Command.KeyboardAccelerators.Add(new KeyboardAccelerator
+            ToolsToggleGroup4Command.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.Number4,
                 Modifiers = VirtualKeyModifiers.Control,
@@ -2577,6 +2653,16 @@ namespace MediaBase.ViewModel
                 WorkspaceSetItemRelationshipCommand_CanExecuteRequested;
             WorkspaceSetItemRelationshipCommand.ExecuteRequested +=
                 WorkspaceSetItemRelationshipCommand_ExecuteRequested;
+
+            WorkspaceUnsetItemRelationshipCommand.CanExecuteRequested +=
+                WorkspaceUnsetItemRelationshipCommand_CanExecuteRequested;
+            WorkspaceUnsetItemRelationshipCommand.ExecuteRequested +=
+                WorkspaceUnsetItemRelationshipCommand_ExecuteRequested;
+
+            WorkspaceUnsetAllItemRelationshipsCommand.CanExecuteRequested +=
+                WorkspaceUnsetAllItemRelationshipsCommand_CanExecuteRequested;
+            WorkspaceUnsetAllItemRelationshipsCommand.ExecuteRequested +=
+                WorkspaceUnsetAllItemRelationshipsCommand_ExecuteRequested;
 
             WorkspaceMoveUpOneLevelCommand.CanExecuteRequested +=
                 WorkspaceMoveUpOneLevelCommand_CanExecuteRequested;
