@@ -39,7 +39,18 @@ namespace MediaBase.Controls
         #endregion
 
         #region Properties
+        public double DisplayRefreshRate
+        {
+            get => (double)GetValue(DisplayRefreshRateProperty);
+            private set => SetValue(DisplayRefreshRateProperty, value);
+        }
 
+        public static readonly DependencyProperty DisplayRefreshRateProperty =
+            DependencyProperty.Register("DisplayRefreshRate",
+                                        typeof(double),
+                                        typeof(MediaEditor),
+                                        new PropertyMetadata(60.0,
+                                            OnDisplayRefreshRateChanged));
         #endregion
 
         #region Constructor
@@ -50,7 +61,10 @@ namespace MediaBase.Controls
         #endregion
 
         #region Dependency Property Callbacks
-
+        private static void OnDisplayRefreshRateChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            
+        }
         #endregion
 
         #region Event Handlers (UserControl)
@@ -58,6 +72,11 @@ namespace MediaBase.Controls
         {
             App.Window.Closed += (s, e) => Dispose();
             InitializeDirect2D();
+        }
+
+        private void UserControl_Unloaded(object sender, RoutedEventArgs e)
+        {
+            Dispose();
         }
 
         private void SwapChainPanel_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -168,6 +187,16 @@ namespace MediaBase.Controls
             using var dxgiDevice = ComObject.From(d3D11Device.As<IDXGIDevice1>(true));
             using var dxgiAdapter = dxgiDevice.GetAdapter();
             using var dxgiFactory = dxgiAdapter.GetFactory2();
+
+            // Get refresh rate
+            var modeToMatch = default(DXGI_MODE_DESC);
+            foreach (var output in dxgiAdapter.EnumOutputs())
+            {
+                var modeDesc = output.FindClosestMatchingMode(modeToMatch, d3D11Device);
+                if (modeDesc != null)
+                    DisplayRefreshRate = (double)modeDesc.Value.RefreshRate.Numerator / modeDesc.Value.RefreshRate.Denominator;
+                output.FinalDispose();
+            }
 
             // Initialize swap chain
             var swapChainDesc = new DXGI_SWAP_CHAIN_DESC1
