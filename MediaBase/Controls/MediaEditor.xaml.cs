@@ -43,9 +43,11 @@ namespace MediaBase.Controls
         private const double AnimatedImage_PlaybackRateIncrement = 0.25;
 
         // Playback Rate (Video)
-        private const double Video_MinimumPlaybackRate = 0.5;
-        private const double Video_MaximumPlaybackRate = 3.0;
-        private const double Video_PlaybackRateIncrement = 0.5;
+        private const double Video_MinimumPlaybackRate = 0.25;
+        private const double Video_MaximumPlaybackRate = 12.0;
+        private const double Video_PlaybackRateLargeIncrement = 1.0;
+        private const double Video_PlaybackRateMediumIncrement = 0.5;
+        private const double Video_PlaybackRateSmallIncrement = 0.25;
 
         // Group Adornments
         private const float GroupAdornment_TotalBorderSize = 12.0f;
@@ -1494,7 +1496,19 @@ namespace MediaBase.Controls
             if (Source.ContentType == MediaContentType.Image)
                 PlaybackRate -= AnimatedImage_PlaybackRateIncrement;
             else
-                _player.PlaybackSession.PlaybackRate -= Video_PlaybackRateIncrement;
+            {
+                double increment;
+                if (_player.PlaybackSession.PlaybackRate > 4)
+                    increment = Video_PlaybackRateLargeIncrement;
+                else if (_player.PlaybackSession.PlaybackRate <= 2)
+                    increment = Video_PlaybackRateSmallIncrement;
+                else
+                    increment = Video_PlaybackRateMediumIncrement;
+
+                var newRate = Math.Round(_player.PlaybackSession.PlaybackRate - increment, 2);
+
+                _player.PlaybackSession.PlaybackRate = newRate;
+            }
         }
 
         private void EditorPlaybackRateIncreaseCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
@@ -1502,7 +1516,19 @@ namespace MediaBase.Controls
             if (Source.ContentType == MediaContentType.Image)
                 PlaybackRate += AnimatedImage_PlaybackRateIncrement;
             else
-                _player.PlaybackSession.PlaybackRate += Video_PlaybackRateIncrement;
+            {
+                double increment;
+                if (_player.PlaybackSession.PlaybackRate >= 4)
+                    increment = Video_PlaybackRateLargeIncrement;
+                else if (_player.PlaybackSession.PlaybackRate < 2)
+                    increment = Video_PlaybackRateSmallIncrement;
+                else
+                    increment = Video_PlaybackRateMediumIncrement;
+
+                var newRate = Math.Round(_player.PlaybackSession.PlaybackRate + increment, 2);
+
+                _player.PlaybackSession.PlaybackRate = newRate;
+            }
         }
 
         private void EditorPlaybackRateNormalCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
