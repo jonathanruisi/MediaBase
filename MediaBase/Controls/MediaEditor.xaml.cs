@@ -70,6 +70,8 @@ namespace MediaBase.Controls
         private DateTime _sourceChangedTimestamp;
         private double _textFadeOpacity, _textFadeOpacityIncrement;
         private int _currentSourceIndex, _currentSourceParentTotal;
+        //private int _groupAdornMemoryParentHash, _groupAdornMemoryPrevParentHash;
+        //private List<bool> _groupAdornListForParent;
         #endregion
 
         #region Properties
@@ -398,6 +400,9 @@ namespace MediaBase.Controls
             _primaryCursor = InputSystemCursor.Create(PrimaryCursorShape);
             _hoverCursor = InputSystemCursor.Create(HoverCursorShape);
             _dragCursor = InputSystemCursor.Create(DragCursorShape);
+
+            // Misc
+            //_groupAdornListForParent = new List<bool>();
 
             // Initialize commands
             InitializeCommands();
@@ -859,6 +864,20 @@ namespace MediaBase.Controls
                 _textFadeOpacity -= _textFadeOpacityIncrement;
             }
 
+            // Manage grouping adornment memory
+            /*_groupAdornMemoryPrevParentHash = _groupAdornMemoryParentHash;
+            _groupAdornMemoryParentHash = (Source == null || Source.Parent == null) ? 0 : Source.Parent.GetHashCode();
+            if (_groupAdornMemoryParentHash != _groupAdornMemoryPrevParentHash)
+            {
+                _groupAdornListForParent.Clear();
+                for (var i = 0; i < _currentSourceParentTotal; i++)
+                {
+                    _groupAdornListForParent.Add(false);
+                }
+            }
+
+            _groupAdornListForParent[_currentSourceIndex - 1] = Source.GroupFlags != 0;*/
+
             // Display title text (during title text display and fade-out)
             if (_textFadeOpacity > 0)
             {
@@ -878,12 +897,33 @@ namespace MediaBase.Controls
                     (float)SwapChainCanvas.ActualWidth, (float)SwapChainCanvas.ActualHeight);
                 using var sourceNumberTextGeometry = CanvasGeometry.CreateText(sourceNumberTextLayout);
 
-                var x = (float)((SwapChainCanvas.ActualWidth / 2.0) - (sourceNumberTextLayout.DrawBounds.Width / 2.0));
-                var y = 5.0f;
+                var progressBarRect = new Rect(15, 15, SwapChainCanvas.ActualWidth - 30, sourceNumberTextLayout.DrawBounds.Height * 2);
+                var sourceNumberTextRect = new Rect(progressBarRect.Left + (progressBarRect.Width / 2) - (sourceNumberTextLayout.DrawBounds.Width / 2.0),
+                                                    progressBarRect.Top + 5, sourceNumberTextLayout.DrawBounds.Width, sourceNumberTextLayout.DrawBounds.Height);
+                var progressThumbWidth = progressBarRect.Width / _currentSourceParentTotal;
+                var progressThumbRect = new Rect(progressBarRect.Left + ((_currentSourceIndex - 1) * progressThumbWidth),
+                    progressBarRect.Top, progressThumbWidth, progressBarRect.Height);
 
-                ds.FillGeometry(sourceNumberTextGeometry, x, y, Color.FromArgb((byte)(_textFadeOpacity * 255),
+                ds.FillRectangle(progressBarRect, Color.FromArgb((byte)(_textFadeOpacity * 127), 184, 134, 11));
+                ds.FillRectangle(progressThumbRect, Color.FromArgb((byte)(_textFadeOpacity * 255), 218, 165, 32));
+                ds.DrawRectangle(progressBarRect, Color.FromArgb((byte)(_textFadeOpacity * 255), 184, 134, 11), 2.0f);
+
+                /*for (var i = 0; i < _groupAdornListForParent.Count; i++)
+                {
+                    if (_groupAdornListForParent[i])
+                    {
+                        var progressGroupMarkRect = new Rect(progressBarRect.Left + (progressThumbWidth * i),
+                            progressThumbRect.Bottom - 5,
+                            progressThumbRect.Width, 5);
+                        ds.FillRectangle(progressGroupMarkRect, Color.FromArgb((byte)(_textFadeOpacity * 255), 255, 255, 255));
+                    }
+                }*/
+
+                ds.FillGeometry(sourceNumberTextGeometry, (float)sourceNumberTextRect.X, (float)sourceNumberTextRect.Y,
+                    Color.FromArgb((byte)(_textFadeOpacity * 255),
                     TextOverlayColor.R, TextOverlayColor.G, TextOverlayColor.B));
-                ds.DrawGeometry(sourceNumberTextGeometry, x, y, Color.FromArgb((byte)(_textFadeOpacity * 255),
+                ds.DrawGeometry(sourceNumberTextGeometry, (float)sourceNumberTextRect.X, (float)sourceNumberTextRect.Y,
+                    Color.FromArgb((byte)(_textFadeOpacity * 255),
                     TextOverlayOutlineColor.R, TextOverlayOutlineColor.G, TextOverlayOutlineColor.B),
                     (float)TextOverlayOutlineThickness);
 
@@ -892,8 +932,8 @@ namespace MediaBase.Controls
                     (float)SwapChainCanvas.ActualWidth, (float)SwapChainCanvas.ActualHeight);
                 using var titleTextGeometry = CanvasGeometry.CreateText(titleTextLayout);
 
-                x = (float)((SwapChainCanvas.ActualWidth / 2.0) - (titleTextLayout.DrawBounds.Width / 2.0));
-                y = (float)(SwapChainCanvas.ActualHeight - titleTextLayout.DrawBounds.Height - 15);
+                var x = (float)((SwapChainCanvas.ActualWidth / 2.0) - (titleTextLayout.DrawBounds.Width / 2.0));
+                var y = (float)(SwapChainCanvas.ActualHeight - titleTextLayout.DrawBounds.Height - 15);
 
                 ds.FillGeometry(titleTextGeometry, x, y, Color.FromArgb((byte)(_textFadeOpacity * 255),
                     TextOverlayColor.R, TextOverlayColor.G, TextOverlayColor.B));
