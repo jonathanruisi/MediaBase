@@ -74,6 +74,14 @@ namespace MediaBase.ViewModel
             set => SetProperty(ref _activeProject, value, true);
         }
 
+        public bool IsActiveMediaSourceFromSystemBrowser =>
+            ActiveMediaSource.Parent == null &&
+            ActiveMediaSource == ActiveSystemBrowserNode?.Content;
+
+        public bool IsActiveMediaSourceFromActivePlaylist =>
+            ActivePlaylist != null &&
+            ActivePlaylist.Children.Contains(ActiveMediaSource);
+
         /// <summary>
         /// Gets or sets a reference to the currently active system browser node.
         /// </summary>
@@ -279,7 +287,7 @@ namespace MediaBase.ViewModel
         public XamlUICommand EditorPreviousMarkerCommand { get; private set; }
         public XamlUICommand EditorNextMarkerCommand { get; private set; }
         public XamlUICommand EditorToggleActiveSelectionCommand { get; private set; }
-        public XamlUICommand EditorAddTrackCommmand { get; private set; }
+        public XamlUICommand EditorAddTrackCommand { get; private set; }
         public XamlUICommand EditorNewMarkerCommand { get; private set; }
         public XamlUICommand EditorNewKeyframeCommand { get; private set; }
         public XamlUICommand EditorCutSelectedCommand { get; private set; }
@@ -601,6 +609,19 @@ namespace MediaBase.ViewModel
                     IsCloseable = true
                 });
             }
+        }
+
+        public IEnumerable<int> GetActiveMediaSourceSiblingGroupInfo()
+        {
+            if (IsActiveMediaSourceFromSystemBrowser)
+            {
+                return from x in ActiveSystemBrowserNode.Parent.Children
+                       where x.Content is MultimediaSource
+                       select x.Content as MultimediaSource into source
+                       select source.GroupFlags;
+            }
+
+            return ActiveMediaSource.Parent?.Children.OfType<MultimediaSource>().Select(x => x.GroupFlags);
         }
 
         public (int index, int total) GetActiveMediaSourceIndexAndParentTotal()
@@ -1714,16 +1735,6 @@ namespace MediaBase.ViewModel
         }
         #endregion
 
-        #region Private Properties
-        private bool IsActiveMediaSourceFromSystemBrowser =>
-            ActiveMediaSource.Parent == null &&
-            ActiveMediaSource == ActiveSystemBrowserNode?.Content;
-
-        private bool IsActiveMediaSourceFromActivePlaylist =>
-            ActivePlaylist != null &&
-            ActivePlaylist.Children.Contains(ActiveMediaSource);
-        #endregion
-
         #region Private Methods
         private async Task<bool> OpenProject(Project project)
         {
@@ -2373,7 +2384,7 @@ namespace MediaBase.ViewModel
             });
 
             // Editor: New Track
-            EditorAddTrackCommmand = new XamlUICommand
+            EditorAddTrackCommand = new XamlUICommand
             {
                 Label = "Add Track",
                 Description = "Add track to current media",

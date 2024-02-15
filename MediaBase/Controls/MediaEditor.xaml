@@ -279,7 +279,7 @@
                 <AppBarButton x:Name="NewMarkerButton" Width="40"
                               Command="{x:Bind ViewModel.EditorNewMarkerCommand}"/>
                 <AppBarButton x:Name="NewTrackButton" Width="40"
-                              Command="{x:Bind ViewModel.EditorAddTrackCommmand}"/>
+                              Command="{x:Bind ViewModel.EditorAddTrackCommand}"/>
                 <AppBarToggleButton x:Name="ActiveSelectionToggleButton" Width="40"
                                     Command="{x:Bind ViewModel.EditorToggleActiveSelectionCommand}"
                                     IsChecked="{x:Bind Timeline.IsSelectionEnabled, Mode=TwoWay}"/>

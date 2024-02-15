@@ -60,18 +60,18 @@ namespace MediaBase.Controls
         private readonly DispatcherQueueTimer _redrawTimer;
         private SoftwareBitmap _frameSizingBitmap;
         private CanvasBitmap _frameBitmap;
-        private InputCursor _primaryCursor, _hoverCursor, _dragCursor;
+        private InputCursor _primaryCursor, _secondaryCursor, _hoverCursor, _dragCursor;
         private bool _isPointerCapturedForFrame;
-        private Point _prevLeftMousePosition;
         private Rect _sourceRect, _destRect, _fullDestRect;
+        private Rect _progressBarRect, _markerBarRect;
+        private Point _prevLeftMousePosition;
         private double _scaleFactor, _prevPlaybackRate, _mouseOffsetX, _mouseOffsetY;
         private FollowMode _prevFollowMode;
         private ValueDragType _scrubType;
-        private DateTime _sourceChangedTimestamp;
-        private double _textFadeOpacity, _textFadeOpacityIncrement;
+        private DateTime _progressBarDisplayedTimestamp;
+        private double _textFadeOpacity, _textFadeOpacityIncrement, _progressThumbWidth;
         private int _currentSourceIndex, _currentSourceParentTotal;
-        //private int _groupAdornMemoryParentHash, _groupAdornMemoryPrevParentHash;
-        //private List<bool> _groupAdornListForParent;
+        private int? _hoverSourceIndex;
         #endregion
 
         #region Properties
@@ -345,6 +345,19 @@ namespace MediaBase.Controls
                                         new PropertyMetadata(InputSystemCursorShape.Hand,
                                             OnCursorShapeChanged));
 
+        public InputSystemCursorShape SecondaryCursorShape
+        {
+            get => (InputSystemCursorShape)GetValue(SecondaryCursorShapeProperty);
+            set => SetValue(SecondaryCursorShapeProperty, value);
+        }
+
+        public static readonly DependencyProperty SecondaryCursorShapeProperty =
+            DependencyProperty.Register("SecondaryCursorShape",
+                                        typeof(InputSystemCursorShape),
+                                        typeof(MediaEditor),
+                                        new PropertyMetadata(InputSystemCursorShape.UpArrow,
+                                            OnCursorShapeChanged));
+
         public InputSystemCursorShape HoverCursorShape
         {
             get => (InputSystemCursorShape)GetValue(HoverCursorShapeProperty);
@@ -398,11 +411,9 @@ namespace MediaBase.Controls
 
             // Initialize cursors
             _primaryCursor = InputSystemCursor.Create(PrimaryCursorShape);
+            _secondaryCursor = InputSystemCursor.Create(SecondaryCursorShape);
             _hoverCursor = InputSystemCursor.Create(HoverCursorShape);
             _dragCursor = InputSystemCursor.Create(DragCursorShape);
-
-            // Misc
-            //_groupAdornListForParent = new List<bool>();
 
             // Initialize commands
             InitializeCommands();
@@ -537,6 +548,12 @@ namespace MediaBase.Controls
                 if (!editor._isPointerCapturedForFrame && !editor._destRect.Contains(editor._prevLeftMousePosition))
                     editor.ProtectedCursor = editor._primaryCursor;
             }
+            else if (e.Property == SecondaryCursorShapeProperty)
+            {
+                editor._secondaryCursor = InputSystemCursor.Create((InputSystemCursorShape)e.NewValue);
+                if (!editor._isPointerCapturedForFrame && !editor._destRect.Contains(editor._prevLeftMousePosition))
+                    editor.ProtectedCursor = editor._secondaryCursor;
+            }
             else if (e.Property == DragCursorShapeProperty)
             {
                 editor._dragCursor = InputSystemCursor.Create((InputSystemCursorShape)e.NewValue);
@@ -667,9 +684,9 @@ namespace MediaBase.Controls
             {
                 decimal previewPosition = _scrubType switch
                 {
-                    ValueDragType.Position     => Timeline.Position,
+                    ValueDragType.Position => Timeline.Position,
                     ValueDragType.SelectionEnd => Timeline.SelectionEnd,
-                    _                          => Timeline.SelectionStart
+                    _ => Timeline.SelectionStart
                 };
 
                 sender.Position = TimeSpan.FromSeconds(decimal.ToDouble(previewPosition));
@@ -846,10 +863,61 @@ namespace MediaBase.Controls
 
                 ds.FillGeometry(timeRemainTextGeometry, -15, 15, TextOverlayColor);
                 ds.DrawGeometry(timeRemainTextGeometry, -15, 15, TextOverlayOutlineColor, (float)TextOverlayOutlineThickness);
+
+                if (Source.Markers.Count > 0)
+                {
+                    var lastMarkerPos = Source.Markers[^1].Position;
+                    var timeToLastMarker = decimal.ToDouble(lastMarkerPos) - CurrentPosition.TotalSeconds;
+                    if (lastMarkerPos != Source.Duration && timeToLastMarker >= 0.0)
+                    {
+                        using var timeToLastMarkerTextFormat = new CanvasTextFormat
+                        {
+                            FontFamily = FontFamily.Source,
+                            FontSize = (float)FontSize,
+                            FontStretch = FontStretch,
+                            FontStyle = FontStyle,
+                            FontWeight = FontWeight,
+                            HorizontalAlignment = CanvasHorizontalAlignment.Right,
+                            VerticalAlignment = CanvasVerticalAlignment.Bottom
+                        };
+
+                        var timeToLastMarkerStr = timeToLastMarker.ToTimecodeString(RefreshRate, TimeDisplayMode);
+
+                        using var timeToLastMarkerTextLayout = new CanvasTextLayout(ds, timeToLastMarkerStr, timeToLastMarkerTextFormat,
+                            (float)SwapChainCanvas.ActualWidth, (float)SwapChainCanvas.ActualHeight);
+                        using var timeToLastMarkerTextGeometry = CanvasGeometry.CreateText(timeToLastMarkerTextLayout);
+
+                        ds.FillGeometry(timeToLastMarkerTextGeometry, -15, -15, timeToLastMarker <= 10.0 ? Colors.HotPink : TextOverlayColor);
+                        ds.DrawGeometry(timeToLastMarkerTextGeometry, -15, -15, TextOverlayOutlineColor, (float)TextOverlayOutlineThickness);
+                    }
+
+                    var currentMarker = Timeline.GetClosestMarkerBeforeCurrentPosition<Marker>();
+                    if (currentMarker != null)
+                    {
+                        using var markerNameTextFormat = new CanvasTextFormat
+                        {
+                            FontFamily = FontFamily.Source,
+                            FontSize = (float)FontSize,
+                            FontStretch = FontStretch,
+                            FontStyle = FontStyle,
+                            FontWeight = FontWeight,
+                            HorizontalAlignment = CanvasHorizontalAlignment.Left,
+                            VerticalAlignment = CanvasVerticalAlignment.Bottom
+                        };
+
+                        using var markerNameTextLayout = new CanvasTextLayout(ds, currentMarker.Name, markerNameTextFormat,
+                            (float)SwapChainCanvas.ActualWidth, (float)SwapChainCanvas.ActualHeight);
+                        using var markerNameTextGeometry = CanvasGeometry.CreateText(markerNameTextLayout);
+
+                        ds.FillGeometry(markerNameTextGeometry, 15, -15, TextOverlayColor);
+                        ds.DrawGeometry(markerNameTextGeometry, 15, -15, TextOverlayOutlineColor, (float)TextOverlayOutlineThickness);
+                    }
+                }
             }
 
+
             // Determine title text opacity (during title text fade)
-            if (DateTime.Now - _sourceChangedTimestamp <= TimeSpan.FromSeconds(TitleTextDisplayDuration))
+            if (DateTime.Now - _progressBarDisplayedTimestamp <= TimeSpan.FromSeconds(TitleTextDisplayDuration))
             {
                 _textFadeOpacity = 1.0;
                 _textFadeOpacityIncrement = 0;
@@ -864,21 +932,7 @@ namespace MediaBase.Controls
                 _textFadeOpacity -= _textFadeOpacityIncrement;
             }
 
-            // Manage grouping adornment memory
-            /*_groupAdornMemoryPrevParentHash = _groupAdornMemoryParentHash;
-            _groupAdornMemoryParentHash = (Source == null || Source.Parent == null) ? 0 : Source.Parent.GetHashCode();
-            if (_groupAdornMemoryParentHash != _groupAdornMemoryPrevParentHash)
-            {
-                _groupAdornListForParent.Clear();
-                for (var i = 0; i < _currentSourceParentTotal; i++)
-                {
-                    _groupAdornListForParent.Add(false);
-                }
-            }
-
-            _groupAdornListForParent[_currentSourceIndex - 1] = Source.GroupFlags != 0;*/
-
-            // Display title text (during title text display and fade-out)
+            // Display title bar (during title text display and fade-out)
             if (_textFadeOpacity > 0)
             {
                 using var titleTextFormat = new CanvasTextFormat
@@ -897,27 +951,56 @@ namespace MediaBase.Controls
                     (float)SwapChainCanvas.ActualWidth, (float)SwapChainCanvas.ActualHeight);
                 using var sourceNumberTextGeometry = CanvasGeometry.CreateText(sourceNumberTextLayout);
 
-                var progressBarRect = new Rect(15, 15, SwapChainCanvas.ActualWidth - 30, sourceNumberTextLayout.DrawBounds.Height * 2);
-                var sourceNumberTextRect = new Rect(progressBarRect.Left + (progressBarRect.Width / 2) - (sourceNumberTextLayout.DrawBounds.Width / 2.0),
-                                                    progressBarRect.Top + 5, sourceNumberTextLayout.DrawBounds.Width, sourceNumberTextLayout.DrawBounds.Height);
-                var progressThumbWidth = progressBarRect.Width / _currentSourceParentTotal;
-                var progressThumbRect = new Rect(progressBarRect.Left + ((_currentSourceIndex - 1) * progressThumbWidth),
-                    progressBarRect.Top, progressThumbWidth, progressBarRect.Height);
+                _progressBarRect = new Rect(15, 15, SwapChainCanvas.ActualWidth - 30.0, sourceNumberTextLayout.DrawBounds.Height * 1.5);
+                _progressThumbWidth = _progressBarRect.Width / _currentSourceParentTotal;
+                _markerBarRect = new Rect(_progressBarRect.X, _progressBarRect.Y, _progressBarRect.Width, 10.0);
 
-                ds.FillRectangle(progressBarRect, Color.FromArgb((byte)(_textFadeOpacity * 127), 184, 134, 11));
-                ds.FillRectangle(progressThumbRect, Color.FromArgb((byte)(_textFadeOpacity * 255), 218, 165, 32));
-                ds.DrawRectangle(progressBarRect, Color.FromArgb((byte)(_textFadeOpacity * 255), 184, 134, 11), 2.0f);
+                var progressBarFillRect = new Rect(_progressBarRect.X, _progressBarRect.Y + 10, _progressBarRect.Width, _progressBarRect.Height - 10);
+                var sourceNumberTextRect = new Rect(_progressBarRect.Left + (_progressBarRect.Width / 2.0) - (sourceNumberTextLayout.DrawBounds.Width / 2.0),
+                                                    _progressBarRect.Top + 5.0, sourceNumberTextLayout.DrawBounds.Width, sourceNumberTextLayout.DrawBounds.Height);
+                var progressThumbRect = new Rect(_progressBarRect.Left + ((_currentSourceIndex - 1) * _progressThumbWidth), _progressBarRect.Top,
+                                                 _progressThumbWidth, _progressBarRect.Height);
 
-                /*for (var i = 0; i < _groupAdornListForParent.Count; i++)
+                ds.FillRectangle(progressBarFillRect, Color.FromArgb((byte)(_textFadeOpacity * 127), 184, 134, 11));
+                ds.DrawRectangle(_markerBarRect, Color.FromArgb((byte)(_textFadeOpacity * 255), 184, 134, 11), 2.0f);
+                ds.DrawRectangle(_progressBarRect, Color.FromArgb((byte)(_textFadeOpacity * 255), 184, 134, 11), 2.0f);
+
+                var index = 0;
+                var showHoverRect = false;
+                var progressBarGeometryList = new List<CanvasGeometry>();
+                var progressBarFilledGeometryList = new List<CanvasGeometry>();
+                foreach (var group in ViewModel.GetActiveMediaSourceSiblingGroupInfo())
                 {
-                    if (_groupAdornListForParent[i])
-                    {
-                        var progressGroupMarkRect = new Rect(progressBarRect.Left + (progressThumbWidth * i),
-                            progressThumbRect.Bottom - 5,
-                            progressThumbRect.Width, 5);
-                        ds.FillRectangle(progressGroupMarkRect, Color.FromArgb((byte)(_textFadeOpacity * 255), 255, 255, 255));
-                    }
-                }*/
+                    var dividerCoord = _markerBarRect.Left + (_progressThumbWidth * index);
+                    var rectGeometry = CanvasGeometry.CreateRectangle(ds,
+                        (float)dividerCoord, (float)_markerBarRect.Top,
+                        (float)progressThumbRect.Width, (float)_markerBarRect.Height);
+
+                    if (index == _hoverSourceIndex && index != _currentSourceIndex)
+                        showHoverRect = true;
+
+                    if (group > 0)
+                        progressBarFilledGeometryList.Add(rectGeometry);
+                    else
+                        progressBarGeometryList.Add(rectGeometry);
+
+                    index++;
+                }
+
+                using var progressBarFilledGeometry = CanvasGeometry.CreateGroup(ds, progressBarFilledGeometryList.ToArray());
+                ds.FillGeometry(progressBarFilledGeometry, Color.FromArgb((byte)(_textFadeOpacity * 255), 51, 153, 255));
+                ds.DrawGeometry(progressBarFilledGeometry, Color.FromArgb((byte)(_textFadeOpacity * 255), 218, 165, 32));
+
+                using var progressBarGeometry = CanvasGeometry.CreateGroup(ds, progressBarGeometryList.ToArray());
+                ds.DrawGeometry(progressBarGeometry, Color.FromArgb((byte)(_textFadeOpacity * 255), 218, 165, 32));
+
+                ds.FillRectangle(progressThumbRect, Color.FromArgb((byte)(_textFadeOpacity * 255), 255, 255, 255));
+                if (showHoverRect)
+                {
+                    ds.FillRectangle((float)(_progressBarRect.Left + (_progressThumbWidth * _hoverSourceIndex)), (float)_progressBarRect.Top,
+                                     (float)progressThumbRect.Width, (float)_progressBarRect.Height,
+                                     Color.FromArgb(128, 255, 255, 255));
+                }
 
                 ds.FillGeometry(sourceNumberTextGeometry, (float)sourceNumberTextRect.X, (float)sourceNumberTextRect.Y,
                     Color.FromArgb((byte)(_textFadeOpacity * 255),
@@ -1107,7 +1190,19 @@ namespace MediaBase.Controls
         {
             var point = e.GetCurrentPoint(RenderAreaBorder);
 
-            if (_destRect.Contains(point.Position) && IsPanAndZoomEnabled)
+            if (_hoverSourceIndex != null)
+            {
+                if (ViewModel.ActiveMediaSource == ViewModel.ActiveWorkspaceBrowserNode)
+                {
+                    ViewModel.ActiveMediaSource = (MultimediaSource)ViewModel.ActiveMediaSource.Parent.Children[(int)_hoverSourceIndex];
+                }
+                else if (ViewModel.IsActiveMediaSourceFromSystemBrowser)
+                {
+                    ViewModel.ActiveSystemBrowserNode = ViewModel.ActiveSystemBrowserNode.Parent.Children[(int)_hoverSourceIndex];
+                    ViewModel.ActiveMediaSource = (MultimediaSource)ViewModel.ActiveSystemBrowserNode.Content;
+                }
+            }
+            else if (_destRect.Contains(point.Position) && IsPanAndZoomEnabled)
             {
                 var isCtrlPressed = App.TestKeyStates(Windows.System.VirtualKey.Control, CoreVirtualKeyStates.Down);
 
@@ -1135,9 +1230,11 @@ namespace MediaBase.Controls
             if (point.Properties.PointerUpdateKind == PointerUpdateKind.LeftButtonReleased)
             {
                 RenderAreaBorder.ReleasePointerCapture(e.Pointer);
-                ProtectedCursor = _destRect.Contains(point.Position) && IsPanAndZoomEnabled
-                    ? _hoverCursor
-                    : _primaryCursor;
+                ProtectedCursor = _progressBarRect.Contains(point.Position)
+                    ? _secondaryCursor
+                    : _destRect.Contains(point.Position) && IsPanAndZoomEnabled
+                        ? _hoverCursor
+                        : _primaryCursor;
             }
 
             _prevLeftMousePosition = point.Position;
@@ -1158,10 +1255,23 @@ namespace MediaBase.Controls
         {
             var point = e.GetCurrentPoint(RenderAreaBorder);
             var isPointerOverFrame = _destRect.Contains(point.Position);
+            var isPointerOverProgressBar = _progressBarRect.Contains(point.Position);
 
-            if (isPointerOverFrame && IsPanAndZoomEnabled && ProtectedCursor != _hoverCursor)
+            if (_progressBarRect.Contains(point.Position))
+            {
+                _progressBarDisplayedTimestamp = DateTime.Now;
+                _hoverSourceIndex = (int)((point.Position.X - _progressBarRect.Left) / _progressThumbWidth);
+            }
+            else
+            {
+                _hoverSourceIndex = null;
+            }
+
+            if (isPointerOverProgressBar && !_isPointerCapturedForFrame && ProtectedCursor != _secondaryCursor)
+                ProtectedCursor = _secondaryCursor;
+            else if (isPointerOverFrame && !isPointerOverProgressBar && IsPanAndZoomEnabled && ProtectedCursor != _hoverCursor)
                 ProtectedCursor = _hoverCursor;
-            else if ((!isPointerOverFrame || !IsPanAndZoomEnabled) && ProtectedCursor != _primaryCursor)
+            else if ((!isPointerOverFrame || !IsPanAndZoomEnabled) && !isPointerOverProgressBar && ProtectedCursor != _primaryCursor)
                 ProtectedCursor = _primaryCursor;
 
             if (IsPanAndZoomEnabled && point.Properties.IsLeftButtonPressed && _isPointerCapturedForFrame)
@@ -1261,7 +1371,7 @@ namespace MediaBase.Controls
             args.CanExecute = IsPlaybackPossible && Source.ContentType == MediaContentType.Video;
         }
 
-        private void EditorAddTrackCommmand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        private void EditorAddTrackCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
             args.CanExecute = IsPlaybackPossible && Source.ContentType == MediaContentType.Video;
         }
@@ -1394,7 +1504,7 @@ namespace MediaBase.Controls
             Timeline.SelectionEnd = Timeline.ZoomEnd - ((Timeline.ZoomEnd - Timeline.ZoomStart) / 3);
         }
 
-        private async void EditorAddTrackCommmand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        private async void EditorAddTrackCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
             var dlg = new TextPromptDialog
             {
@@ -1693,8 +1803,6 @@ namespace MediaBase.Controls
                 return;
             }
 
-            IsPanAndZoomEnabled = true;
-
             if (!Source.IsReady)
                 await Source.MakeReady();
 
@@ -1704,6 +1812,7 @@ namespace MediaBase.Controls
 
             if (Source is ViewModel.ImageSource image)
             {
+                IsPanAndZoomEnabled = true;
                 TimeDisplayMode = TimeDisplayFormat.FrameNumber;
                 _frameBitmap = await CanvasBitmap.LoadAsync(SwapChainCanvas.SwapChain.Device,
                     await (image.Source as ImageFile).File.OpenReadAsync());
@@ -1730,12 +1839,13 @@ namespace MediaBase.Controls
             }
             else if (Source is VideoSource video)
             {
+                IsPanAndZoomEnabled = false;
                 TimeDisplayMode = TimeDisplayFormat.TimecodeWithFrame;
                 Timeline.Duration = TimeSpan.FromSeconds(decimal.ToDouble(video.Duration));
                 Timeline.Position = 0;
 
                 _player.Source = await video.BuildMediaSourceAsync();
-                
+
                 if (!IsHoldCurrentPanAndZoom)
                     FrameScale = decimal.ToDouble(CalculateFrameScaleToFit(Source.WidthInPixels, Source.HeightInPixels));
 
@@ -1754,7 +1864,9 @@ namespace MediaBase.Controls
                 Timeline.Markers.Add(marker);
             }
 
-            _sourceChangedTimestamp = DateTime.Now;
+            _progressBarRect = Rect.Empty;
+            _markerBarRect = Rect.Empty;
+            _progressBarDisplayedTimestamp = DateTime.Now;
         }
 
         private void SeekToMarker(ITimelineMarker marker)
@@ -2270,7 +2382,7 @@ namespace MediaBase.Controls
             ViewModel.EditorPreviousMarkerCommand.NotifyCanExecuteChanged();
             ViewModel.EditorNextMarkerCommand.NotifyCanExecuteChanged();
             ViewModel.EditorToggleActiveSelectionCommand.NotifyCanExecuteChanged();
-            ViewModel.EditorAddTrackCommmand.NotifyCanExecuteChanged();
+            ViewModel.EditorAddTrackCommand.NotifyCanExecuteChanged();
             ViewModel.EditorNewMarkerCommand.NotifyCanExecuteChanged();
             ViewModel.EditorNewKeyframeCommand.NotifyCanExecuteChanged();
             ViewModel.EditorCutSelectedCommand.NotifyCanExecuteChanged();
@@ -2325,10 +2437,10 @@ namespace MediaBase.Controls
             ViewModel.EditorToggleActiveSelectionCommand.ExecuteRequested +=
                 EditorToggleActiveSelectionCommand_ExecuteRequested;
 
-            ViewModel.EditorAddTrackCommmand.CanExecuteRequested +=
-                EditorAddTrackCommmand_CanExecuteRequested;
-            ViewModel.EditorAddTrackCommmand.ExecuteRequested +=
-                EditorAddTrackCommmand_ExecuteRequested;
+            ViewModel.EditorAddTrackCommand.CanExecuteRequested +=
+                EditorAddTrackCommand_CanExecuteRequested;
+            ViewModel.EditorAddTrackCommand.ExecuteRequested +=
+                EditorAddTrackCommand_ExecuteRequested;
 
             ViewModel.EditorNewMarkerCommand.CanExecuteRequested +=
                 EditorNewMarkerCommand_CanExecuteRequested;
