@@ -611,17 +611,16 @@ namespace MediaBase.ViewModel
             }
         }
 
-        public IEnumerable<int> GetActiveMediaSourceSiblingGroupInfo()
+        public IEnumerable<MultimediaSource> GetActiveMediaSourceSiblings()
         {
             if (IsActiveMediaSourceFromSystemBrowser)
             {
                 return from x in ActiveSystemBrowserNode.Parent.Children
                        where x.Content is MultimediaSource
-                       select x.Content as MultimediaSource into source
-                       select source.GroupFlags;
+                       select x.Content as MultimediaSource;
             }
 
-            return ActiveMediaSource.Parent?.Children.OfType<MultimediaSource>().Select(x => x.GroupFlags);
+            return ActiveMediaSource.Parent?.Children.OfType<MultimediaSource>();
         }
 
         public (int index, int total) GetActiveMediaSourceIndexAndParentTotal()
@@ -629,11 +628,11 @@ namespace MediaBase.ViewModel
             if (IsActiveMediaSourceFromSystemBrowser)
             {
                 var systemBrowserMediaList = ActiveSystemBrowserNode.Parent.Children.Where(x => x.Content is MultimediaSource).ToList();
-                return (systemBrowserMediaList.IndexOf(ActiveSystemBrowserNode) + 1, systemBrowserMediaList.Count);
+                return (systemBrowserMediaList.IndexOf(ActiveSystemBrowserNode), systemBrowserMediaList.Count);
             }
 
             var workspaceBrowserMediaList = ActiveMediaSource.Parent.Children.OfType<MultimediaSource>().ToList();
-            return (workspaceBrowserMediaList.IndexOf(ActiveMediaSource) + 1, workspaceBrowserMediaList.Count);
+            return (workspaceBrowserMediaList.IndexOf(ActiveMediaSource), workspaceBrowserMediaList.Count);
         }
 
         public bool PlaylistMoveFirst()

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -32,11 +33,15 @@ using Windows.Media.Playback;
 using Windows.UI;
 using Windows.UI.Core;
 
+using static System.Net.Mime.MediaTypeNames;
+
 namespace MediaBase.Controls
 {
     public sealed partial class MediaEditor : UserControl
     {
         #region Constants
+        private const int ImageCacheSize = 250;
+
         // Playback Rate (Animated Image)
         private const double AnimatedImage_MinimumPlaybackRate = 0.25;
         private const double AnimatedImage_MaximumPlaybackRate = 4.0;
@@ -60,6 +65,8 @@ namespace MediaBase.Controls
         private readonly DispatcherQueueTimer _redrawTimer;
         private SoftwareBitmap _frameSizingBitmap;
         private CanvasBitmap _frameBitmap;
+        private List<CanvasBitmap> _imageCache;
+        private List<ViewModel.ImageSource> _activeNodeImageList;
         private InputCursor _primaryCursor, _secondaryCursor, _hoverCursor, _dragCursor;
         private bool _isPointerCapturedForFrame;
         private Rect _sourceRect, _destRect, _fullDestRect;
@@ -70,7 +77,8 @@ namespace MediaBase.Controls
         private ValueDragType _scrubType;
         private DateTime _progressBarDisplayedTimestamp;
         private double _textFadeOpacity, _textFadeOpacityIncrement, _progressThumbWidth;
-        private int _currentSourceIndex, _currentSourceParentTotal;
+        private int _prevSourceIndex, _currentSourceIndex, _currentSourceSiblingCount, _imageCacheStartIndex;
+        private int _imageSeekDirection;
         private int? _hoverSourceIndex;
         #endregion
 
@@ -414,6 +422,10 @@ namespace MediaBase.Controls
             _secondaryCursor = InputSystemCursor.Create(SecondaryCursorShape);
             _hoverCursor = InputSystemCursor.Create(HoverCursorShape);
             _dragCursor = InputSystemCursor.Create(DragCursorShape);
+
+            // Misc
+            _imageCache = new List<CanvasBitmap>(ImageCacheSize);
+            _activeNodeImageList = new List<ViewModel.ImageSource>();
 
             // Initialize commands
             InitializeCommands();
@@ -921,7 +933,6 @@ namespace MediaBase.Controls
             {
                 _textFadeOpacity = 1.0;
                 _textFadeOpacityIncrement = 0;
-                (_currentSourceIndex, _currentSourceParentTotal) = ViewModel.GetActiveMediaSourceIndexAndParentTotal();
             }
             else if (_textFadeOpacity == 1.0 && _textFadeOpacityIncrement == 0)
             {
@@ -947,18 +958,18 @@ namespace MediaBase.Controls
 
                 // Current source number out of total in folder
                 using var sourceNumberTextLayout = new CanvasTextLayout(ds,
-                    $"{_currentSourceIndex}/{_currentSourceParentTotal}", titleTextFormat,
+                    $"{_currentSourceIndex + 1}/{_currentSourceSiblingCount}", titleTextFormat,
                     (float)SwapChainCanvas.ActualWidth, (float)SwapChainCanvas.ActualHeight);
                 using var sourceNumberTextGeometry = CanvasGeometry.CreateText(sourceNumberTextLayout);
 
                 _progressBarRect = new Rect(15, 15, SwapChainCanvas.ActualWidth - 30.0, sourceNumberTextLayout.DrawBounds.Height * 1.5);
-                _progressThumbWidth = _progressBarRect.Width / _currentSourceParentTotal;
+                _progressThumbWidth = _progressBarRect.Width / _currentSourceSiblingCount;
                 _markerBarRect = new Rect(_progressBarRect.X, _progressBarRect.Y, _progressBarRect.Width, 10.0);
 
                 var progressBarFillRect = new Rect(_progressBarRect.X, _progressBarRect.Y + 10, _progressBarRect.Width, _progressBarRect.Height - 10);
                 var sourceNumberTextRect = new Rect(_progressBarRect.Left + (_progressBarRect.Width / 2.0) - (sourceNumberTextLayout.DrawBounds.Width / 2.0),
                                                     _progressBarRect.Top + 5.0, sourceNumberTextLayout.DrawBounds.Width, sourceNumberTextLayout.DrawBounds.Height);
-                var progressThumbRect = new Rect(_progressBarRect.Left + ((_currentSourceIndex - 1) * _progressThumbWidth), _progressBarRect.Top,
+                var progressThumbRect = new Rect(_progressBarRect.Left + (_currentSourceIndex * _progressThumbWidth), _progressBarRect.Top,
                                                  _progressThumbWidth, _progressBarRect.Height);
 
                 ds.FillRectangle(progressBarFillRect, Color.FromArgb((byte)(_textFadeOpacity * 127), 184, 134, 11));
@@ -969,7 +980,7 @@ namespace MediaBase.Controls
                 var showHoverRect = false;
                 var progressBarGeometryList = new List<CanvasGeometry>();
                 var progressBarFilledGeometryList = new List<CanvasGeometry>();
-                foreach (var group in ViewModel.GetActiveMediaSourceSiblingGroupInfo())
+                foreach (var group in ViewModel.GetActiveMediaSourceSiblings().Select(x => x.GroupFlags))
                 {
                     var dividerCoord = _markerBarRect.Left + (_progressThumbWidth * index);
                     var rectGeometry = CanvasGeometry.CreateRectangle(ds,
@@ -1764,7 +1775,7 @@ namespace MediaBase.Controls
             // De-select all markers
             ViewModel.SelectedMarker = null;
 
-            if (_player.Source is IDisposable oldSource && oldSource != null)
+            /*if (_player.Source is IDisposable oldSource && oldSource != null)
             {
                 oldSource.Dispose();
                 _player.Source = null;
@@ -1780,7 +1791,7 @@ namespace MediaBase.Controls
             {
                 _frameSizingBitmap.Dispose();
                 _frameSizingBitmap = null;
-            }
+            }*/
 
             // Reset frame position and scale
             if (!IsHoldCurrentPanAndZoom)
@@ -1796,12 +1807,21 @@ namespace MediaBase.Controls
 
         private async Task PrepareEditorForSource()
         {
+            Debug.WriteLine("\nPREPARE SOURCE");
             if (Source == null)
             {
                 RefreshRate = App.RefreshRate;
                 TimeDisplayMode = TimeDisplayFormat.None;
+                _currentSourceIndex = 0;
+                _currentSourceSiblingCount = 0;
+                PurgeImageCache();
+                Debug.WriteLine("Source = NULL");
                 return;
             }
+
+            _prevSourceIndex = _currentSourceIndex;
+            (_currentSourceIndex, _currentSourceSiblingCount) = ViewModel.GetActiveMediaSourceIndexAndParentTotal();
+            Debug.WriteLine($"Item {_currentSourceIndex} out of {_currentSourceSiblingCount}");
 
             if (!Source.IsReady)
                 await Source.MakeReady();
@@ -1814,28 +1834,79 @@ namespace MediaBase.Controls
             {
                 IsPanAndZoomEnabled = true;
                 TimeDisplayMode = TimeDisplayFormat.FrameNumber;
-                _frameBitmap = await CanvasBitmap.LoadAsync(SwapChainCanvas.SwapChain.Device,
-                    await (image.Source as ImageFile).File.OpenReadAsync());
-                if (!IsHoldCurrentPanAndZoom)
-                    FrameScale = decimal.ToDouble(CalculateFrameScaleToFit(Source.WidthInPixels, Source.HeightInPixels));
-                ApplyFrameScaleAndPosition();
 
-                // Configure timeline (if image is animated) and pause on first frame
-                if (image.IsAnimated)
+                if (_activeNodeImageList.Count == 0)
                 {
-                    Timeline.Duration = TimeSpan.FromSeconds(decimal.ToDouble(image.Duration));
-                    Timeline.Position = 0;
-                    Timeline.IsSelectionEnabled = false;
-                    Timeline.IsPositionAdjustmentEnabled = true;
-                    Timeline.IsSelectionAdjustmentEnabled = false;
-                    Timeline.IsZoomAdjustmentEnabled = true;
-                    Timeline.ZoomOutFull();
-                    PlaybackState = MediaPlaybackState.Paused;
+                    Debug.WriteLine("Building image list...");
+                    _imageSeekDirection = 0;
+                    _imageCacheStartIndex = _currentSourceIndex;
+                    _activeNodeImageList.AddRange(ViewModel.GetActiveMediaSourceSiblings().OfType<ViewModel.ImageSource>());
+                }
+                else if (_currentSourceIndex > _prevSourceIndex)
+                    _imageSeekDirection = 1;
+                else if (_currentSourceIndex < _prevSourceIndex)
+                    _imageSeekDirection = -1;
+                else
+                    _imageSeekDirection = 0;
+                Debug.WriteLine($"Image seek direction = {_imageSeekDirection}");
+
+                // Rebuild cache if needed
+                if (_currentSourceIndex < _imageCacheStartIndex ||
+                    _currentSourceIndex >= _imageCacheStartIndex + ImageCacheSize ||
+                    _imageSeekDirection == 0)
+                {
+                    PurgeImageCache();
+                    if (_imageSeekDirection == -1)
+                        _imageCacheStartIndex = Math.Max(_currentSourceIndex - (ImageCacheSize - 1), 0);
+                    else if (_currentSourceIndex + ImageCacheSize >= _currentSourceSiblingCount - 1)
+                        _imageCacheStartIndex = _currentSourceSiblingCount - ImageCacheSize;
+                    else
+                        _imageCacheStartIndex = _currentSourceIndex;
+                    Debug.WriteLine($"Rebuilding image cache at index {_imageCacheStartIndex}");
+
+                    for (var x = 0; x < ImageCacheSize; x++)
+                    {
+                        var imageStream = await (_activeNodeImageList[_imageCacheStartIndex + x].Source as ImageFile).File.OpenReadAsync();
+                        var canvasBitmap = await CanvasBitmap.LoadAsync(SwapChainCanvas.SwapChain.Device, imageStream);
+                        _imageCache.Add(canvasBitmap);
+                        Debug.WriteLine($"Added {_activeNodeImageList[_imageCacheStartIndex + x].Source.Name} to image cache at index {_imageCacheStartIndex + x}");
+
+                        if (x == 0)
+                            FinishLoadingImage();
+                    }
                 }
                 else
                 {
-                    _redrawTimer.Start();
+                    FinishLoadingImage();
                 }
+
+                // Local function that finishes loading the image to be displayed
+                void FinishLoadingImage()
+                {
+                    Debug.WriteLine($"Loading frame from cache index {_currentSourceIndex - _imageCacheStartIndex}");
+                    _frameBitmap = _imageCache[_currentSourceIndex - _imageCacheStartIndex];
+                    if (!IsHoldCurrentPanAndZoom)
+                        FrameScale = decimal.ToDouble(CalculateFrameScaleToFit(Source.WidthInPixels, Source.HeightInPixels));
+                    ApplyFrameScaleAndPosition();
+
+                    // Configure timeline (if image is animated) and pause on first frame
+                    if ((Source as ViewModel.ImageSource).IsAnimated)
+                    {
+                        Timeline.Duration = TimeSpan.FromSeconds(decimal.ToDouble(Source.Duration));
+                        Timeline.Position = 0;
+                        Timeline.IsSelectionEnabled = false;
+                        Timeline.IsPositionAdjustmentEnabled = true;
+                        Timeline.IsSelectionAdjustmentEnabled = false;
+                        Timeline.IsZoomAdjustmentEnabled = true;
+                        Timeline.ZoomOutFull();
+                        PlaybackState = MediaPlaybackState.Paused;
+                    }
+                    else
+                    {
+                        _redrawTimer.Start();
+                    }
+                }
+
             }
             else if (Source is VideoSource video)
             {
@@ -2320,6 +2391,27 @@ namespace MediaBase.Controls
                     m.Reply(group.Key);
                 }
             });
+
+            // ViewModel.ActiveSystemBrowserNode changed
+            messenger.Register<PropertyChangedMessage<TreeViewNode>>(this, (r, m) =>
+            {
+                if (m.Sender != ViewModel ||
+                    m.PropertyName != nameof(ViewModel.ActiveSystemBrowserNode))
+                    return;
+
+                if (m.NewValue == null || m.NewValue?.Parent != m.OldValue?.Parent)
+                {
+                    PurgeImageCache();
+                    _activeNodeImageList.Clear();
+                }
+            });
+        }
+
+        private void PurgeImageCache()
+        {
+            foreach (var item in _imageCache)
+                item.Dispose();
+            _imageCache.Clear();
         }
 
         private void RefreshUI()
