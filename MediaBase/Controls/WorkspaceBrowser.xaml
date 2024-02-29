@@ -98,6 +98,15 @@
                                                           Converter={StaticResource BoolToVisibilityConverter},
                                                           ConverterParameter=True,
                                                           Mode=OneWay}"/>
+
+                            <!-- Image Cache Indicator -->
+                            <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center"
+                                      Glyph="&#xE783;"
+                                      Foreground="{StaticResource LightSkyBlueBrush}"
+                                      Visibility="{x:Bind ((viewmodel:ImageFile)Source).IsCached,
+                                                          Converter={StaticResource BoolToVisibilityConverter},
+                                                          ConverterParameter=False,
+                                                          Mode=OneWay}"/>
                         </StackPanel>
 
                         <!-- Image Icon -->

@@ -97,14 +97,25 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <FontIcon Grid.Column="0" Margin="-24,0,0,0"
-                          HorizontalAlignment="Center" VerticalAlignment="Center"
-                          Glyph="&#xE783;"
-                          Foreground="{StaticResource RedBrush}"
-                          Visibility="{x:Bind ((viewmodel:MultimediaSource)Content).IsReady,
-                                              Converter={StaticResource BoolToVisibilityConverter},
-                                              ConverterParameter=True,
-                                              Mode=OneWay}"/>
+                <StackPanel Grid.Column="0"
+                            Margin="-24,0,0,0"
+                            Orientation="Horizontal">
+                    <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center"
+                              Glyph="&#xE783;"
+                              Foreground="{StaticResource RedBrush}"
+                              Visibility="{x:Bind ((viewmodel:MultimediaSource)Content).IsReady,
+                                                  Converter={StaticResource BoolToVisibilityConverter},
+                                                  ConverterParameter=True,
+                                                  Mode=OneWay}"/>
+
+                    <FontIcon HorizontalAlignment="Center" VerticalAlignment="Center"
+                              Glyph="&#xE964;"
+                              Foreground="{StaticResource LightSkyBlueBrush}"
+                              Visibility="{x:Bind ((viewmodel:ImageFile)((viewmodel:ImageSource)Content).Source).IsCached,
+                                                  Converter={StaticResource BoolToVisibilityConverter},
+                                                  ConverterParameter=False,
+                                                  Mode=OneWay}"/>
+                </StackPanel>
 
                 <FontIcon Grid.Column="1"
                           Margin="0,0,6,0"

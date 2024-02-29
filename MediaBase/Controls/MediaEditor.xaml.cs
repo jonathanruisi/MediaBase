@@ -10,6 +10,7 @@ using JLR.Utility.WinUI;
 using JLR.Utility.WinUI.Controls;
 using JLR.Utility.WinUI.Dialogs;
 using JLR.Utility.WinUI.Messaging;
+using JLR.Utility.WinUI.ViewModel;
 
 using MediaBase.Dialogs;
 using MediaBase.ViewModel;
@@ -37,6 +38,9 @@ namespace MediaBase.Controls
     public sealed partial class MediaEditor : UserControl
     {
         #region Constants
+        private const int ImageCacheSize = 300;
+        private const int ImageCacheThreshold = 25;
+
         // Playback Rate (Animated Image)
         private const double AnimatedImage_MinimumPlaybackRate = 0.25;
         private const double AnimatedImage_MaximumPlaybackRate = 4.0;
@@ -70,8 +74,10 @@ namespace MediaBase.Controls
         private ValueDragType _scrubType;
         private DateTime _progressBarDisplayedTimestamp;
         private double _textFadeOpacity, _textFadeOpacityIncrement, _progressThumbWidth;
-        private int _currentSourceIndex, _currentSourceParentTotal;
         private int? _hoverSourceIndex;
+        private List<MultimediaSource> _activeMediaSourceSiblings;
+        private Queue<ViewModel.ImageSource> _cachedImageQueue;
+
         #endregion
 
         #region Properties
@@ -414,6 +420,10 @@ namespace MediaBase.Controls
             _secondaryCursor = InputSystemCursor.Create(SecondaryCursorShape);
             _hoverCursor = InputSystemCursor.Create(HoverCursorShape);
             _dragCursor = InputSystemCursor.Create(DragCursorShape);
+
+            // Misc
+            _cachedImageQueue = new Queue<ViewModel.ImageSource>();
+            _activeMediaSourceSiblings = new List<MultimediaSource>();
 
             // Initialize commands
             InitializeCommands();
@@ -921,7 +931,6 @@ namespace MediaBase.Controls
             {
                 _textFadeOpacity = 1.0;
                 _textFadeOpacityIncrement = 0;
-                (_currentSourceIndex, _currentSourceParentTotal) = ViewModel.GetActiveMediaSourceIndexAndParentTotal();
             }
             else if (_textFadeOpacity == 1.0 && _textFadeOpacityIncrement == 0)
             {
@@ -946,19 +955,20 @@ namespace MediaBase.Controls
                 };
 
                 // Current source number out of total in folder
+                var currentIndex = _activeMediaSourceSiblings.IndexOf(Source);
                 using var sourceNumberTextLayout = new CanvasTextLayout(ds,
-                    $"{_currentSourceIndex}/{_currentSourceParentTotal}", titleTextFormat,
+                    $"{currentIndex + 1}/{_activeMediaSourceSiblings.Count}", titleTextFormat,
                     (float)SwapChainCanvas.ActualWidth, (float)SwapChainCanvas.ActualHeight);
                 using var sourceNumberTextGeometry = CanvasGeometry.CreateText(sourceNumberTextLayout);
 
                 _progressBarRect = new Rect(15, 15, SwapChainCanvas.ActualWidth - 30.0, sourceNumberTextLayout.DrawBounds.Height * 1.5);
-                _progressThumbWidth = _progressBarRect.Width / _currentSourceParentTotal;
+                _progressThumbWidth = _progressBarRect.Width / _activeMediaSourceSiblings.Count;
                 _markerBarRect = new Rect(_progressBarRect.X, _progressBarRect.Y, _progressBarRect.Width, 10.0);
 
                 var progressBarFillRect = new Rect(_progressBarRect.X, _progressBarRect.Y + 10, _progressBarRect.Width, _progressBarRect.Height - 10);
                 var sourceNumberTextRect = new Rect(_progressBarRect.Left + (_progressBarRect.Width / 2.0) - (sourceNumberTextLayout.DrawBounds.Width / 2.0),
                                                     _progressBarRect.Top + 5.0, sourceNumberTextLayout.DrawBounds.Width, sourceNumberTextLayout.DrawBounds.Height);
-                var progressThumbRect = new Rect(_progressBarRect.Left + ((_currentSourceIndex - 1) * _progressThumbWidth), _progressBarRect.Top,
+                var progressThumbRect = new Rect(_progressBarRect.Left + (currentIndex* _progressThumbWidth), _progressBarRect.Top,
                                                  _progressThumbWidth, _progressBarRect.Height);
 
                 ds.FillRectangle(progressBarFillRect, Color.FromArgb((byte)(_textFadeOpacity * 127), 184, 134, 11));
@@ -969,14 +979,14 @@ namespace MediaBase.Controls
                 var showHoverRect = false;
                 var progressBarGeometryList = new List<CanvasGeometry>();
                 var progressBarFilledGeometryList = new List<CanvasGeometry>();
-                foreach (var group in ViewModel.GetActiveMediaSourceSiblingGroupInfo())
+                foreach (var group in ViewModel.GetActiveMediaSourceSiblings().Select(x => x.GroupFlags))
                 {
                     var dividerCoord = _markerBarRect.Left + (_progressThumbWidth * index);
                     var rectGeometry = CanvasGeometry.CreateRectangle(ds,
                         (float)dividerCoord, (float)_markerBarRect.Top,
                         (float)progressThumbRect.Width, (float)_markerBarRect.Height);
 
-                    if (index == _hoverSourceIndex && index != _currentSourceIndex)
+                    if (index == _hoverSourceIndex && index != currentIndex)
                         showHoverRect = true;
 
                     if (group > 0)
@@ -1770,11 +1780,12 @@ namespace MediaBase.Controls
                 _player.Source = null;
             }
 
-            if (_frameBitmap != null)
+            /*if (_frameBitmap != null)
             {
                 _frameBitmap.Dispose();
                 _frameBitmap = null;
-            }
+            }*/
+            _frameBitmap = null;
 
             if (_frameSizingBitmap != null)
             {
@@ -1800,7 +1811,13 @@ namespace MediaBase.Controls
             {
                 RefreshRate = App.RefreshRate;
                 TimeDisplayMode = TimeDisplayFormat.None;
+                ClearImageCache();
                 return;
+            }
+
+            if (_activeMediaSourceSiblings.Count == 0)
+            {
+                _activeMediaSourceSiblings.AddRange(ViewModel.GetActiveMediaSourceSiblings());
             }
 
             if (!Source.IsReady)
@@ -1814,8 +1831,17 @@ namespace MediaBase.Controls
             {
                 IsPanAndZoomEnabled = true;
                 TimeDisplayMode = TimeDisplayFormat.FrameNumber;
-                _frameBitmap = await CanvasBitmap.LoadAsync(SwapChainCanvas.SwapChain.Device,
-                    await (image.Source as ImageFile).File.OpenReadAsync());
+
+                var imageFile = image.Source as ImageFile;
+                if (!imageFile.IsCached)
+                {
+                    if (_cachedImageQueue.Count >= ImageCacheSize - ImageCacheThreshold)
+                        ClearImageCache();
+                    await imageFile.Cache(SwapChainCanvas.SwapChain.Device);
+                    _cachedImageQueue.Enqueue(image);
+                }
+                _frameBitmap = imageFile.Bitmap;
+
                 if (!IsHoldCurrentPanAndZoom)
                     FrameScale = decimal.ToDouble(CalculateFrameScaleToFit(Source.WidthInPixels, Source.HeightInPixels));
                 ApplyFrameScaleAndPosition();
@@ -1867,6 +1893,16 @@ namespace MediaBase.Controls
             _progressBarRect = Rect.Empty;
             _markerBarRect = Rect.Empty;
             _progressBarDisplayedTimestamp = DateTime.Now;
+        }
+
+        private void ClearImageCache(bool purge = false)
+        {
+            while (_cachedImageQueue.TryDequeue(out ViewModel.ImageSource image) &&
+                   !purge && _cachedImageQueue.Count >= ImageCacheSize - ImageCacheThreshold)
+            {
+                var imageFile = image.Source as ImageFile;
+                imageFile.FreeCache();
+            }
         }
 
         private void SeekToMarker(ITimelineMarker marker)
@@ -2318,6 +2354,20 @@ namespace MediaBase.Controls
                 foreach (var group in ((MediaEditor)r).Timeline.MarkerStyleGroups)
                 {
                     m.Reply(group.Key);
+                }
+            });
+
+            // ViewModel.ActiveSystemBrowserNode changed
+            messenger.Register<PropertyChangedMessage<TreeViewNode>>(this, (r, m) =>
+            {
+                if (m.Sender != ViewModel ||
+                    m.PropertyName != nameof(ViewModel.ActiveSystemBrowserNode))
+                    return;
+
+                if (m.NewValue == null || m.NewValue?.Parent != m.OldValue?.Parent)
+                {
+                    _activeMediaSourceSiblings.Clear();
+                    ClearImageCache(true);
                 }
             });
         }
