@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 using CommunityToolkit.Mvvm.Messaging;
@@ -40,7 +41,7 @@ namespace MediaBase.Controls
     public sealed partial class MediaEditor : UserControl
     {
         #region Constants
-        private const int ImageCacheSize = 250;
+        private const int ImageCacheSize = 64;
 
         // Playback Rate (Animated Image)
         private const double AnimatedImage_MinimumPlaybackRate = 0.25;
@@ -65,8 +66,6 @@ namespace MediaBase.Controls
         private readonly DispatcherQueueTimer _redrawTimer;
         private SoftwareBitmap _frameSizingBitmap;
         private CanvasBitmap _frameBitmap;
-        private List<CanvasBitmap> _imageCache;
-        private List<ViewModel.ImageSource> _activeNodeImageList;
         private InputCursor _primaryCursor, _secondaryCursor, _hoverCursor, _dragCursor;
         private bool _isPointerCapturedForFrame;
         private Rect _sourceRect, _destRect, _fullDestRect;
@@ -77,9 +76,13 @@ namespace MediaBase.Controls
         private ValueDragType _scrubType;
         private DateTime _progressBarDisplayedTimestamp;
         private double _textFadeOpacity, _textFadeOpacityIncrement, _progressThumbWidth;
-        private int _prevSourceIndex, _currentSourceIndex, _currentSourceSiblingCount, _imageCacheStartIndex;
-        private int _imageSeekDirection;
+        private int _prevSourceIndex, _currentSourceIndex, _currentSourceSiblingCount;
+        private int _imageSeekDirection, _imageCacheStartIndex, _imageCacheEndIndex;
         private int? _hoverSourceIndex;
+        private CanvasBitmap[] _imageCache;
+        private List<ViewModel.ImageSource> _activeNodeImageList;
+        private Task _imageCacheTask;
+        private CancellationTokenSource _cancellationTokenSource;
         #endregion
 
         #region Properties
@@ -424,8 +427,9 @@ namespace MediaBase.Controls
             _dragCursor = InputSystemCursor.Create(DragCursorShape);
 
             // Misc
-            _imageCache = new List<CanvasBitmap>(ImageCacheSize);
+            _imageCache = new CanvasBitmap[ImageCacheSize];
             _activeNodeImageList = new List<ViewModel.ImageSource>();
+            _cancellationTokenSource = new CancellationTokenSource();
 
             // Initialize commands
             InitializeCommands();
@@ -1855,58 +1859,34 @@ namespace MediaBase.Controls
                     _currentSourceIndex >= _imageCacheStartIndex + ImageCacheSize ||
                     _imageSeekDirection == 0)
                 {
+                    if (_imageCacheTask != null && _imageCacheTask.Status == TaskStatus.Running)
+                    {
+                        _cancellationTokenSource.Cancel();
+                        _imageCacheTask.Wait();
+                    }
+
                     PurgeImageCache();
                     if (_imageSeekDirection == -1)
-                        _imageCacheStartIndex = Math.Max(_currentSourceIndex - (ImageCacheSize - 1), 0);
-                    else if (_currentSourceIndex + ImageCacheSize >= _currentSourceSiblingCount - 1)
-                        _imageCacheStartIndex = _currentSourceSiblingCount - ImageCacheSize;
-                    else
-                        _imageCacheStartIndex = _currentSourceIndex;
-                    Debug.WriteLine($"Rebuilding image cache at index {_imageCacheStartIndex}");
-
-                    for (var x = 0; x < ImageCacheSize; x++)
                     {
-                        var imageStream = await (_activeNodeImageList[_imageCacheStartIndex + x].Source as ImageFile).File.OpenReadAsync();
-                        var canvasBitmap = await CanvasBitmap.LoadAsync(SwapChainCanvas.SwapChain.Device, imageStream);
-                        _imageCache.Add(canvasBitmap);
-                        Debug.WriteLine($"Added {_activeNodeImageList[_imageCacheStartIndex + x].Source.Name} to image cache at index {_imageCacheStartIndex + x}");
-
-                        if (x == 0)
-                            FinishLoadingImage();
+                        _imageCacheStartIndex = Math.Max(0, _currentSourceIndex - (ImageCacheSize - 1));
+                        _imageCacheEndIndex = Math.Min(_imageCacheStartIndex + (ImageCacheSize - 1), _currentSourceSiblingCount - 1);
                     }
+                    else
+                    {
+                        _imageCacheEndIndex = Math.Min(_currentSourceIndex + (ImageCacheSize - 1), _currentSourceSiblingCount - 1);
+                        _imageCacheStartIndex = Math.Max(_imageCacheEndIndex - (ImageCacheSize - 1), 0);
+                    }
+
+                    Debug.WriteLine($"Rebuilding image cache at index {_imageCacheStartIndex}");
+                    _imageCacheTask = FillImageCache(new Progress<int>(FillImageCacheProgressCallback),
+                                      _cancellationTokenSource.Token);
+                    await _imageCacheTask;
+                    Debug.WriteLine("Cache build complete");
                 }
                 else
                 {
-                    FinishLoadingImage();
+                    FinishLoadingImage(_currentSourceIndex - _imageCacheStartIndex);
                 }
-
-                // Local function that finishes loading the image to be displayed
-                void FinishLoadingImage()
-                {
-                    Debug.WriteLine($"Loading frame from cache index {_currentSourceIndex - _imageCacheStartIndex}");
-                    _frameBitmap = _imageCache[_currentSourceIndex - _imageCacheStartIndex];
-                    if (!IsHoldCurrentPanAndZoom)
-                        FrameScale = decimal.ToDouble(CalculateFrameScaleToFit(Source.WidthInPixels, Source.HeightInPixels));
-                    ApplyFrameScaleAndPosition();
-
-                    // Configure timeline (if image is animated) and pause on first frame
-                    if ((Source as ViewModel.ImageSource).IsAnimated)
-                    {
-                        Timeline.Duration = TimeSpan.FromSeconds(decimal.ToDouble(Source.Duration));
-                        Timeline.Position = 0;
-                        Timeline.IsSelectionEnabled = false;
-                        Timeline.IsPositionAdjustmentEnabled = true;
-                        Timeline.IsSelectionAdjustmentEnabled = false;
-                        Timeline.IsZoomAdjustmentEnabled = true;
-                        Timeline.ZoomOutFull();
-                        PlaybackState = MediaPlaybackState.Paused;
-                    }
-                    else
-                    {
-                        _redrawTimer.Start();
-                    }
-                }
-
             }
             else if (Source is VideoSource video)
             {
@@ -1938,6 +1918,57 @@ namespace MediaBase.Controls
             _progressBarRect = Rect.Empty;
             _markerBarRect = Rect.Empty;
             _progressBarDisplayedTimestamp = DateTime.Now;
+        }
+
+        private async Task FillImageCache(IProgress<int> progress, CancellationToken cancel)
+        {
+            for (var x = 0; x <= _imageCacheEndIndex - _imageCacheStartIndex; x++)
+            {
+                var imageStream = await (_activeNodeImageList[_imageCacheStartIndex + x].Source as ImageFile).File.OpenReadAsync();
+                _imageCache[x] = await CanvasBitmap.LoadAsync(SwapChainCanvas.SwapChain.Device, imageStream);
+                progress.Report(x);
+                Debug.WriteLine($"Added {_activeNodeImageList[_imageCacheStartIndex + x].Source.Name} to image cache at index {x}");
+
+                if (cancel.IsCancellationRequested)
+                {
+                    Debug.WriteLine("Image cache fill CANCELLED");
+                    break;
+                }
+            }
+        }
+
+        private void FillImageCacheProgressCallback(int lastIndexFilled)
+        {
+            Debug.WriteLine($"Image index {lastIndexFilled} filled");
+            if (_currentSourceIndex - _imageCacheStartIndex == lastIndexFilled)
+                FinishLoadingImage(lastIndexFilled);
+        }
+
+        // Loads the specified cached image into the frame buffer
+        private void FinishLoadingImage(int index)
+        {
+            Debug.WriteLine($"Loading frame from cache index {index}");
+            _frameBitmap = _imageCache[index];
+            if (!IsHoldCurrentPanAndZoom)
+                FrameScale = decimal.ToDouble(CalculateFrameScaleToFit(Source.WidthInPixels, Source.HeightInPixels));
+            ApplyFrameScaleAndPosition();
+
+            // Configure timeline (if image is animated) and pause on first frame
+            if ((Source as ViewModel.ImageSource).IsAnimated)
+            {
+                Timeline.Duration = TimeSpan.FromSeconds(decimal.ToDouble(Source.Duration));
+                Timeline.Position = 0;
+                Timeline.IsSelectionEnabled = false;
+                Timeline.IsPositionAdjustmentEnabled = true;
+                Timeline.IsSelectionAdjustmentEnabled = false;
+                Timeline.IsZoomAdjustmentEnabled = true;
+                Timeline.ZoomOutFull();
+                PlaybackState = MediaPlaybackState.Paused;
+            }
+            else
+            {
+                _redrawTimer.Start();
+            }
         }
 
         private void SeekToMarker(ITimelineMarker marker)
@@ -2409,9 +2440,13 @@ namespace MediaBase.Controls
 
         private void PurgeImageCache()
         {
-            foreach (var item in _imageCache)
-                item.Dispose();
-            _imageCache.Clear();
+            for (var x = 0; x < ImageCacheSize; x++)
+            {
+                if (_imageCache[x] is null)
+                    continue;
+                _imageCache[x].Dispose();
+                _imageCache[x] = null;
+            }
         }
 
         private void RefreshUI()
