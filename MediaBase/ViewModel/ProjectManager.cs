@@ -298,6 +298,7 @@ namespace MediaBase.ViewModel
         public XamlUICommand EditorCenterFrameCommand { get; private set; }
         public XamlUICommand EditorFrameZoomFitCommand { get; private set; }
         public XamlUICommand EditorFrameZoomFullCommand { get; private set; }
+        public XamlUICommand EditorFrameRotateCommand { get; private set; }
         public XamlUICommand EditorTimelineZoomOutCommand { get; private set; }
         public XamlUICommand EditorTimelineZoomInCommand { get; private set; }
         #endregion
@@ -1184,9 +1185,9 @@ namespace MediaBase.ViewModel
             {
                 if (parentProject.MediaFileDictionary.ContainsKey(sourceFile.Path))
                 {
-                    var mediaFile = (MediaFile)MediaItemDictionary[parentProject.MediaFileDictionary[sourceFile.Path]];
-                    if (mediaFile is null) throw new Exception(
-                        $"Database lookup error: Unable to find MediaFile associated with the file at {sourceFile.Path}");
+                    var mediaFile = (MediaFile)MediaItemDictionary[parentProject.MediaFileDictionary[sourceFile.Path]]
+                        ?? throw new Exception(
+                            $"Database lookup error: Unable to find MediaFile associated with the file at {sourceFile.Path}");
 
                     if (mediaFile.ContentType == MediaContentType.Image)
                     {
@@ -1399,7 +1400,7 @@ namespace MediaBase.ViewModel
                 return;
 
             ActiveMediaSource.ToggleGroupFlag(group);
-            if (App.TestKeyStates(VirtualKey.Control, CoreVirtualKeyStates.Down))
+            if (App.TestKeyStates(VirtualKey.Shift, CoreVirtualKeyStates.Down))
             {
                 if (ActiveMediaSource == ActiveWorkspaceBrowserNode)
                 {
@@ -2125,7 +2126,7 @@ namespace MediaBase.ViewModel
             ToolsToggleGroup1Command.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.Number1,
-                Modifiers = VirtualKeyModifiers.Control,
+                Modifiers = VirtualKeyModifiers.Shift,
                 IsEnabled = true
             });
 
@@ -2138,7 +2139,7 @@ namespace MediaBase.ViewModel
             ToolsToggleGroup1Command.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.NumberPad1,
-                Modifiers = VirtualKeyModifiers.Control,
+                Modifiers = VirtualKeyModifiers.Shift,
                 IsEnabled = true
             });
 
@@ -2164,7 +2165,7 @@ namespace MediaBase.ViewModel
             ToolsToggleGroup2Command.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.Number2,
-                Modifiers = VirtualKeyModifiers.Control,
+                Modifiers = VirtualKeyModifiers.Shift,
                 IsEnabled = true
             });
 
@@ -2177,7 +2178,7 @@ namespace MediaBase.ViewModel
             ToolsToggleGroup2Command.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.NumberPad2,
-                Modifiers = VirtualKeyModifiers.Control,
+                Modifiers = VirtualKeyModifiers.Shift,
                 IsEnabled = true
             });
 
@@ -2203,7 +2204,7 @@ namespace MediaBase.ViewModel
             ToolsToggleGroup3Command.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.Number3,
-                Modifiers = VirtualKeyModifiers.Control,
+                Modifiers = VirtualKeyModifiers.Shift,
                 IsEnabled = true
             });
 
@@ -2216,7 +2217,7 @@ namespace MediaBase.ViewModel
             ToolsToggleGroup3Command.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.NumberPad3,
-                Modifiers = VirtualKeyModifiers.Control,
+                Modifiers = VirtualKeyModifiers.Shift,
                 IsEnabled = true
             });
 
@@ -2242,7 +2243,7 @@ namespace MediaBase.ViewModel
             ToolsToggleGroup4Command.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.Number4,
-                Modifiers = VirtualKeyModifiers.Control,
+                Modifiers = VirtualKeyModifiers.Shift,
                 IsEnabled = true
             });
 
@@ -2255,7 +2256,7 @@ namespace MediaBase.ViewModel
             ToolsToggleGroup4Command.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.NumberPad4,
-                Modifiers = VirtualKeyModifiers.Control,
+                Modifiers = VirtualKeyModifiers.Shift,
                 IsEnabled = true
             });
 
@@ -2525,6 +2526,20 @@ namespace MediaBase.ViewModel
             {
                 Key = VirtualKey.Number1,
                 Modifiers = VirtualKeyModifiers.Control,
+                IsEnabled = true
+            });
+
+            // Editor: Rotate
+            EditorFrameRotateCommand = new XamlUICommand
+            {
+                Label = "Rotate CW 90°",
+                Description = "Rotate current frame 90° clockwise",
+                IconSource = new SymbolIconSource { Symbol = Symbol.Rotate }
+            };
+
+            EditorFrameRotateCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.T,
                 IsEnabled = true
             });
 
