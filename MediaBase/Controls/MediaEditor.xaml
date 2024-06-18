@@ -219,6 +219,13 @@
                                                        Converter={StaticResource GroupMaskToBooleanConverter},
                                                        ConverterParameter=1,
                                                        Mode=OneWay}"/>
+                <AppBarToggleButton x:Name="Group1SeriesToggleButton" Width="40"
+                    Command="{x:Bind ViewModel.ToolsToggleGroup1SeriesCommand}"
+                    CommandParameter="1"
+                    IsChecked="{x:Bind ViewModel.ActiveMediaSource.GroupFlags,
+                                       Converter={StaticResource GroupMaskToBooleanConverter},
+                                       ConverterParameter=1,
+                                       Mode=OneWay}"/>
                 <AppBarSeparator/>
                 <AppBarElementContainer x:Name="OpacitySlider" Width="100"
                                         HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
@@ -231,6 +238,8 @@
                 <AppBarToggleButton x:Name="HoldCurrentPanAndZoomToggleButton" Width="40"
                                     Command="{x:Bind ViewModel.EditorTogglePanAndZoomLockCommand}"
                                     IsChecked="{x:Bind IsHoldCurrentPanAndZoom, Mode=TwoWay}"/>
+                <AppBarButton x:Name="RotateFrameButton" Width="40"
+                              Command="{x:Bind ViewModel.EditorFrameRotateCommand}"/>
                 <AppBarButton x:Name="CenterFrameButton" Width="40"
                               Command="{x:Bind ViewModel.EditorCenterFrameCommand}"
                               Visibility="{x:Bind IsPanAndZoomEnabled,

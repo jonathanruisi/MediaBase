@@ -98,6 +98,7 @@ namespace MediaBase.ViewModel
                     ToolsToggleGroup2Command.NotifyCanExecuteChanged();
                     ToolsToggleGroup3Command.NotifyCanExecuteChanged();
                     ToolsToggleGroup4Command.NotifyCanExecuteChanged();
+                    ToolsToggleGroup1SeriesCommand.NotifyCanExecuteChanged();
                 }
             }
         }
@@ -118,6 +119,7 @@ namespace MediaBase.ViewModel
                     ToolsToggleGroup2Command.NotifyCanExecuteChanged();
                     ToolsToggleGroup3Command.NotifyCanExecuteChanged();
                     ToolsToggleGroup4Command.NotifyCanExecuteChanged();
+                    ToolsToggleGroup1SeriesCommand.NotifyCanExecuteChanged();
                 }
             }
         }
@@ -172,6 +174,7 @@ namespace MediaBase.ViewModel
                 ToolsToggleGroup2Command.NotifyCanExecuteChanged();
                 ToolsToggleGroup3Command.NotifyCanExecuteChanged();
                 ToolsToggleGroup4Command.NotifyCanExecuteChanged();
+                ToolsToggleGroup1SeriesCommand.NotifyCanExecuteChanged();
             }
         }
 
@@ -275,6 +278,7 @@ namespace MediaBase.ViewModel
         public XamlUICommand ToolsToggleGroup2Command { get; private set; }
         public XamlUICommand ToolsToggleGroup3Command { get; private set; }
         public XamlUICommand ToolsToggleGroup4Command { get; private set; }
+        public XamlUICommand ToolsToggleGroup1SeriesCommand { get; private set; }
         public XamlUICommand ToolsBatchActionCommand { get; private set; }
         public XamlUICommand ToolsAnimateImageCommand { get; private set; }
 
@@ -298,6 +302,7 @@ namespace MediaBase.ViewModel
         public XamlUICommand EditorCenterFrameCommand { get; private set; }
         public XamlUICommand EditorFrameZoomFitCommand { get; private set; }
         public XamlUICommand EditorFrameZoomFullCommand { get; private set; }
+        public XamlUICommand EditorFrameRotateCommand { get; private set; }
         public XamlUICommand EditorTimelineZoomOutCommand { get; private set; }
         public XamlUICommand EditorTimelineZoomInCommand { get; private set; }
         #endregion
@@ -611,17 +616,16 @@ namespace MediaBase.ViewModel
             }
         }
 
-        public IEnumerable<int> GetActiveMediaSourceSiblingGroupInfo()
+        public IEnumerable<MultimediaSource> GetActiveMediaSourceSiblings()
         {
             if (IsActiveMediaSourceFromSystemBrowser)
             {
                 return from x in ActiveSystemBrowserNode.Parent.Children
                        where x.Content is MultimediaSource
-                       select x.Content as MultimediaSource into source
-                       select source.GroupFlags;
+                       select x.Content as MultimediaSource;
             }
 
-            return ActiveMediaSource.Parent?.Children.OfType<MultimediaSource>().Select(x => x.GroupFlags);
+            return ActiveMediaSource.Parent?.Children.OfType<MultimediaSource>();
         }
 
         public (int index, int total) GetActiveMediaSourceIndexAndParentTotal()
@@ -629,11 +633,11 @@ namespace MediaBase.ViewModel
             if (IsActiveMediaSourceFromSystemBrowser)
             {
                 var systemBrowserMediaList = ActiveSystemBrowserNode.Parent.Children.Where(x => x.Content is MultimediaSource).ToList();
-                return (systemBrowserMediaList.IndexOf(ActiveSystemBrowserNode) + 1, systemBrowserMediaList.Count);
+                return (systemBrowserMediaList.IndexOf(ActiveSystemBrowserNode), systemBrowserMediaList.Count);
             }
 
             var workspaceBrowserMediaList = ActiveMediaSource.Parent.Children.OfType<MultimediaSource>().ToList();
-            return (workspaceBrowserMediaList.IndexOf(ActiveMediaSource) + 1, workspaceBrowserMediaList.Count);
+            return (workspaceBrowserMediaList.IndexOf(ActiveMediaSource), workspaceBrowserMediaList.Count);
         }
 
         public bool PlaylistMoveFirst()
@@ -880,6 +884,11 @@ namespace MediaBase.ViewModel
         }
 
         private void ToolsToggleGroupCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = ActiveMediaSource != null;
+        }
+
+        private void ToolsToggleGroup1SeriesCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
             args.CanExecute = ActiveMediaSource != null;
         }
@@ -1185,9 +1194,9 @@ namespace MediaBase.ViewModel
             {
                 if (parentProject.MediaFileDictionary.ContainsKey(sourceFile.Path))
                 {
-                    var mediaFile = (MediaFile)MediaItemDictionary[parentProject.MediaFileDictionary[sourceFile.Path]];
-                    if (mediaFile is null) throw new Exception(
-                        $"Database lookup error: Unable to find MediaFile associated with the file at {sourceFile.Path}");
+                    var mediaFile = (MediaFile)MediaItemDictionary[parentProject.MediaFileDictionary[sourceFile.Path]]
+                        ?? throw new Exception(
+                            $"Database lookup error: Unable to find MediaFile associated with the file at {sourceFile.Path}");
 
                     if (mediaFile.ContentType == MediaContentType.Image)
                     {
@@ -1420,6 +1429,30 @@ namespace MediaBase.ViewModel
                             prevMediaSource.ToggleGroupFlag(group);
                         else break;
                     }
+                }
+            }
+        }
+
+        private void ToolsToggleGroup1SeriesCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            ActiveMediaSource.ToggleGroupFlag(1);
+            if (ActiveMediaSource == ActiveWorkspaceBrowserNode)
+            {
+                for (var i = ActiveMediaSource.Parent.Children.IndexOf(ActiveMediaSource) - 1; i >= 0; i--)
+                {
+                    if (((MultimediaSource)ActiveMediaSource.Parent.Children[i]).CheckGroupFlag(1) != ActiveMediaSource.CheckGroupFlag(1))
+                        ((MultimediaSource)ActiveMediaSource.Parent.Children[i]).ToggleGroupFlag(1);
+                    else break;
+                }
+            }
+            else if (IsActiveMediaSourceFromSystemBrowser)
+            {
+                for (var i = ActiveSystemBrowserNode.Parent.Children.IndexOf(ActiveSystemBrowserNode) - 1; i >= 0; i--)
+                {
+                    if (ActiveSystemBrowserNode.Parent.Children[i].Content is MultimediaSource prevMediaSource &&
+                        prevMediaSource.CheckGroupFlag(1) != ActiveMediaSource.CheckGroupFlag(1))
+                        prevMediaSource.ToggleGroupFlag(1);
+                    else break;
                 }
             }
         }
@@ -2143,6 +2176,25 @@ namespace MediaBase.ViewModel
                 IsEnabled = true
             });
 
+            // Tools: Toggle Group 1 (Series)
+            ToolsToggleGroup1SeriesCommand = new XamlUICommand
+            {
+                Label = "Group 1 (Series)",
+                Description = "Toggle a series of item marks for Group 1",
+                IconSource = new FontIconSource
+                {
+                    Glyph = "S",
+                    Foreground = new SolidColorBrush(Colors.Firebrick),
+                    FontFamily = new FontFamily("Segoe UI")
+                }
+            };
+
+            ToolsToggleGroup1SeriesCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.NumberPad0,
+                IsEnabled = true
+            });
+
             // Tools: Toggle Group 2
             ToolsToggleGroup2Command = new XamlUICommand
             {
@@ -2529,6 +2581,20 @@ namespace MediaBase.ViewModel
                 IsEnabled = true
             });
 
+            // Editor: Rotate
+            EditorFrameRotateCommand = new XamlUICommand
+            {
+                Label = "Rotate CW 90°",
+                Description = "Rotate current frame 90° clockwise",
+                IconSource = new SymbolIconSource { Symbol = Symbol.Rotate }
+            };
+
+            EditorFrameRotateCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.T,
+                IsEnabled = true
+            });
+
             // Editor: Zoom Out Timeline
             EditorTimelineZoomOutCommand = new XamlUICommand
             {
@@ -2691,6 +2757,11 @@ namespace MediaBase.ViewModel
                 ToolsToggleGroupCommand_CanExecuteRequested;
             ToolsToggleGroup1Command.ExecuteRequested +=
                 ToolsToggleGroupCommand_ExecuteRequested;
+
+            ToolsToggleGroup1SeriesCommand.CanExecuteRequested +=
+                ToolsToggleGroup1SeriesCommand_CanExecuteRequested;
+            ToolsToggleGroup1SeriesCommand.ExecuteRequested +=
+                ToolsToggleGroup1SeriesCommand_ExecuteRequested;
 
             ToolsToggleGroup2Command.CanExecuteRequested +=
                 ToolsToggleGroupCommand_CanExecuteRequested;

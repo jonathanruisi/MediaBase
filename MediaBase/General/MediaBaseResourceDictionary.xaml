@@ -16,6 +16,7 @@
 
     <!-- Brushes -->
     <SolidColorBrush x:Key="RedBrush" Color="Red"/>
+    <SolidColorBrush x:Key="LightSkyBlueBrush" Color="LightSkyBlue"/>
     <SolidColorBrush x:Key="WhiteBrush" Color="White"/>
 
     <!-- Value Converters -->

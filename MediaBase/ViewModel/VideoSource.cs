@@ -195,11 +195,8 @@ namespace MediaBase.ViewModel
 
         public async Task<MediaSource> BuildMediaSourceAsync(MediaEncodingProfile profile = null)
         {
-            var composition = await BuildMediaCompositionAsync();
-
-            if (composition == null)
-                throw new Exception("Unable to build MediaSource: Composition failure");
-
+            var composition = await BuildMediaCompositionAsync()
+                ?? throw new Exception("Unable to build MediaSource: Composition failure");
             var encodingProfile = profile ?? composition.CreateDefaultEncodingProfile();
             var mediaStreamSource = composition.GenerateMediaStreamSource(encodingProfile);
             return MediaSource.CreateFromMediaStreamSource(mediaStreamSource);

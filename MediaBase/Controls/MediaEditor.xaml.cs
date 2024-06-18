@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
+using System.Reflection.Metadata;
 using System.Threading.Tasks;
 
 using CommunityToolkit.Mvvm.Messaging;
@@ -10,6 +12,7 @@ using JLR.Utility.WinUI;
 using JLR.Utility.WinUI.Controls;
 using JLR.Utility.WinUI.Dialogs;
 using JLR.Utility.WinUI.Messaging;
+using JLR.Utility.WinUI.ViewModel;
 
 using MediaBase.Dialogs;
 using MediaBase.ViewModel;
@@ -37,6 +40,9 @@ namespace MediaBase.Controls
     public sealed partial class MediaEditor : UserControl
     {
         #region Constants
+        private const int ImageCacheSize = 500;
+        private const int ImageCacheThreshold = 50;
+
         // Playback Rate (Animated Image)
         private const double AnimatedImage_MinimumPlaybackRate = 0.25;
         private const double AnimatedImage_MaximumPlaybackRate = 4.0;
@@ -70,8 +76,10 @@ namespace MediaBase.Controls
         private ValueDragType _scrubType;
         private DateTime _progressBarDisplayedTimestamp;
         private double _textFadeOpacity, _textFadeOpacityIncrement, _progressThumbWidth;
-        private int _currentSourceIndex, _currentSourceParentTotal;
         private int? _hoverSourceIndex;
+        private readonly List<MultimediaSource> _activeMediaSourceSiblings;
+        private readonly Queue<ViewModel.ImageSource> _cachedImageQueue;
+
         #endregion
 
         #region Properties
@@ -211,6 +219,18 @@ namespace MediaBase.Controls
                                         typeof(MediaEditor),
                                         new PropertyMetadata(0.0,
                                             OnFrameOffsetChanged));
+
+        public double FrameRotate
+        {
+            get => (double)GetValue(FrameRotateProperty);
+            set => SetValue(FrameRotateProperty, value);
+        }
+
+        public static readonly DependencyProperty FrameRotateProperty =
+            DependencyProperty.Register("FrameRotate",
+                                        typeof(double),
+                                        typeof(MediaEditor),
+                                        new PropertyMetadata(0.0));
 
         public double FrameOpacity
         {
@@ -415,6 +435,10 @@ namespace MediaBase.Controls
             _hoverCursor = InputSystemCursor.Create(HoverCursorShape);
             _dragCursor = InputSystemCursor.Create(DragCursorShape);
 
+            // Misc
+            _cachedImageQueue = new Queue<ViewModel.ImageSource>();
+            _activeMediaSourceSiblings = new List<MultimediaSource>();
+
             // Initialize commands
             InitializeCommands();
         }
@@ -576,7 +600,9 @@ namespace MediaBase.Controls
             SwapChainCanvas.SwapChain = new CanvasSwapChain(CanvasDevice.GetSharedDevice(),
                                                             (float)SwapChainCanvas.ActualWidth,
                                                             (float)SwapChainCanvas.ActualHeight,
-                                                            PInvoke.User32.GetDpiForWindow(App.WindowHandle));
+                                                            PInvoke.User32.GetDpiForWindow(App.WindowHandle)/*,
+                                                            Windows.Graphics.DirectX.DirectXPixelFormat.R10G10B10A2UIntNormalized,
+                                                            2, CanvasAlphaMode.Ignore*/);
 
             // Set default frame rate
             RefreshRate = App.RefreshRate;
@@ -728,6 +754,8 @@ namespace MediaBase.Controls
                 return;
 
             using var ds = SwapChainCanvas.SwapChain.CreateDrawingSession(Colors.Black);
+            ds.Transform = Matrix3x2.CreateRotation((float)(Math.PI * FrameRotate / 180.0),
+                                                    new Vector2((float)_fullDestRect.Width / 2.0f, (float)_fullDestRect.Height / 2.0f));
             var isAnimatedImagePlaying = Source.ContentType == MediaContentType.Image &&
                                          PlaybackState == MediaPlaybackState.Playing &&
                                          CurrentFrame < Source.TotalFrames;
@@ -915,13 +943,11 @@ namespace MediaBase.Controls
                 }
             }
 
-
             // Determine title text opacity (during title text fade)
             if (DateTime.Now - _progressBarDisplayedTimestamp <= TimeSpan.FromSeconds(TitleTextDisplayDuration))
             {
                 _textFadeOpacity = 1.0;
                 _textFadeOpacityIncrement = 0;
-                (_currentSourceIndex, _currentSourceParentTotal) = ViewModel.GetActiveMediaSourceIndexAndParentTotal();
             }
             else if (_textFadeOpacity == 1.0 && _textFadeOpacityIncrement == 0)
             {
@@ -946,19 +972,20 @@ namespace MediaBase.Controls
                 };
 
                 // Current source number out of total in folder
+                var currentIndex = _activeMediaSourceSiblings.IndexOf(Source);
                 using var sourceNumberTextLayout = new CanvasTextLayout(ds,
-                    $"{_currentSourceIndex}/{_currentSourceParentTotal}", titleTextFormat,
+                    $"{currentIndex + 1}/{_activeMediaSourceSiblings.Count}", titleTextFormat,
                     (float)SwapChainCanvas.ActualWidth, (float)SwapChainCanvas.ActualHeight);
                 using var sourceNumberTextGeometry = CanvasGeometry.CreateText(sourceNumberTextLayout);
 
                 _progressBarRect = new Rect(15, 15, SwapChainCanvas.ActualWidth - 30.0, sourceNumberTextLayout.DrawBounds.Height * 1.5);
-                _progressThumbWidth = _progressBarRect.Width / _currentSourceParentTotal;
+                _progressThumbWidth = _progressBarRect.Width / _activeMediaSourceSiblings.Count;
                 _markerBarRect = new Rect(_progressBarRect.X, _progressBarRect.Y, _progressBarRect.Width, 10.0);
 
                 var progressBarFillRect = new Rect(_progressBarRect.X, _progressBarRect.Y + 10, _progressBarRect.Width, _progressBarRect.Height - 10);
                 var sourceNumberTextRect = new Rect(_progressBarRect.Left + (_progressBarRect.Width / 2.0) - (sourceNumberTextLayout.DrawBounds.Width / 2.0),
                                                     _progressBarRect.Top + 5.0, sourceNumberTextLayout.DrawBounds.Width, sourceNumberTextLayout.DrawBounds.Height);
-                var progressThumbRect = new Rect(_progressBarRect.Left + ((_currentSourceIndex - 1) * _progressThumbWidth), _progressBarRect.Top,
+                var progressThumbRect = new Rect(_progressBarRect.Left + (currentIndex* _progressThumbWidth), _progressBarRect.Top,
                                                  _progressThumbWidth, _progressBarRect.Height);
 
                 ds.FillRectangle(progressBarFillRect, Color.FromArgb((byte)(_textFadeOpacity * 127), 184, 134, 11));
@@ -967,31 +994,40 @@ namespace MediaBase.Controls
 
                 var index = 0;
                 var showHoverRect = false;
-                var progressBarGeometryList = new List<CanvasGeometry>();
-                var progressBarFilledGeometryList = new List<CanvasGeometry>();
-                foreach (var group in ViewModel.GetActiveMediaSourceSiblingGroupInfo())
+                var progressBarGroupGeometryList = new List<CanvasGeometry>();
+                var progressBarGroupFilledGeometryList = new List<CanvasGeometry>();
+                var progressBarCacheGeometryList = new List<CanvasGeometry>();
+                foreach (var sibling in ViewModel.GetActiveMediaSourceSiblings())
                 {
                     var dividerCoord = _markerBarRect.Left + (_progressThumbWidth * index);
                     var rectGeometry = CanvasGeometry.CreateRectangle(ds,
                         (float)dividerCoord, (float)_markerBarRect.Top,
                         (float)progressThumbRect.Width, (float)_markerBarRect.Height);
 
-                    if (index == _hoverSourceIndex && index != _currentSourceIndex)
+                    if (index == _hoverSourceIndex && index != currentIndex)
                         showHoverRect = true;
 
-                    if (group > 0)
-                        progressBarFilledGeometryList.Add(rectGeometry);
+                    if (sibling.GroupFlags > 0)
+                        progressBarGroupFilledGeometryList.Add(rectGeometry);
                     else
-                        progressBarGeometryList.Add(rectGeometry);
+                        progressBarGroupGeometryList.Add(rectGeometry);
+
+                    if (sibling.Source is ImageFile imageFile && imageFile.IsCached)
+                        progressBarCacheGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
+                            (float)dividerCoord, (float)_progressBarRect.Bottom - 5.0f,
+                            (float)progressThumbRect.Width, 5.0f));
 
                     index++;
                 }
 
-                using var progressBarFilledGeometry = CanvasGeometry.CreateGroup(ds, progressBarFilledGeometryList.ToArray());
+                using var progressBarCacheGeometry = CanvasGeometry.CreateGroup(ds, progressBarCacheGeometryList.ToArray());
+                ds.FillGeometry(progressBarCacheGeometry, Color.FromArgb((byte)(_textFadeOpacity * 255), 100, 149, 237));
+
+                using var progressBarFilledGeometry = CanvasGeometry.CreateGroup(ds, progressBarGroupFilledGeometryList.ToArray());
                 ds.FillGeometry(progressBarFilledGeometry, Color.FromArgb((byte)(_textFadeOpacity * 255), 51, 153, 255));
                 ds.DrawGeometry(progressBarFilledGeometry, Color.FromArgb((byte)(_textFadeOpacity * 255), 218, 165, 32));
 
-                using var progressBarGeometry = CanvasGeometry.CreateGroup(ds, progressBarGeometryList.ToArray());
+                using var progressBarGeometry = CanvasGeometry.CreateGroup(ds, progressBarGroupGeometryList.ToArray());
                 ds.DrawGeometry(progressBarGeometry, Color.FromArgb((byte)(_textFadeOpacity * 255), 218, 165, 32));
 
                 ds.FillRectangle(progressThumbRect, Color.FromArgb((byte)(_textFadeOpacity * 255), 255, 255, 255));
@@ -1434,6 +1470,11 @@ namespace MediaBase.Controls
             args.CanExecute = IsLoaded && Source != null;
         }
 
+        private void EditorFrameRotateCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = IsLoaded && Source != null;
+        }
+
         private void EditorFrameZoomFullCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
             args.CanExecute = IsLoaded && Source != null;
@@ -1709,6 +1750,16 @@ namespace MediaBase.Controls
             FrameScale = 0;
         }
 
+        private void EditorFrameRotateCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            if (FrameRotate + 45.0 >= 360.0)
+            {
+                FrameRotate = FrameRotate + 45.0 - 360.0;
+            }
+            else
+                FrameRotate += 45.0;
+        }
+
         private void EditorTimelineZoomOutCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
             Timeline.VisibleDuration *= 2;
@@ -1756,6 +1807,7 @@ namespace MediaBase.Controls
             // Reset various properties
             if (PlaybackState != MediaPlaybackState.None)
                 PlaybackState = MediaPlaybackState.None;
+            FrameRotate = 0.0;
             CurrentFrame = 0;
             PlaybackRate = 1;
             TimeDisplayMode = TimeDisplayFormat.None;
@@ -1770,11 +1822,12 @@ namespace MediaBase.Controls
                 _player.Source = null;
             }
 
-            if (_frameBitmap != null)
+            /*if (_frameBitmap != null)
             {
                 _frameBitmap.Dispose();
                 _frameBitmap = null;
-            }
+            }*/
+            _frameBitmap = null;
 
             if (_frameSizingBitmap != null)
             {
@@ -1782,7 +1835,7 @@ namespace MediaBase.Controls
                 _frameSizingBitmap = null;
             }
 
-            // Reset frame position and scale
+            // Reset frame position, rotation, and scale
             if (!IsHoldCurrentPanAndZoom)
             {
                 FrameScale = 0;
@@ -1800,7 +1853,13 @@ namespace MediaBase.Controls
             {
                 RefreshRate = App.RefreshRate;
                 TimeDisplayMode = TimeDisplayFormat.None;
+                ClearImageCache();
                 return;
+            }
+
+            if (_activeMediaSourceSiblings.Count == 0)
+            {
+                _activeMediaSourceSiblings.AddRange(ViewModel.GetActiveMediaSourceSiblings());
             }
 
             if (!Source.IsReady)
@@ -1814,8 +1873,17 @@ namespace MediaBase.Controls
             {
                 IsPanAndZoomEnabled = true;
                 TimeDisplayMode = TimeDisplayFormat.FrameNumber;
-                _frameBitmap = await CanvasBitmap.LoadAsync(SwapChainCanvas.SwapChain.Device,
-                    await (image.Source as ImageFile).File.OpenReadAsync());
+
+                var imageFile = image.Source as ImageFile;
+                if (!imageFile.IsCached)
+                {
+                    if (_cachedImageQueue.Count >= ImageCacheSize - ImageCacheThreshold)
+                        ClearImageCache();
+                    await imageFile.Cache(SwapChainCanvas.SwapChain.Device);
+                    _cachedImageQueue.Enqueue(image);
+                }
+                _frameBitmap = imageFile.Bitmap;
+
                 if (!IsHoldCurrentPanAndZoom)
                     FrameScale = decimal.ToDouble(CalculateFrameScaleToFit(Source.WidthInPixels, Source.HeightInPixels));
                 ApplyFrameScaleAndPosition();
@@ -1867,6 +1935,18 @@ namespace MediaBase.Controls
             _progressBarRect = Rect.Empty;
             _markerBarRect = Rect.Empty;
             _progressBarDisplayedTimestamp = DateTime.Now;
+        }
+
+        private void ClearImageCache(bool purge = false)
+        {
+            while (_cachedImageQueue.TryDequeue(out ViewModel.ImageSource image))
+            {
+                var imageFile = image.Source as ImageFile;
+                imageFile.FreeCache();
+
+                if (!purge && _cachedImageQueue.Count == ImageCacheSize - ImageCacheThreshold)
+                    break;
+            }
         }
 
         private void SeekToMarker(ITimelineMarker marker)
@@ -2127,8 +2207,8 @@ namespace MediaBase.Controls
 
         private decimal CalculateFrameScaleToFit(uint widthInPixels, uint heightInPixels)
         {
-            var destWidth = SwapChainCanvas.SwapChain.SizeInPixels.Width;
-            var destHeight = SwapChainCanvas.SwapChain.SizeInPixels.Height;
+            var destWidth = SwapChainCanvas.SwapChain.Size.Width;
+            var destHeight = SwapChainCanvas.SwapChain.Size.Height;
             var scaleW = 10 * (decimal)Math.Log((double)destWidth / widthInPixels) / (decimal)Math.Log(2.0);
             var scaleH = 10 * (decimal)Math.Log((double)destHeight / heightInPixels) / (decimal)Math.Log(2.0);
             return Math.Min(scaleW, scaleH);
@@ -2139,8 +2219,8 @@ namespace MediaBase.Controls
         {
             var sourceWidth = _frameBitmap.SizeInPixels.Width;
             var sourceHeight = _frameBitmap.SizeInPixels.Height;
-            var destWidth = SwapChainCanvas.SwapChain.SizeInPixels.Width;
-            var destHeight = SwapChainCanvas.SwapChain.SizeInPixels.Height;
+            var destWidth = SwapChainCanvas.SwapChain.Size.Width;
+            var destHeight = SwapChainCanvas.SwapChain.Size.Height;
 
             // Scale frame and define its rectangle related to the visible screen area
             _scaleFactor = Math.Pow(2, 0.1 * FrameScale);
@@ -2320,6 +2400,20 @@ namespace MediaBase.Controls
                     m.Reply(group.Key);
                 }
             });
+
+            // ViewModel.ActiveSystemBrowserNode changed
+            messenger.Register<PropertyChangedMessage<TreeViewNode>>(this, (r, m) =>
+            {
+                if (m.Sender != ViewModel ||
+                    m.PropertyName != nameof(ViewModel.ActiveSystemBrowserNode))
+                    return;
+
+                if (m.NewValue == null || m.NewValue?.Parent != m.OldValue?.Parent)
+                {
+                    _activeMediaSourceSiblings.Clear();
+                    ClearImageCache(true);
+                }
+            });
         }
 
         private void RefreshUI()
@@ -2393,6 +2487,7 @@ namespace MediaBase.Controls
             ViewModel.EditorCenterFrameCommand.NotifyCanExecuteChanged();
             ViewModel.EditorFrameZoomFitCommand.NotifyCanExecuteChanged();
             ViewModel.EditorFrameZoomFullCommand.NotifyCanExecuteChanged();
+            ViewModel.EditorFrameRotateCommand.NotifyCanExecuteChanged();
             ViewModel.EditorTimelineZoomOutCommand.NotifyCanExecuteChanged();
             ViewModel.EditorTimelineZoomInCommand.NotifyCanExecuteChanged();
         }
@@ -2489,6 +2584,11 @@ namespace MediaBase.Controls
                 EditorFrameZoomFullCommand_CanExecuteRequested;
             ViewModel.EditorFrameZoomFullCommand.ExecuteRequested +=
                 EditorFrameZoomFullCommand_ExecuteRequested;
+
+            ViewModel.EditorFrameRotateCommand.CanExecuteRequested +=
+                EditorFrameRotateCommand_CanExecuteRequested;
+            ViewModel.EditorFrameRotateCommand.ExecuteRequested +=
+                EditorFrameRotateCommand_ExecuteRequested;
 
             ViewModel.EditorTimelineZoomOutCommand.CanExecuteRequested +=
                 EditorTimelineZoomOutCommand_CanExecuteRequested;

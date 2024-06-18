@@ -31,6 +31,8 @@ namespace MediaBase.Dialogs
         #region Properties
         public ProjectManager ViewModel => (ProjectManager)DataContext;
 
+        public static StorageFolder PreviousFolder { get; private set; }
+
         public bool ActOnGroup1
         {
             get => (bool)GetValue(ActOnGroup1Property);
@@ -157,6 +159,7 @@ namespace MediaBase.Dialogs
         {
             InitializeComponent();
             DataContext = App.Current.Services.GetService<ProjectManager>();
+            TargetFolder = PreviousFolder;
         }
         #endregion
 
@@ -194,7 +197,10 @@ namespace MediaBase.Dialogs
 
             var folder = await picker.PickSingleFolderAsync();
             if (folder != null)
+            {
                 TargetFolder = folder;
+                PreviousFolder = folder;
+            }
         }
         #endregion
     }
