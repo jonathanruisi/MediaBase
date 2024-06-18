@@ -219,6 +219,13 @@
                                                        Converter={StaticResource GroupMaskToBooleanConverter},
                                                        ConverterParameter=1,
                                                        Mode=OneWay}"/>
+                <AppBarToggleButton x:Name="Group1SeriesToggleButton" Width="40"
+                    Command="{x:Bind ViewModel.ToolsToggleGroup1SeriesCommand}"
+                    CommandParameter="1"
+                    IsChecked="{x:Bind ViewModel.ActiveMediaSource.GroupFlags,
+                                       Converter={StaticResource GroupMaskToBooleanConverter},
+                                       ConverterParameter=1,
+                                       Mode=OneWay}"/>
                 <AppBarSeparator/>
                 <AppBarElementContainer x:Name="OpacitySlider" Width="100"
                                         HorizontalAlignment="Stretch" VerticalAlignment="Stretch"

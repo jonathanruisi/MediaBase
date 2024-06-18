@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
+using System.Reflection.Metadata;
 using System.Threading.Tasks;
 
 using CommunityToolkit.Mvvm.Messaging;
@@ -218,17 +220,17 @@ namespace MediaBase.Controls
                                         new PropertyMetadata(0.0,
                                             OnFrameOffsetChanged));
 
-        public CanvasSwapChainRotation FrameRotate
+        public double FrameRotate
         {
-            get => (CanvasSwapChainRotation)GetValue(FrameRotateProperty);
+            get => (double)GetValue(FrameRotateProperty);
             set => SetValue(FrameRotateProperty, value);
         }
 
         public static readonly DependencyProperty FrameRotateProperty =
             DependencyProperty.Register("FrameRotate",
-                                        typeof(CanvasSwapChainRotation),
+                                        typeof(double),
                                         typeof(MediaEditor),
-                                        new PropertyMetadata(CanvasSwapChainRotation.None));
+                                        new PropertyMetadata(0.0));
 
         public double FrameOpacity
         {
@@ -520,8 +522,6 @@ namespace MediaBase.Controls
                 ((decimal)e.OldValue).CompareTo((decimal)e.NewValue) == 0)
                 return;
 
-            editor.SwapChainCanvas.SwapChain.Rotation = editor.FrameRotate;
-
             // Frame change was not due to the user interacting with the timeline,
             // therefore the timeline needs to be synchronized to the frame count.
             if (editor._scrubType == ValueDragType.None)
@@ -754,6 +754,8 @@ namespace MediaBase.Controls
                 return;
 
             using var ds = SwapChainCanvas.SwapChain.CreateDrawingSession(Colors.Black);
+            ds.Transform = Matrix3x2.CreateRotation((float)(Math.PI * FrameRotate / 180.0),
+                                                    new Vector2((float)_fullDestRect.Width / 2.0f, (float)_fullDestRect.Height / 2.0f));
             var isAnimatedImagePlaying = Source.ContentType == MediaContentType.Image &&
                                          PlaybackState == MediaPlaybackState.Playing &&
                                          CurrentFrame < Source.TotalFrames;
@@ -1750,10 +1752,12 @@ namespace MediaBase.Controls
 
         private void EditorFrameRotateCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            if (FrameRotate != CanvasSwapChainRotation.Rotate270)
-                FrameRotate += 1;
+            if (FrameRotate + 45.0 >= 360.0)
+            {
+                FrameRotate = FrameRotate + 45.0 - 360.0;
+            }
             else
-                FrameRotate = CanvasSwapChainRotation.None;
+                FrameRotate += 45.0;
         }
 
         private void EditorTimelineZoomOutCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
@@ -1803,7 +1807,7 @@ namespace MediaBase.Controls
             // Reset various properties
             if (PlaybackState != MediaPlaybackState.None)
                 PlaybackState = MediaPlaybackState.None;
-            FrameRotate = CanvasSwapChainRotation.None;
+            FrameRotate = 0.0;
             CurrentFrame = 0;
             PlaybackRate = 1;
             TimeDisplayMode = TimeDisplayFormat.None;
