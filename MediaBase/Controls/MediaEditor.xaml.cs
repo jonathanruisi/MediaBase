@@ -42,6 +42,7 @@ namespace MediaBase.Controls
         #region Constants
         private const int ImageCacheSize = 500;
         private const int ImageCacheThreshold = 50;
+        private const int HistogramBinCount = 256;
 
         // Playback Rate (Animated Image)
         private const double AnimatedImage_MinimumPlaybackRate = 0.25;
@@ -985,7 +986,7 @@ namespace MediaBase.Controls
                 var progressBarFillRect = new Rect(_progressBarRect.X, _progressBarRect.Y + 10, _progressBarRect.Width, _progressBarRect.Height - 10);
                 var sourceNumberTextRect = new Rect(_progressBarRect.Left + (_progressBarRect.Width / 2.0) - (sourceNumberTextLayout.DrawBounds.Width / 2.0),
                                                     _progressBarRect.Top + 5.0, sourceNumberTextLayout.DrawBounds.Width, sourceNumberTextLayout.DrawBounds.Height);
-                var progressThumbRect = new Rect(_progressBarRect.Left + (currentIndex* _progressThumbWidth), _progressBarRect.Top,
+                var progressThumbRect = new Rect(_progressBarRect.Left + (currentIndex * _progressThumbWidth), _progressBarRect.Top,
                                                  _progressThumbWidth, _progressBarRect.Height);
 
                 ds.FillRectangle(progressBarFillRect, Color.FromArgb((byte)(_textFadeOpacity * 127), 184, 134, 11));
@@ -1060,6 +1061,141 @@ namespace MediaBase.Controls
                     TextOverlayOutlineColor.R, TextOverlayOutlineColor.G, TextOverlayOutlineColor.B),
                     (float)TextOverlayOutlineThickness);
             }
+
+            // Display histogram
+            var rGeometryList = new List<CanvasGeometry>();
+            var gGeometryList = new List<CanvasGeometry>();
+            var bGeometryList = new List<CanvasGeometry>();
+            var rgGeometryList = new List<CanvasGeometry>();
+            var rbGeometryList = new List<CanvasGeometry>();
+            var gbGeometryList = new List<CanvasGeometry>();
+            var rgbGeometryList = new List<CanvasGeometry>();
+
+            var histRect = new Rect(15, 75, 256, 128);
+            var dX = histRect.Width / HistogramBinCount;
+
+            var histR = CanvasImage.ComputeHistogram(_frameBitmap, _sourceRect, ds,
+                Microsoft.Graphics.Canvas.Effects.EffectChannelSelect.Red, HistogramBinCount);
+            var histG = CanvasImage.ComputeHistogram(_frameBitmap, _sourceRect, ds,
+                Microsoft.Graphics.Canvas.Effects.EffectChannelSelect.Green, HistogramBinCount);
+            var histB = CanvasImage.ComputeHistogram(_frameBitmap, _sourceRect, ds,
+                Microsoft.Graphics.Canvas.Effects.EffectChannelSelect.Blue, HistogramBinCount);
+
+            var maxR = histR.Max();
+            var maxG = histG.Max();
+            var maxB = histB.Max();
+
+            for (int histX = 0; histX < HistogramBinCount; histX++)
+            {
+                var heightR = (float)(histRect.Height * (histR[histX] / maxR));
+                var heightG = (float)(histRect.Height * (histG[histX] / maxG));
+                var heightB = (float)(histRect.Height * (histB[histX] / maxB));
+
+                if (heightR >= heightG && heightR >= heightB)
+                {
+                    rGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
+                        (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightR,
+                        (float)dX, heightR - Math.Max(heightG, heightB)));
+
+                    if (heightG >= heightB)
+                    {
+                        rgGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
+                            (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightG,
+                            (float)dX, heightG - heightB));
+
+                        rgbGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
+                            (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightB,
+                            (float)dX, heightB));
+                    }
+                    else
+                    {
+                        rbGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
+                            (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightB,
+                            (float)dX, heightB - heightG));
+
+                        rgbGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
+                            (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightG,
+                            (float)dX, heightG));
+                    }
+                }
+                else if (heightG >= heightR && heightG >= heightB)
+                {
+                    gGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
+                        (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightG,
+                        (float)dX, heightG - Math.Max(heightR, heightB)));
+
+                    if (heightR >= heightB)
+                    {
+                        rgGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
+                            (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightR,
+                            (float)dX, heightR - heightB));
+
+                        rgbGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
+                            (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightB,
+                            (float)dX, heightB));
+                    }
+                    else
+                    {
+                        gbGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
+                            (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightB,
+                            (float)dX, heightB - heightR));
+
+                        rgbGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
+                            (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightR,
+                            (float)dX, heightR));
+                    }
+                }
+                else if (heightB >= heightR && heightB >= heightG)
+                {
+                    bGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
+                        (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightB,
+                        (float)dX, heightB - Math.Max(heightR, heightG)));
+
+                    if (heightR >= heightG)
+                    {
+                        rbGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
+                            (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightR,
+                            (float)dX, heightR - heightG));
+
+                        rgbGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
+                            (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightG,
+                            (float)dX, heightG));
+                    }
+                    else
+                    {
+                        gbGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
+                            (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightG,
+                            (float)dX, heightG - heightR));
+
+                        rgbGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
+                            (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightR,
+                            (float)dX, heightR));
+                    }
+                }
+            }
+
+            ds.FillRectangle(histRect, Color.FromArgb(255, 255, 255, 255));
+
+            using var rGeometry = CanvasGeometry.CreateGroup(ds, rGeometryList.ToArray());
+            ds.FillGeometry(rGeometry, Color.FromArgb(255, 255, 0, 0));
+
+            using var gGeometry = CanvasGeometry.CreateGroup(ds, gGeometryList.ToArray());
+            ds.FillGeometry(gGeometry, Color.FromArgb(255, 0, 255, 0));
+
+            using var bGeometry = CanvasGeometry.CreateGroup(ds, bGeometryList.ToArray());
+            ds.FillGeometry(bGeometry, Color.FromArgb(255, 0, 0, 255));
+
+            using var rgGeometry = CanvasGeometry.CreateGroup(ds, rgGeometryList.ToArray());
+            ds.FillGeometry(rgGeometry, Color.FromArgb(255, 255, 255, 0));
+
+            using var rbGeometry = CanvasGeometry.CreateGroup(ds, rbGeometryList.ToArray());
+            ds.FillGeometry(rbGeometry, Color.FromArgb(255, 255, 0, 255));
+
+            using var gbGeometry = CanvasGeometry.CreateGroup(ds, gbGeometryList.ToArray());
+            ds.FillGeometry(gbGeometry, Color.FromArgb(255, 0, 255, 255));
+
+            using var rgbGeometry = CanvasGeometry.CreateGroup(ds, rgbGeometryList.ToArray());
+            ds.FillGeometry(rgbGeometry, Color.FromArgb(255, 128, 128, 128));
 
             SwapChainCanvas.SwapChain.Present();
         }
