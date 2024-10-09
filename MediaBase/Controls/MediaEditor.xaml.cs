@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using System.Reflection.Metadata;
 using System.Threading.Tasks;
 
 using CommunityToolkit.Mvvm.Messaging;
@@ -19,6 +18,7 @@ using MediaBase.ViewModel;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Graphics.Canvas;
+using Microsoft.Graphics.Canvas.Effects;
 using Microsoft.Graphics.Canvas.Geometry;
 using Microsoft.Graphics.Canvas.Text;
 using Microsoft.UI;
@@ -28,6 +28,8 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+
+using Nito.Disposables;
 
 using Windows.Foundation;
 using Windows.Graphics.Imaging;
@@ -40,9 +42,9 @@ namespace MediaBase.Controls
     public sealed partial class MediaEditor : UserControl
     {
         #region Constants
-        private const int ImageCacheSize = 500;
+        // Image Cache
+        private const int ImageCacheSize = 550;
         private const int ImageCacheThreshold = 50;
-        private const int HistogramBinCount = 256;
 
         // Playback Rate (Animated Image)
         private const double AnimatedImage_MinimumPlaybackRate = 0.25;
@@ -68,7 +70,7 @@ namespace MediaBase.Controls
         private SoftwareBitmap _frameSizingBitmap;
         private CanvasBitmap _frameBitmap;
         private InputCursor _primaryCursor, _secondaryCursor, _hoverCursor, _dragCursor;
-        private bool _isPointerCapturedForFrame;
+        private bool _isPointerCapturedForFrame, _isPointerCapturedForHistogram;
         private Rect _sourceRect, _destRect, _fullDestRect;
         private Rect _progressBarRect, _markerBarRect;
         private Point _prevLeftMousePosition;
@@ -80,6 +82,8 @@ namespace MediaBase.Controls
         private int? _hoverSourceIndex;
         private readonly List<MultimediaSource> _activeMediaSourceSiblings;
         private readonly Queue<ViewModel.ImageSource> _cachedImageQueue;
+        private float[] _prevHistR, _prevHistG, _prevHistB;
+        //private readonly object _frameLock;
 
         #endregion
 
@@ -352,6 +356,90 @@ namespace MediaBase.Controls
                                         typeof(double),
                                         typeof(MediaEditor),
                                         new PropertyMetadata(0.5));
+
+        public bool IsHistogramEnabled
+        {
+            get => (bool)GetValue(IsHistogramEnabledProperty);
+            set => SetValue(IsHistogramEnabledProperty, value);
+        }
+
+        public static readonly DependencyProperty IsHistogramEnabledProperty =
+            DependencyProperty.Register("IsHistogramEnabled",
+                                        typeof(bool),
+                                        typeof(MediaEditor),
+                                        new PropertyMetadata(false));
+
+        public int HistogramBinCount
+        {
+            get => (int)GetValue(HistogramBinCountProperty);
+            set => SetValue(HistogramBinCountProperty, value);
+        }
+
+        public static readonly DependencyProperty HistogramBinCountProperty =
+            DependencyProperty.Register("HistogramBinCount",
+                                        typeof(int),
+                                        typeof(MediaEditor),
+                                        new PropertyMetadata(256));
+
+        public float HistogramLocationX
+        {
+            get => (float)GetValue(HistogramLocationXProperty);
+            set => SetValue(HistogramLocationXProperty, value);
+        }
+
+        public static readonly DependencyProperty HistogramLocationXProperty =
+            DependencyProperty.Register("HistogramLocationX",
+                                        typeof(float),
+                                        typeof(MediaEditor),
+                                        new PropertyMetadata(0f));
+
+        public float HistogramLocationY
+        {
+            get => (float)GetValue(HistogramLocationYProperty);
+            set => SetValue(HistogramLocationYProperty, value);
+        }
+
+        public static readonly DependencyProperty HistogramLocationYProperty =
+            DependencyProperty.Register("HistogramLocationY",
+                                        typeof(float),
+                                        typeof(MediaEditor),
+                                        new PropertyMetadata(0f));
+
+        public float HistogramWidth
+        {
+            get => (float)GetValue(HistogramWidthProperty);
+            set => SetValue(HistogramWidthProperty, value);
+        }
+
+        public static readonly DependencyProperty HistogramWidthProperty =
+            DependencyProperty.Register("HistogramWidth",
+                                        typeof(float),
+                                        typeof(MediaEditor),
+                                        new PropertyMetadata(256f));
+
+        public float HistogramHeight
+        {
+            get => (float)GetValue(HistogramHeightProperty);
+            set => SetValue(HistogramHeightProperty, value);
+        }
+
+        public static readonly DependencyProperty HistogramHeightProperty =
+            DependencyProperty.Register("HistogramHeight",
+                                        typeof(float),
+                                        typeof(MediaEditor),
+                                        new PropertyMetadata(128f));
+
+        public Color HistogramBackgroundColor
+        {
+            get => (Color)GetValue(HistogramBackgroundColorProperty);
+            set => SetValue(HistogramBackgroundColorProperty, value);
+        }
+
+        public static readonly DependencyProperty HistogramBackgroundColorProperty =
+            DependencyProperty.Register("HistogramBackgroundColor",
+                                        typeof(Color),
+                                        typeof(MediaEditor),
+                                        new PropertyMetadata(Colors.White));
 
         public InputSystemCursorShape PrimaryCursorShape
         {
@@ -781,7 +869,8 @@ namespace MediaBase.Controls
             ApplyFrameScaleAndPosition();
 
             // Draw the image
-            ds.DrawImage(_frameBitmap, _destRect, _sourceRect, (float)FrameOpacity);
+            try { ds.DrawImage(_frameBitmap, _destRect, _sourceRect, (float)FrameOpacity); }
+            catch (ObjectDisposedException) { ds.Clear(Colors.Purple); }
 
             // Determine the number of groups
             var groupOffset = 0;
@@ -998,7 +1087,7 @@ namespace MediaBase.Controls
                 var progressBarGroupGeometryList = new List<CanvasGeometry>();
                 var progressBarGroupFilledGeometryList = new List<CanvasGeometry>();
                 var progressBarCacheGeometryList = new List<CanvasGeometry>();
-                foreach (var sibling in ViewModel.GetActiveMediaSourceSiblings())
+                foreach (var sibling in _activeMediaSourceSiblings)
                 {
                     var dividerCoord = _markerBarRect.Left + (_progressThumbWidth * index);
                     var rectGeometry = CanvasGeometry.CreateRectangle(ds,
@@ -1010,7 +1099,7 @@ namespace MediaBase.Controls
 
                     if (sibling.GroupFlags > 0)
                         progressBarGroupFilledGeometryList.Add(rectGeometry);
-                    else
+                    else if (progressThumbRect.Width > 5.0)
                         progressBarGroupGeometryList.Add(rectGeometry);
 
                     if (sibling.Source is ImageFile imageFile && imageFile.IsCached)
@@ -1026,7 +1115,8 @@ namespace MediaBase.Controls
 
                 using var progressBarFilledGeometry = CanvasGeometry.CreateGroup(ds, progressBarGroupFilledGeometryList.ToArray());
                 ds.FillGeometry(progressBarFilledGeometry, Color.FromArgb((byte)(_textFadeOpacity * 255), 51, 153, 255));
-                ds.DrawGeometry(progressBarFilledGeometry, Color.FromArgb((byte)(_textFadeOpacity * 255), 218, 165, 32));
+                if (progressThumbRect.Width > 5.0)
+                    ds.DrawGeometry(progressBarFilledGeometry, Color.FromArgb((byte)(_textFadeOpacity * 255), 218, 165, 32));
 
                 using var progressBarGeometry = CanvasGeometry.CreateGroup(ds, progressBarGroupGeometryList.ToArray());
                 ds.DrawGeometry(progressBarGeometry, Color.FromArgb((byte)(_textFadeOpacity * 255), 218, 165, 32));
@@ -1063,139 +1153,193 @@ namespace MediaBase.Controls
             }
 
             // Display histogram
-            var rGeometryList = new List<CanvasGeometry>();
-            var gGeometryList = new List<CanvasGeometry>();
-            var bGeometryList = new List<CanvasGeometry>();
-            var rgGeometryList = new List<CanvasGeometry>();
-            var rbGeometryList = new List<CanvasGeometry>();
-            var gbGeometryList = new List<CanvasGeometry>();
-            var rgbGeometryList = new List<CanvasGeometry>();
+            var histRect = HistogramRect;
+            var havePrevHistogram = _prevHistR != null && _prevHistR.Length > 0 &&
+                                    _prevHistG != null && _prevHistG.Length > 0 &&
+                                    _prevHistB != null && _prevHistB.Length > 0;
 
-            var histRect = new Rect(15, 75, 256, 128);
-            var dX = histRect.Width / HistogramBinCount;
-
-            var histR = CanvasImage.ComputeHistogram(_frameBitmap, _sourceRect, ds,
-                Microsoft.Graphics.Canvas.Effects.EffectChannelSelect.Red, HistogramBinCount);
-            var histG = CanvasImage.ComputeHistogram(_frameBitmap, _sourceRect, ds,
-                Microsoft.Graphics.Canvas.Effects.EffectChannelSelect.Green, HistogramBinCount);
-            var histB = CanvasImage.ComputeHistogram(_frameBitmap, _sourceRect, ds,
-                Microsoft.Graphics.Canvas.Effects.EffectChannelSelect.Blue, HistogramBinCount);
-
-            var maxR = histR.Max();
-            var maxG = histG.Max();
-            var maxB = histB.Max();
-
-            for (int histX = 0; histX < HistogramBinCount; histX++)
+            if (IsHistogramEnabled && histRect.Width > 0 && histRect.Height > 0)
             {
-                var heightR = (float)(histRect.Height * (histR[histX] / maxR));
-                var heightG = (float)(histRect.Height * (histG[histX] / maxG));
-                var heightB = (float)(histRect.Height * (histB[histX] / maxB));
+                var rGeometryList = new List<CanvasGeometry>();
+                var gGeometryList = new List<CanvasGeometry>();
+                var bGeometryList = new List<CanvasGeometry>();
+                var rgGeometryList = new List<CanvasGeometry>();
+                var rbGeometryList = new List<CanvasGeometry>();
+                var gbGeometryList = new List<CanvasGeometry>();
+                var rgbGeometryList = new List<CanvasGeometry>();
 
-                if (heightR >= heightG && heightR >= heightB)
+                var dX = histRect.Width / HistogramBinCount;
+
+                try
                 {
-                    rGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
-                        (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightR,
-                        (float)dX, heightR - Math.Max(heightG, heightB)));
+                    var histR = CanvasImage.ComputeHistogram(_frameBitmap, _sourceRect, ds, EffectChannelSelect.Red, HistogramBinCount);
+                    var histG = CanvasImage.ComputeHistogram(_frameBitmap, _sourceRect, ds, EffectChannelSelect.Green, HistogramBinCount);
+                    var histB = CanvasImage.ComputeHistogram(_frameBitmap, _sourceRect, ds, EffectChannelSelect.Blue, HistogramBinCount);
 
-                    if (heightG >= heightB)
+                    /*var saveHistogramData = true;
+                    if (havePrevHistogram)
                     {
-                        rgGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
-                            (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightG,
-                            (float)dX, heightG - heightB));
-
-                        rgbGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
-                            (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightB,
-                            (float)dX, heightB));
+                        for (var x = 0; x < histR.Length; x++)
+                        {
+                            if (histR[x] != _prevHistR[x] || histG[x] != _prevHistG[x] || histB[x] != _prevHistB[x])
+                            {
+                                saveHistogramData = false;
+                                break;
+                            }
+                        }
                     }
-                    else
-                    {
-                        rbGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
-                            (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightB,
-                            (float)dX, heightB - heightG));
 
-                        rgbGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
-                            (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightG,
-                            (float)dX, heightG));
+                    if (saveHistogramData)
+                    {
+                        _prevHistR = histR;
+                        _prevHistG = histG;
+                        _prevHistB = histB;
+                    }*/
+
+                    CreateHistogramGeometry();
+
+                    /*if(havePrevHistogram)
+                    {
+                        histR = ChiSquared(histR, _prevHistR);
+                        histG = ChiSquared(histG, _prevHistG);
+                        histB = ChiSquared(histB, _prevHistB);
+                        histRect = new Rect(histRect.X, histRect.Y + histRect.Height + 10, histRect.Width, histRect.Height);
+                        CreateHistogramGeometry();
+                    }*/
+
+                    using var rGeometry = CanvasGeometry.CreateGroup(ds, rGeometryList.ToArray());
+                    ds.FillGeometry(rGeometry, Color.FromArgb(255, 255, 0, 0));
+
+                    using var gGeometry = CanvasGeometry.CreateGroup(ds, gGeometryList.ToArray());
+                    ds.FillGeometry(gGeometry, Color.FromArgb(255, 0, 255, 0));
+
+                    using var bGeometry = CanvasGeometry.CreateGroup(ds, bGeometryList.ToArray());
+                    ds.FillGeometry(bGeometry, Color.FromArgb(255, 0, 0, 255));
+
+                    using var rgGeometry = CanvasGeometry.CreateGroup(ds, rgGeometryList.ToArray());
+                    ds.FillGeometry(rgGeometry, Color.FromArgb(255, 255, 255, 0));
+
+                    using var rbGeometry = CanvasGeometry.CreateGroup(ds, rbGeometryList.ToArray());
+                    ds.FillGeometry(rbGeometry, Color.FromArgb(255, 255, 0, 255));
+
+                    using var gbGeometry = CanvasGeometry.CreateGroup(ds, gbGeometryList.ToArray());
+                    ds.FillGeometry(gbGeometry, Color.FromArgb(255, 0, 255, 255));
+
+                    using var rgbGeometry = CanvasGeometry.CreateGroup(ds, rgbGeometryList.ToArray());
+                    ds.FillGeometry(rgbGeometry, Color.FromArgb(255, 128, 128, 128));
+
+                    void CreateHistogramGeometry()
+                    {
+                        ds.FillRectangle(histRect, HistogramBackgroundColor);
+
+                        var maxR = histR.Max();
+                        var maxG = histG.Max();
+                        var maxB = histB.Max();
+
+                        for (int histX = 0; histX < HistogramBinCount; histX++)
+                        {
+                            var heightR = (float)(histRect.Height * (histR[histX] / maxR));
+                            var heightG = (float)(histRect.Height * (histG[histX] / maxG));
+                            var heightB = (float)(histRect.Height * (histB[histX] / maxB));
+
+                            if (heightR >= heightG && heightR >= heightB)
+                            {
+                                rGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
+                                    (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightR,
+                                    (float)dX, heightR - Math.Max(heightG, heightB)));
+
+                                if (heightG >= heightB)
+                                {
+                                    rgGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
+                                        (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightG,
+                                        (float)dX, heightG - heightB));
+
+                                    rgbGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
+                                        (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightB,
+                                        (float)dX, heightB));
+                                }
+                                else
+                                {
+                                    rbGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
+                                        (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightB,
+                                        (float)dX, heightB - heightG));
+
+                                    rgbGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
+                                        (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightG,
+                                        (float)dX, heightG));
+                                }
+                            }
+                            else if (heightG >= heightR && heightG >= heightB)
+                            {
+                                gGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
+                                    (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightG,
+                                    (float)dX, heightG - Math.Max(heightR, heightB)));
+
+                                if (heightR >= heightB)
+                                {
+                                    rgGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
+                                        (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightR,
+                                        (float)dX, heightR - heightB));
+
+                                    rgbGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
+                                        (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightB,
+                                        (float)dX, heightB));
+                                }
+                                else
+                                {
+                                    gbGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
+                                        (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightB,
+                                        (float)dX, heightB - heightR));
+
+                                    rgbGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
+                                        (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightR,
+                                        (float)dX, heightR));
+                                }
+                            }
+                            else if (heightB >= heightR && heightB >= heightG)
+                            {
+                                bGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
+                                    (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightB,
+                                    (float)dX, heightB - Math.Max(heightR, heightG)));
+
+                                if (heightR >= heightG)
+                                {
+                                    rbGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
+                                        (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightR,
+                                        (float)dX, heightR - heightG));
+
+                                    rgbGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
+                                        (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightG,
+                                        (float)dX, heightG));
+                                }
+                                else
+                                {
+                                    gbGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
+                                        (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightG,
+                                        (float)dX, heightG - heightR));
+
+                                    rgbGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
+                                        (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightR,
+                                        (float)dX, heightR));
+                                }
+                            }
+                        }
                     }
                 }
-                else if (heightG >= heightR && heightG >= heightB)
+                catch (ObjectDisposedException) { }
+
+                /*static float[] ChiSquared(float[] data, float[] prevData)
                 {
-                    gGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
-                        (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightG,
-                        (float)dX, heightG - Math.Max(heightR, heightB)));
+                    var result = new float[data.Length];
 
-                    if (heightR >= heightB)
+                    for (var i = 0; i < data.Length; i++)
                     {
-                        rgGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
-                            (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightR,
-                            (float)dX, heightR - heightB));
-
-                        rgbGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
-                            (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightB,
-                            (float)dX, heightB));
+                        result[i] = ((data[i] - prevData[i]) * (data[i] - prevData[i])) / prevData[i];
                     }
-                    else
-                    {
-                        gbGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
-                            (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightB,
-                            (float)dX, heightB - heightR));
 
-                        rgbGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
-                            (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightR,
-                            (float)dX, heightR));
-                    }
-                }
-                else if (heightB >= heightR && heightB >= heightG)
-                {
-                    bGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
-                        (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightB,
-                        (float)dX, heightB - Math.Max(heightR, heightG)));
-
-                    if (heightR >= heightG)
-                    {
-                        rbGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
-                            (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightR,
-                            (float)dX, heightR - heightG));
-
-                        rgbGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
-                            (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightG,
-                            (float)dX, heightG));
-                    }
-                    else
-                    {
-                        gbGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
-                            (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightG,
-                            (float)dX, heightG - heightR));
-
-                        rgbGeometryList.Add(CanvasGeometry.CreateRectangle(ds,
-                            (float)(histRect.Left + (dX * histX)), (float)histRect.Bottom - heightR,
-                            (float)dX, heightR));
-                    }
-                }
+                    return result;
+                }*/
             }
-
-            ds.FillRectangle(histRect, Color.FromArgb(255, 255, 255, 255));
-
-            using var rGeometry = CanvasGeometry.CreateGroup(ds, rGeometryList.ToArray());
-            ds.FillGeometry(rGeometry, Color.FromArgb(255, 255, 0, 0));
-
-            using var gGeometry = CanvasGeometry.CreateGroup(ds, gGeometryList.ToArray());
-            ds.FillGeometry(gGeometry, Color.FromArgb(255, 0, 255, 0));
-
-            using var bGeometry = CanvasGeometry.CreateGroup(ds, bGeometryList.ToArray());
-            ds.FillGeometry(bGeometry, Color.FromArgb(255, 0, 0, 255));
-
-            using var rgGeometry = CanvasGeometry.CreateGroup(ds, rgGeometryList.ToArray());
-            ds.FillGeometry(rgGeometry, Color.FromArgb(255, 255, 255, 0));
-
-            using var rbGeometry = CanvasGeometry.CreateGroup(ds, rbGeometryList.ToArray());
-            ds.FillGeometry(rbGeometry, Color.FromArgb(255, 255, 0, 255));
-
-            using var gbGeometry = CanvasGeometry.CreateGroup(ds, gbGeometryList.ToArray());
-            ds.FillGeometry(gbGeometry, Color.FromArgb(255, 0, 255, 255));
-
-            using var rgbGeometry = CanvasGeometry.CreateGroup(ds, rgbGeometryList.ToArray());
-            ds.FillGeometry(rgbGeometry, Color.FromArgb(255, 128, 128, 128));
 
             SwapChainCanvas.SwapChain.Present();
         }
@@ -1342,7 +1486,7 @@ namespace MediaBase.Controls
         #region Event Handlers (Pointer)
         private void RenderAreaBorder_PointerEntered(object sender, PointerRoutedEventArgs e)
         {
-            if (_isPointerCapturedForFrame)
+            if (_isPointerCapturedForFrame || _isPointerCapturedForHistogram)
                 return;
 
             ProtectedCursor = _primaryCursor;
@@ -1352,7 +1496,7 @@ namespace MediaBase.Controls
         {
             _prevLeftMousePosition = new Point(double.NaN, double.NaN);
 
-            if (_isPointerCapturedForFrame)
+            if (_isPointerCapturedForFrame || _isPointerCapturedForHistogram)
                 return;
 
             ProtectedCursor = _primaryCursor;
@@ -1361,6 +1505,7 @@ namespace MediaBase.Controls
         private void RenderAreaBorder_PointerPressed(object sender, PointerRoutedEventArgs e)
         {
             var point = e.GetCurrentPoint(RenderAreaBorder);
+            var histRect = HistogramRect;
 
             if (_hoverSourceIndex != null)
             {
@@ -1373,6 +1518,11 @@ namespace MediaBase.Controls
                     ViewModel.ActiveSystemBrowserNode = ViewModel.ActiveSystemBrowserNode.Parent.Children[(int)_hoverSourceIndex];
                     ViewModel.ActiveMediaSource = (MultimediaSource)ViewModel.ActiveSystemBrowserNode.Content;
                 }
+            }
+            else if (histRect.Contains(point.Position) && point.Properties.IsLeftButtonPressed)
+            {
+                _isPointerCapturedForHistogram = RenderAreaBorder.CapturePointer(e.Pointer);
+                ProtectedCursor = _dragCursor;
             }
             else if (_destRect.Contains(point.Position) && IsPanAndZoomEnabled)
             {
@@ -1398,13 +1548,14 @@ namespace MediaBase.Controls
         private void RenderAreaBorder_PointerReleased(object sender, PointerRoutedEventArgs e)
         {
             var point = e.GetCurrentPoint(RenderAreaBorder);
+            var histRect = HistogramRect;
 
             if (point.Properties.PointerUpdateKind == PointerUpdateKind.LeftButtonReleased)
             {
                 RenderAreaBorder.ReleasePointerCapture(e.Pointer);
                 ProtectedCursor = _progressBarRect.Contains(point.Position)
                     ? _secondaryCursor
-                    : _destRect.Contains(point.Position) && IsPanAndZoomEnabled
+                    : histRect.Contains(point.Position) || (_destRect.Contains(point.Position) && IsPanAndZoomEnabled)
                         ? _hoverCursor
                         : _primaryCursor;
             }
@@ -1415,21 +1566,25 @@ namespace MediaBase.Controls
         private void RenderAreaBorder_PointerCaptureLost(object sender, PointerRoutedEventArgs e)
         {
             _isPointerCapturedForFrame = false;
+            _isPointerCapturedForHistogram = false;
         }
 
         private void RenderAreaBorder_PointerCanceled(object sender, PointerRoutedEventArgs e)
         {
             _isPointerCapturedForFrame = false;
+            _isPointerCapturedForHistogram = false;
             _prevLeftMousePosition = new Point(double.NaN, double.NaN);
         }
 
         private void RenderAreaBorder_PointerMoved(object sender, PointerRoutedEventArgs e)
         {
             var point = e.GetCurrentPoint(RenderAreaBorder);
+            var histRect = HistogramRect;
             var isPointerOverFrame = _destRect.Contains(point.Position);
             var isPointerOverProgressBar = _progressBarRect.Contains(point.Position);
+            var isPointerOverHistogram = histRect.Contains(point.Position);
 
-            if (_progressBarRect.Contains(point.Position))
+            if (isPointerOverProgressBar)
             {
                 _progressBarDisplayedTimestamp = DateTime.Now;
                 _hoverSourceIndex = (int)((point.Position.X - _progressBarRect.Left) / _progressThumbWidth);
@@ -1446,7 +1601,26 @@ namespace MediaBase.Controls
             else if ((!isPointerOverFrame || !IsPanAndZoomEnabled) && !isPointerOverProgressBar && ProtectedCursor != _primaryCursor)
                 ProtectedCursor = _primaryCursor;
 
-            if (IsPanAndZoomEnabled && point.Properties.IsLeftButtonPressed && _isPointerCapturedForFrame)
+            if (point.Properties.IsLeftButtonPressed && _isPointerCapturedForHistogram)
+            {
+                var newX = HistogramLocationX + (float)point.Position.X - (float)_prevLeftMousePosition.X;
+                var newY = HistogramLocationY + (float)point.Position.Y - (float)_prevLeftMousePosition.Y;
+
+                if (newX + HistogramWidth >= SwapChainCanvas.ActualWidth)
+                    HistogramLocationX = (float)SwapChainCanvas.ActualWidth - HistogramWidth;
+                else if (newX < 0)
+                    HistogramLocationX = 0;
+                else
+                    HistogramLocationX = newX;
+
+                if (newY + HistogramHeight >= SwapChainCanvas.ActualHeight)
+                    HistogramLocationY = (float)SwapChainCanvas.ActualHeight - HistogramHeight;
+                else if (newY < 0)
+                    HistogramLocationY = 0;
+                else
+                    HistogramLocationY = newY;
+            }
+            else if (IsPanAndZoomEnabled && point.Properties.IsLeftButtonPressed && _isPointerCapturedForFrame)
             {
                 if (ProtectedCursor != _dragCursor)
                     ProtectedCursor = _dragCursor;
@@ -1466,34 +1640,34 @@ namespace MediaBase.Controls
             var point = e.GetCurrentPoint(RenderAreaBorder);
             var delta = point.Properties.MouseWheelDelta / 120;
 
-            if (App.TestKeyStates(Windows.System.VirtualKey.Control, CoreVirtualKeyStates.Down))
-            {// Scale
-                FrameScale += delta;
+            FrameScale += delta;
 
-                if (_fullDestRect.Contains(point.Position))
+            if (_fullDestRect.Contains(point.Position))
+            {
+                var newScaleFactor = Math.Pow(2, 0.1 * FrameScale);
+
+                double widthDelta = 0;
+                double heightDelta = 0;
+
+                try
                 {
-                    var newScaleFactor = Math.Pow(2, 0.1 * FrameScale);
-
                     var newScaledWidth = Math.Round(_frameBitmap.SizeInPixels.Width * newScaleFactor, 6);
+                    widthDelta = newScaledWidth - _fullDestRect.Width;
+
                     var newScaledHeight = Math.Round(_frameBitmap.SizeInPixels.Height * newScaleFactor, 6);
-
-                    var widthDelta = newScaledWidth - _fullDestRect.Width;
-                    var heightDelta = newScaledHeight - _fullDestRect.Height;
-
-                    _mouseOffsetX = point.Position.X - _fullDestRect.GetCenterPoint().X;
-                    FrameOffsetX -= (widthDelta * (_mouseOffsetX / (_fullDestRect.Width / 2))) / 2;
-
-                    _mouseOffsetY = point.Position.Y - _fullDestRect.GetCenterPoint().Y;
-                    FrameOffsetY += (heightDelta * (_mouseOffsetY / (_fullDestRect.Height / 2))) / 2;
+                    heightDelta = newScaledHeight - _fullDestRect.Height;
                 }
-            }
-            else if (App.TestKeyStates(Windows.System.VirtualKey.Shift, CoreVirtualKeyStates.Down))
-            {// Horizontal scroll
-                FrameOffsetX += delta * PanSpeedMultiplier;
-            }
-            else
-            {// Vertical scroll
-                FrameOffsetY -= delta * PanSpeedMultiplier;
+                catch (ObjectDisposedException)
+                {
+                    widthDelta = 0;
+                    heightDelta = 0;
+                }
+
+                _mouseOffsetX = point.Position.X - _fullDestRect.GetCenterPoint().X;
+                FrameOffsetX -= (widthDelta * (_mouseOffsetX / (_fullDestRect.Width / 2))) / 2;
+
+                _mouseOffsetY = point.Position.Y - _fullDestRect.GetCenterPoint().Y;
+                FrameOffsetY += (heightDelta * (_mouseOffsetY / (_fullDestRect.Height / 2))) / 2;
             }
         }
         #endregion
@@ -1607,6 +1781,11 @@ namespace MediaBase.Controls
         }
 
         private void EditorFrameRotateCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = IsLoaded && Source != null;
+        }
+
+        private void EditorToggleHistogramCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
             args.CanExecute = IsLoaded && Source != null;
         }
@@ -1896,6 +2075,11 @@ namespace MediaBase.Controls
                 FrameRotate += 45.0;
         }
 
+        private void EditorToggleHistogramCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            IsHistogramEnabled = !IsHistogramEnabled;
+        }
+
         private void EditorTimelineZoomOutCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
             Timeline.VisibleDuration *= 2;
@@ -1924,11 +2108,16 @@ namespace MediaBase.Controls
                        PlaybackState == MediaPlaybackState.Paused);
             }
         }
+
+        private Rect HistogramRect => new Rect(HistogramLocationX, HistogramLocationY, HistogramWidth, HistogramHeight);
         #endregion
 
         #region Private Methods
         private void ResetEditor()
         {
+            // Halt redraw timer
+            _redrawTimer.Stop();
+
             // Stop current playback
             if (PlaybackState is MediaPlaybackState.Opening or
                                  MediaPlaybackState.Buffering or
@@ -1936,9 +2125,6 @@ namespace MediaBase.Controls
             {
                 _player.Pause();
             }
-
-            // Halt redraw timer
-            _redrawTimer.Stop();
 
             // Reset various properties
             if (PlaybackState != MediaPlaybackState.None)
@@ -1963,7 +2149,6 @@ namespace MediaBase.Controls
                 _frameBitmap.Dispose();
                 _frameBitmap = null;
             }*/
-            _frameBitmap = null;
 
             if (_frameSizingBitmap != null)
             {
@@ -1978,6 +2163,11 @@ namespace MediaBase.Controls
                 FrameOffsetX = 0;
                 FrameOffsetY = 0;
             }
+
+            // Clear histograms
+            _prevHistR = null;
+            _prevHistG = null;
+            _prevHistB = null;
 
             // Reset timeline
             Timeline.Reset();
@@ -2353,8 +2543,16 @@ namespace MediaBase.Controls
         // This is better than Photoshop
         private void ApplyFrameScaleAndPosition()
         {
-            var sourceWidth = _frameBitmap.SizeInPixels.Width;
-            var sourceHeight = _frameBitmap.SizeInPixels.Height;
+            uint sourceWidth = 0;
+            uint sourceHeight = 0;
+
+            try
+            {
+                sourceWidth = _frameBitmap.SizeInPixels.Width;
+                sourceHeight = _frameBitmap.SizeInPixels.Height;
+            }
+            catch (ObjectDisposedException) { return; }
+
             var destWidth = SwapChainCanvas.SwapChain.Size.Width;
             var destHeight = SwapChainCanvas.SwapChain.Size.Height;
 
@@ -2624,6 +2822,7 @@ namespace MediaBase.Controls
             ViewModel.EditorFrameZoomFitCommand.NotifyCanExecuteChanged();
             ViewModel.EditorFrameZoomFullCommand.NotifyCanExecuteChanged();
             ViewModel.EditorFrameRotateCommand.NotifyCanExecuteChanged();
+            ViewModel.EditorToggleHistogramCommand.NotifyCanExecuteChanged();
             ViewModel.EditorTimelineZoomOutCommand.NotifyCanExecuteChanged();
             ViewModel.EditorTimelineZoomInCommand.NotifyCanExecuteChanged();
         }
@@ -2725,6 +2924,11 @@ namespace MediaBase.Controls
                 EditorFrameRotateCommand_CanExecuteRequested;
             ViewModel.EditorFrameRotateCommand.ExecuteRequested +=
                 EditorFrameRotateCommand_ExecuteRequested;
+
+            ViewModel.EditorToggleHistogramCommand.CanExecuteRequested +=
+                EditorToggleHistogramCommand_CanExecuteRequested;
+            ViewModel.EditorToggleHistogramCommand.ExecuteRequested +=
+                EditorToggleHistogramCommand_ExecuteRequested;
 
             ViewModel.EditorTimelineZoomOutCommand.CanExecuteRequested +=
                 EditorTimelineZoomOutCommand_CanExecuteRequested;

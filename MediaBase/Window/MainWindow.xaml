@@ -89,6 +89,8 @@
                         <MenuFlyoutItem Command="{x:Bind ViewModel.WorkspaceUnsetAllItemRelationshipsCommand}"/>
                         <MenuFlyoutSeparator/>
                         <MenuFlyoutItem Command="{x:Bind ViewModel.ToolsAnimateImageCommand}"/>
+                        <MenuFlyoutSeparator/>
+                        <MenuFlyoutItem Command="{x:Bind ViewModel.ToolsPreloadWorkspaceCommand}"/>
                     </MenuBarItem>
                     
                     <MenuBarItem Title="View" Margin="0" VerticalAlignment="Bottom">

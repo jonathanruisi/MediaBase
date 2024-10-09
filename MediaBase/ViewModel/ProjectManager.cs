@@ -281,6 +281,7 @@ namespace MediaBase.ViewModel
         public XamlUICommand ToolsToggleGroup1SeriesCommand { get; private set; }
         public XamlUICommand ToolsBatchActionCommand { get; private set; }
         public XamlUICommand ToolsAnimateImageCommand { get; private set; }
+        public XamlUICommand ToolsPreloadWorkspaceCommand { get; private set; }
 
         // Editor
         public XamlUICommand EditorPlayCommand { get; private set; }
@@ -303,6 +304,7 @@ namespace MediaBase.ViewModel
         public XamlUICommand EditorFrameZoomFitCommand { get; private set; }
         public XamlUICommand EditorFrameZoomFullCommand { get; private set; }
         public XamlUICommand EditorFrameRotateCommand { get; private set; }
+        public XamlUICommand EditorToggleHistogramCommand { get; private set; }
         public XamlUICommand EditorTimelineZoomOutCommand { get; private set; }
         public XamlUICommand EditorTimelineZoomInCommand { get; private set; }
         #endregion
@@ -904,6 +906,11 @@ namespace MediaBase.ViewModel
                               ActiveMediaSource is ImageSource image &&
                               image.Duration == 0 &&
                               image.IsAnimated == false;
+        }
+
+        private void ToolsPreloadWorkspaceCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
+        {
+            args.CanExecute = IsActive && Projects.Count > 0;
         }
         #endregion
 
@@ -1630,6 +1637,40 @@ namespace MediaBase.ViewModel
             currentImage.Animate((decimal)duration);
             ActiveMediaSource = currentImage;
         }
+
+        private async void ToolsPreloadWorkspaceCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
+        {
+            var messenger = App.Current.Services.GetService<IMessenger>();
+
+            foreach (Project project in Projects)
+            {
+                foreach (var folder in project.Children.OfType<MediaFolder>())
+                {
+                    messenger.Send(new SetInfoBarMessage
+                    {
+                        Title = "Preloading...",
+                        Message = folder.Name,
+                        Severity = InfoBarSeverity.Informational,
+                        IsCloseable = false
+                    });
+
+                    await LoadFolder(folder);
+                }
+            }
+
+            messenger.Send(new SetInfoBarMessage
+            {
+                Title = "Done",
+                Message = "Workspace preload complete",
+                Severity = InfoBarSeverity.Success,
+                IsCloseable = true
+            });
+
+            static async Task LoadFolder(MediaFolder folder)
+            {
+                await MakeItemsReadyAsync(folder);
+            }
+        }
         #endregion
 
         #region Method Overrides (ViewModelElement)
@@ -2327,6 +2368,13 @@ namespace MediaBase.ViewModel
                 IsEnabled = true
             });
 
+            // Tools: Animate Image
+            ToolsPreloadWorkspaceCommand = new XamlUICommand
+            {
+                Label = "Preload Workspace",
+                Description = "Recursively loads all workspace media elements"
+            };
+
             // Editor: Play
             EditorPlayCommand = new XamlUICommand
             {
@@ -2595,6 +2643,19 @@ namespace MediaBase.ViewModel
                 IsEnabled = true
             });
 
+            EditorToggleHistogramCommand = new XamlUICommand
+            {
+                Label = "Toggle Histogram",
+                Description = "Toggle histogram display",
+                IconSource = new SymbolIconSource { Symbol = (Symbol)0xE9D2 }
+            };
+
+            EditorToggleHistogramCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
+            {
+                Key = VirtualKey.H,
+                IsEnabled = true
+            });
+
             // Editor: Zoom Out Timeline
             EditorTimelineZoomOutCommand = new XamlUICommand
             {
@@ -2787,6 +2848,11 @@ namespace MediaBase.ViewModel
                 ToolsAnimateImageCommand_CanExecuteRequested;
             ToolsAnimateImageCommand.ExecuteRequested +=
                 ToolsAnimateImageCommand_ExecuteRequested;
+
+            ToolsPreloadWorkspaceCommand.CanExecuteRequested +=
+                ToolsPreloadWorkspaceCommand_CanExecuteRequested;
+            ToolsPreloadWorkspaceCommand.ExecuteRequested +=
+                ToolsPreloadWorkspaceCommand_ExecuteRequested;
         }
         #endregion
     }

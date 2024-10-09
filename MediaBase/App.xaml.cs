@@ -83,7 +83,7 @@ namespace MediaBase
 
         private void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
         {
-            ShowMessageBoxAsync(e.Message, "Unhandled Exception");
+            //ShowMessageBoxAsync(e.Message, "Unhandled Exception");
         }
         #endregion
 

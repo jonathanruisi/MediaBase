@@ -238,6 +238,9 @@
                 <AppBarToggleButton x:Name="HoldCurrentPanAndZoomToggleButton" Width="40"
                                     Command="{x:Bind ViewModel.EditorTogglePanAndZoomLockCommand}"
                                     IsChecked="{x:Bind IsHoldCurrentPanAndZoom, Mode=TwoWay}"/>
+                <AppBarToggleButton x:Name="HistogramToggleButton" Width="40"
+                                    Command="{x:Bind ViewModel.EditorToggleHistogramCommand}"
+                                    IsChecked="{x:Bind IsHistogramEnabled}"/>
                 <AppBarButton x:Name="RotateFrameButton" Width="40"
                               Command="{x:Bind ViewModel.EditorFrameRotateCommand}"/>
                 <AppBarButton x:Name="CenterFrameButton" Width="40"
