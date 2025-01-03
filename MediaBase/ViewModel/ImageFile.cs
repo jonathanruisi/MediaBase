@@ -22,7 +22,6 @@ namespace MediaBase.ViewModel
         #region Fields
         private bool _isCached;
         private uint _widthInPixels, _heightInPixels;
-        private CanvasBitmap _bitmap;
         #endregion
 
         #region Properties
@@ -44,12 +43,6 @@ namespace MediaBase.ViewModel
             private set => SetProperty(ref _isCached, value);
         }
 
-        public CanvasBitmap Bitmap
-        {
-            get => _bitmap;
-            private set => SetProperty(ref _bitmap, value);
-        }
-
         public override MediaContentType ContentType => MediaContentType.Image;
         #endregion
 
@@ -61,7 +54,6 @@ namespace MediaBase.ViewModel
             _widthInPixels = 0;
             _heightInPixels = 0;
             _isCached = false;
-            _bitmap = null;
         }
 
         public ImageFile(StorageFile file) : base(file)
@@ -69,39 +61,6 @@ namespace MediaBase.ViewModel
             _widthInPixels = 0;
             _heightInPixels = 0;
             _isCached = false;
-            _bitmap = null;
-        }
-        #endregion
-
-        #region Public Methods
-        public async Task<bool> Cache(ICanvasResourceCreator resourceCreator)
-        {
-            if (await MakeReady() == false)
-                return false;
-
-            try
-            {
-                Bitmap = await CanvasBitmap.LoadAsync(resourceCreator, await File.OpenReadAsync());
-            }
-            catch (Exception)
-            {
-                IsCached = false;
-                return false;
-            }
-
-            IsCached = true;
-            return true;
-        }
-
-        public void FreeCache()
-        {
-            if (Bitmap != null)
-            {
-                Bitmap.Dispose();
-                Bitmap = null;
-            }
-
-            IsCached = false;
         }
         #endregion
 

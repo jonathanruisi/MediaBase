@@ -11,7 +11,6 @@ using JLR.Utility.WinUI;
 using JLR.Utility.WinUI.Controls;
 using JLR.Utility.WinUI.Dialogs;
 using JLR.Utility.WinUI.Messaging;
-using JLR.Utility.WinUI.ViewModel;
 
 using MediaBase.Dialogs;
 using MediaBase.ViewModel;
@@ -40,10 +39,6 @@ namespace MediaBase.Controls
     public sealed partial class MediaEditor : UserControl
     {
         #region Constants
-        // Image Cache
-        private const int ImageCacheSize = 550;
-        private const int ImageCacheThreshold = 50;
-
         // Playback Rate (Animated Image)
         private const double AnimatedImage_MinimumPlaybackRate = 0.25;
         private const double AnimatedImage_MaximumPlaybackRate = 4.0;
@@ -78,8 +73,7 @@ namespace MediaBase.Controls
         private DateTime _progressBarDisplayedTimestamp;
         private double _textFadeOpacity, _textFadeOpacityIncrement, _progressThumbWidth;
         private int? _hoverSourceIndex;
-        private readonly List<MultimediaSource> _activeMediaSourceSiblings;
-        private readonly Queue<ViewModel.ImageSource> _cachedImageQueue;
+        private List<MultimediaSource> _activeMediaSourceSiblings;
         private float[] _prevHistR, _prevHistG, _prevHistB;
         //private readonly object _frameLock;
 
@@ -523,7 +517,6 @@ namespace MediaBase.Controls
             _dragCursor = InputSystemCursor.Create(DragCursorShape);
 
             // Misc
-            _cachedImageQueue = new Queue<ViewModel.ImageSource>();
             _activeMediaSourceSiblings = new List<MultimediaSource>();
 
             // Initialize commands
@@ -2142,11 +2135,11 @@ namespace MediaBase.Controls
                 _player.Source = null;
             }
 
-            /*if (_frameBitmap != null)
+            if (_frameBitmap != null)
             {
                 _frameBitmap.Dispose();
                 _frameBitmap = null;
-            }*/
+            }
 
             if (_frameSizingBitmap != null)
             {
@@ -2177,7 +2170,6 @@ namespace MediaBase.Controls
             {
                 RefreshRate = App.RefreshRate;
                 TimeDisplayMode = TimeDisplayFormat.None;
-                ClearImageCache();
                 return;
             }
 
@@ -2198,15 +2190,8 @@ namespace MediaBase.Controls
                 IsPanAndZoomEnabled = true;
                 TimeDisplayMode = TimeDisplayFormat.FrameNumber;
 
-                var imageFile = image.Source as ImageFile;
-                if (!imageFile.IsCached)
-                {
-                    if (_cachedImageQueue.Count >= ImageCacheSize - ImageCacheThreshold)
-                        ClearImageCache();
-                    await imageFile.Cache(SwapChainCanvas.SwapChain.Device);
-                    _cachedImageQueue.Enqueue(image);
-                }
-                _frameBitmap = imageFile.Bitmap;
+                _frameBitmap = await CanvasBitmap.LoadAsync(SwapChainCanvas.SwapChain.Device,
+                    await (image.Source as ImageFile).File.OpenReadAsync());
 
                 if (!IsHoldCurrentPanAndZoom)
                     FrameScale = decimal.ToDouble(CalculateFrameScaleToFit(Source.WidthInPixels, Source.HeightInPixels));
@@ -2259,18 +2244,6 @@ namespace MediaBase.Controls
             _progressBarRect = Rect.Empty;
             _markerBarRect = Rect.Empty;
             _progressBarDisplayedTimestamp = DateTime.Now;
-        }
-
-        private void ClearImageCache(bool purge = false)
-        {
-            while (_cachedImageQueue.TryDequeue(out ViewModel.ImageSource image))
-            {
-                var imageFile = image.Source as ImageFile;
-                imageFile.FreeCache();
-
-                if (!purge && _cachedImageQueue.Count == ImageCacheSize - ImageCacheThreshold)
-                    break;
-            }
         }
 
         private void SeekToMarker(ITimelineMarker marker)
@@ -2743,7 +2716,7 @@ namespace MediaBase.Controls
                 if (m.NewValue == null || m.NewValue?.Parent != m.OldValue?.Parent)
                 {
                     _activeMediaSourceSiblings.Clear();
-                    ClearImageCache(true);
+                    //ClearImageCache(true);
                 }
             });
         }
