@@ -29,8 +29,6 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 
-using Nito.Disposables;
-
 using Windows.Foundation;
 using Windows.Graphics.Imaging;
 using Windows.Media.Playback;

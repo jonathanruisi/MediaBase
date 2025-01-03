@@ -151,7 +151,19 @@ namespace MediaBase.Dialogs
             DependencyProperty.Register("TargetFolder",
                                         typeof(StorageFolder),
                                         typeof(GroupActionDialog),
-                                        new PropertyMetadata(null));
+                                        new PropertyMetadata(null, OnTargetFolderChanged));
+
+        public string TargetPath
+        {
+            get => (string)GetValue(TargetPathProperty);
+            set => SetValue(TargetPathProperty, value);
+        }
+
+        public static readonly DependencyProperty TargetPathProperty =
+            DependencyProperty.Register("TargetPath",
+                                        typeof(string),
+                                        typeof(GroupActionDialog),
+                                        new PropertyMetadata(string.Empty));
         #endregion
 
         #region Constructor
@@ -159,11 +171,18 @@ namespace MediaBase.Dialogs
         {
             InitializeComponent();
             DataContext = App.Current.Services.GetService<ProjectManager>();
-            TargetFolder = PreviousFolder;
         }
         #endregion
 
         #region Event Handlers (ContentDialog)
+        private static void OnTargetFolderChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is not GroupActionDialog dlg)
+                return;
+
+            dlg.TargetPath = (e.NewValue as StorageFolder)?.Path;
+        }
+
         private void GroupActionRadioButtons_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (GroupActionRadioButtons.SelectedItem == null)
@@ -176,12 +195,31 @@ namespace MediaBase.Dialogs
             {
                 FolderBrowseButton.Visibility = Visibility.Visible;
                 TargetFolderPathTextBox.Visibility = Visibility.Visible;
+                FolderSelectionRadioButtons.Visibility = Visibility.Visible;
+                UpOneLevelButton.Visibility = Visibility.Visible;
             }
             else
             {
                 FolderBrowseButton.Visibility = Visibility.Collapsed;
                 TargetFolderPathTextBox.Visibility = Visibility.Collapsed;
+                FolderSelectionRadioButtons.Visibility = Visibility.Collapsed;
+                UpOneLevelButton.Visibility = Visibility.Collapsed;
             }
+        }
+
+        private async void FolderSelectionRadioButtons_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (FolderSelectionRadioButtons.SelectedIndex == 0 && ViewModel.ActiveMediaSource.Source is MediaFile file)
+                TargetFolder = await file.File.GetParentAsync();
+            else if (FolderSelectionRadioButtons.SelectedIndex == 1)
+                TargetFolder = PreviousFolder;
+        }
+
+        private async void UpOneLevelButton_Click(object sender, RoutedEventArgs e)
+        {
+            var folder = await TargetFolder.GetParentAsync();
+            if (folder is not null)
+                TargetFolder = folder;
         }
 
         private async void FolderBrowseButton_Click(object sender, RoutedEventArgs e)

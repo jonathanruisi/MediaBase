@@ -1466,8 +1466,6 @@ namespace MediaBase.ViewModel
 
         private async void ToolsBatchActionCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            ActiveMediaSource = null;
-
             var groupedNodes = Messenger.Send<CollectionRequestMessage<TreeViewNode>, string>("GetGroupedSystemBrowserNodes").Responses;
             var group1Files = groupedNodes.Select(x => x.Content).OfType<MultimediaSource>()
                                                                  .Where(x => x.CheckGroupFlag(1))
@@ -1539,7 +1537,7 @@ namespace MediaBase.ViewModel
                 case BatchAction.Copy:
                     foreach (var file in filesToProcess)
                     {
-                        var message2 = $"Copying {file.DisplayName} to {dlg.TargetFolder.Path} (file {currentItem} of {filesToProcess.Count})";
+                        var message2 = $"Copying {file.DisplayName} to {dlg.TargetPath} (file {currentItem} of {filesToProcess.Count})";
                         Messenger.Send(new SetInfoBarMessage
                         {
                             Title = "Batch Operation Running",
@@ -1555,7 +1553,7 @@ namespace MediaBase.ViewModel
                 case BatchAction.Move:
                     foreach (var file in filesToProcess)
                     {
-                        var message3 = $"Moving {file.DisplayName} to {dlg.TargetFolder.Path} (file {currentItem} of {filesToProcess.Count})";
+                        var message3 = $"Moving {file.DisplayName} to {dlg.TargetPath} (file {currentItem} of {filesToProcess.Count})";
                         Messenger.Send(new SetInfoBarMessage
                         {
                             Title = "Batch Operation Running",
@@ -1597,7 +1595,7 @@ namespace MediaBase.ViewModel
             else if (dlg.Action is BatchAction.Copy or BatchAction.Move)
             {
                 summaryMessage.Append(" to ");
-                summaryMessage.Append(dlg.TargetFolder.Path);
+                summaryMessage.Append(dlg.TargetPath);
             }
 
             Messenger.Send(new SetInfoBarMessage

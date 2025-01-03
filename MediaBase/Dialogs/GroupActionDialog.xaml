@@ -15,6 +15,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
@@ -95,11 +96,23 @@
             <x:String>Move</x:String>
         </RadioButtons>
 
-        <Button x:Name="FolderBrowseButton" Grid.Row="3" Grid.Column="0" Margin="0,10,5,0"
+        <RadioButtons x:Name="FolderSelectionRadioButtons" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3"
+                      MaxColumns="2" Header="Folder Selection" SelectedIndex="-1" Margin="0,20,0,0"
+                      SelectionChanged="FolderSelectionRadioButtons_SelectionChanged">
+            <x:String>Active Media</x:String>
+            <x:String>Previous Folder</x:String>
+        </RadioButtons>
+
+        <Button x:Name="UpOneLevelButton" Grid.Row="3" Grid.Column="3" Margin="0,20,0,0"
+                Click="UpOneLevelButton_Click">
+            Up One
+        </Button>
+
+        <Button x:Name="FolderBrowseButton" Grid.Row="4" Grid.Column="0" Margin="0,10,5,0"
                 HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Content="Browse..."
                 Click="FolderBrowseButton_Click"/>
         <TextBox x:Name="TargetFolderPathTextBox" Margin="0,10,0,0"
-                 Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3" IsReadOnly="True"
-                 Text="{x:Bind TargetFolder.Path, Mode=OneWay}"/>
+                 Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="3" IsReadOnly="True"
+                 Text="{x:Bind TargetPath, Mode=OneWay}"/>
     </Grid>
 </ContentDialog>
