@@ -11,7 +11,6 @@ using JLR.Utility.WinUI;
 using JLR.Utility.WinUI.Controls;
 using JLR.Utility.WinUI.Dialogs;
 using JLR.Utility.WinUI.Messaging;
-using JLR.Utility.WinUI.ViewModel;
 
 using MediaBase.Dialogs;
 using MediaBase.ViewModel;
@@ -34,6 +33,7 @@ using Windows.Graphics.Imaging;
 using Windows.Media.Playback;
 using Windows.UI;
 using Windows.UI.Core;
+using Windows.Win32;
 
 namespace MediaBase.Controls
 {
@@ -687,7 +687,7 @@ namespace MediaBase.Controls
             SwapChainCanvas.SwapChain = new CanvasSwapChain(CanvasDevice.GetSharedDevice(),
                                                             (float)SwapChainCanvas.ActualWidth,
                                                             (float)SwapChainCanvas.ActualHeight,
-                                                            PInvoke.User32.GetDpiForWindow(App.WindowHandle)/*,
+                                                            PInvoke.GetDpiForWindow((Windows.Win32.Foundation.HWND)App.WindowHandle)/*,
                                                             Windows.Graphics.DirectX.DirectXPixelFormat.R10G10B10A2UIntNormalized,
                                                             2, CanvasAlphaMode.Ignore*/);
 
@@ -868,7 +868,7 @@ namespace MediaBase.Controls
 
             // Draw the image
             try { ds.DrawImage(_frameBitmap, _destRect, _sourceRect, (float)FrameOpacity); }
-            catch (ObjectDisposedException) { ds.Clear(Colors.Purple); }
+            catch (ObjectDisposedException) { ds.Clear(Colors.HotPink); }
 
             // Determine the number of groups
             var groupOffset = 0;
@@ -1354,7 +1354,7 @@ namespace MediaBase.Controls
                 FrameOffsetY = 0;
                 if (Source != null)
                     FrameScale = decimal.ToDouble(CalculateFrameScaleToFit(Source.WidthInPixels,
-                                                                       Source.HeightInPixels));
+                                                                           Source.HeightInPixels));
             }
         }
         #endregion
@@ -2203,10 +2203,10 @@ namespace MediaBase.Controls
                 {
                     if (_cachedImageQueue.Count >= ImageCacheSize - ImageCacheThreshold)
                         ClearImageCache();
-                    await imageFile.Cache(SwapChainCanvas.SwapChain.Device);
+                    await imageFile.Cache(SwapChainCanvas.SwapChain.Device, SwapChainCanvas.SwapChain.Dpi);
                     _cachedImageQueue.Enqueue(image);
                 }
-                _frameBitmap = imageFile.Bitmap;
+                _frameBitmap = imageFile.RenderTarget;
 
                 if (!IsHoldCurrentPanAndZoom)
                     FrameScale = decimal.ToDouble(CalculateFrameScaleToFit(Source.WidthInPixels, Source.HeightInPixels));

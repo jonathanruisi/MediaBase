@@ -8,6 +8,7 @@ using System.Xml;
 using JLR.Utility.WinUI.ViewModel;
 
 using Microsoft.Graphics.Canvas;
+using Microsoft.UI;
 
 using Windows.Storage;
 
@@ -22,7 +23,7 @@ namespace MediaBase.ViewModel
         #region Fields
         private bool _isCached;
         private uint _widthInPixels, _heightInPixels;
-        private CanvasBitmap _bitmap;
+        private CanvasRenderTarget _renderTarget;
         #endregion
 
         #region Properties
@@ -44,10 +45,10 @@ namespace MediaBase.ViewModel
             private set => SetProperty(ref _isCached, value);
         }
 
-        public CanvasBitmap Bitmap
+        public CanvasRenderTarget RenderTarget
         {
-            get => _bitmap;
-            private set => SetProperty(ref _bitmap, value);
+            get => _renderTarget;
+            private set => SetProperty(ref _renderTarget, value);
         }
 
         public override MediaContentType ContentType => MediaContentType.Image;
@@ -61,7 +62,7 @@ namespace MediaBase.ViewModel
             _widthInPixels = 0;
             _heightInPixels = 0;
             _isCached = false;
-            _bitmap = null;
+            _renderTarget = null;
         }
 
         public ImageFile(StorageFile file) : base(file)
@@ -69,19 +70,23 @@ namespace MediaBase.ViewModel
             _widthInPixels = 0;
             _heightInPixels = 0;
             _isCached = false;
-            _bitmap = null;
+            _renderTarget = null;
         }
         #endregion
 
         #region Public Methods
-        public async Task<bool> Cache(ICanvasResourceCreator resourceCreator)
+        public async Task<bool> Cache(ICanvasResourceCreator resourceCreator, float dpi)
         {
             if (await MakeReady() == false)
                 return false;
 
             try
             {
-                Bitmap = await CanvasBitmap.LoadAsync(resourceCreator, await File.OpenReadAsync());
+                using var bitmap = await CanvasBitmap.LoadAsync(resourceCreator, await File.OpenReadAsync());
+                RenderTarget = new CanvasRenderTarget(resourceCreator, bitmap.SizeInPixels.Width, bitmap.SizeInPixels.Height, dpi);
+                using CanvasDrawingSession ds = RenderTarget.CreateDrawingSession();
+                ds.Clear(Colors.Black);
+                ds.DrawImage(bitmap);
             }
             catch (Exception)
             {
@@ -95,10 +100,10 @@ namespace MediaBase.ViewModel
 
         public void FreeCache()
         {
-            if (Bitmap != null)
+            if (RenderTarget != null)
             {
-                Bitmap.Dispose();
-                Bitmap = null;
+                RenderTarget.Dispose();
+                RenderTarget = null;
             }
 
             IsCached = false;
