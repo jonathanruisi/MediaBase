@@ -192,13 +192,13 @@ namespace MediaBase
                 _systemBrowserWidth = SystemBrowserColumn.Width;
                 SystemBrowserColumn.Width = new GridLength(0);
                 SystemBrowserPanel.Visibility = Visibility.Collapsed;
-                SystemBrowserGridSplitter.Visibility = Visibility.Collapsed;
+                SystemBrowserContentSizer.Visibility = Visibility.Collapsed;
             }
             else
             {
                 SystemBrowserColumn.Width = _systemBrowserWidth;
                 SystemBrowserPanel.Visibility = Visibility.Visible;
-                SystemBrowserGridSplitter.Visibility = Visibility.Visible;
+                SystemBrowserContentSizer.Visibility = Visibility.Visible;
             }
         }
 
@@ -210,14 +210,14 @@ namespace MediaBase
                 {
                     Grid.SetRow(PlaylistEditorPanel, 0);
                     Grid.SetRowSpan(PlaylistEditorPanel, 3);
-                    PlaylistEditorGridSplitter.Visibility = Visibility.Collapsed;
+                    PlaylistEditorContentSizer.Visibility = Visibility.Collapsed;
                 }
                 else
                 {
                     Grid.SetRowSpan(WorkspaceBrowserPanel, 3);
                     _workspaceBrowserWidth = WorkspaceBrowserColumn.Width;
                     WorkspaceBrowserColumn.Width = new GridLength(0);
-                    WorkspaceBrowserGridSplitter.Visibility = Visibility.Collapsed;
+                    WorkspaceBrowserContentSizer.Visibility = Visibility.Collapsed;
                 }
                 WorkspaceBrowserPanel.Visibility = Visibility.Collapsed;
             }
@@ -227,13 +227,13 @@ namespace MediaBase
                 {
                     Grid.SetRow(PlaylistEditorPanel, 2);
                     Grid.SetRowSpan(PlaylistEditorPanel, 1);
-                    PlaylistEditorGridSplitter.Visibility = Visibility.Visible;
+                    PlaylistEditorContentSizer.Visibility = Visibility.Visible;
                 }
                 else
                 {
                     Grid.SetRowSpan(WorkspaceBrowserPanel, 3);
                     WorkspaceBrowserColumn.Width = _workspaceBrowserWidth;
-                    WorkspaceBrowserGridSplitter.Visibility = Visibility.Visible;
+                    WorkspaceBrowserContentSizer.Visibility = Visibility.Visible;
                 }
                 WorkspaceBrowserPanel.Visibility = Visibility.Visible;
             }
@@ -246,7 +246,7 @@ namespace MediaBase
                 if (WorkspaceBrowserPanel.Visibility == Visibility.Visible)
                 {
                     Grid.SetRowSpan(WorkspaceBrowserPanel, 3);
-                    PlaylistEditorGridSplitter.Visibility = Visibility.Collapsed;
+                    PlaylistEditorContentSizer.Visibility = Visibility.Collapsed;
                 }
                 else
                 {
@@ -254,7 +254,7 @@ namespace MediaBase
                     Grid.SetRowSpan(PlaylistEditorPanel, 1);
                     _workspaceBrowserWidth = WorkspaceBrowserColumn.Width;
                     WorkspaceBrowserColumn.Width = new GridLength(0);
-                    WorkspaceBrowserGridSplitter.Visibility = Visibility.Collapsed;
+                    WorkspaceBrowserContentSizer.Visibility = Visibility.Collapsed;
 
                 }
                 PlaylistEditorPanel.Visibility = Visibility.Collapsed;
@@ -264,14 +264,14 @@ namespace MediaBase
                 if (WorkspaceBrowserPanel.Visibility == Visibility.Visible)
                 {
                     Grid.SetRowSpan(WorkspaceBrowserPanel, 1);
-                    PlaylistEditorGridSplitter.Visibility = Visibility.Visible;
+                    PlaylistEditorContentSizer.Visibility = Visibility.Visible;
                 }
                 else
                 {
                     Grid.SetRow(PlaylistEditorPanel, 0);
                     Grid.SetRowSpan(PlaylistEditorPanel, 3);
                     WorkspaceBrowserColumn.Width = _workspaceBrowserWidth;
-                    WorkspaceBrowserGridSplitter.Visibility = Visibility.Visible;
+                    WorkspaceBrowserContentSizer.Visibility = Visibility.Visible;
                 }
                 PlaylistEditorPanel.Visibility = Visibility.Visible;
             }
@@ -284,13 +284,13 @@ namespace MediaBase
                 _mediaPropertiesWidth = MediaPropertiesColumn.Width;
                 MediaPropertiesColumn.Width = new GridLength(0);
                 MediaPropertiesPanel.Visibility = Visibility.Collapsed;
-                MediaPropertiesGridSplitter.Visibility = Visibility.Collapsed;
+                MediaPropertiesContentSizer.Visibility = Visibility.Collapsed;
             }
             else
             {
                 MediaPropertiesColumn.Width = _mediaPropertiesWidth;
                 MediaPropertiesPanel.Visibility = Visibility.Visible;
-                MediaPropertiesGridSplitter.Visibility = Visibility.Visible;
+                MediaPropertiesContentSizer.Visibility = Visibility.Visible;
             }
         }
         #endregion

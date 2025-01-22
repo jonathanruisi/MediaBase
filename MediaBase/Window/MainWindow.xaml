@@ -7,8 +7,8 @@
     mc:Ignorable="d"
     xmlns:controls="using:MediaBase.Controls"
     xmlns:windowing="using:Microsoft.UI.Windowing"
-    xmlns:toolkit="using:CommunityToolkit.WinUI.UI.Controls"
-    xmlns:toolkit_converters="using:CommunityToolkit.WinUI.UI.Converters"
+    xmlns:toolkit="using:CommunityToolkit.WinUI.Controls"
+    xmlns:toolkit_converters="using:CommunityToolkit.WinUI.Converters"
     xmlns:xaml="using:Microsoft.UI.Xaml">
 
     <Grid>
@@ -157,17 +157,17 @@
                 <RowDefinition Height="*" x:Name="BottomRow"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="250" x:Name="SystemBrowserColumn"/>
+                <ColumnDefinition Width="Auto" x:Name="SystemBrowserColumn"/>
                 <ColumnDefinition Width="Auto" x:Name="SystemBrowserResizeColumn"/>
-                <ColumnDefinition Width="400" x:Name="WorkspaceBrowserColumn"/>
+                <ColumnDefinition Width="Auto" x:Name="WorkspaceBrowserColumn"/>
                 <ColumnDefinition Width="Auto" x:Name="WorkspaceBrowserResizeColumn"/>
-                <ColumnDefinition Width="250" x:Name="MediaPropertiesColumn"/>
+                <ColumnDefinition Width="Auto" x:Name="MediaPropertiesColumn"/>
                 <ColumnDefinition Width="Auto" x:Name="MediaPropertiesResizeColumn"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
             <!-- System Browser -->
-            <Grid x:Name="SystemBrowserPanel"
+            <Grid x:Name="SystemBrowserPanel" MinWidth="250"
                   Grid.Row="0" Grid.RowSpan="3" Grid.Column="0"
                   Visibility="Visible" Background="#101010">
                 <Grid.RowDefinitions>
@@ -184,7 +184,7 @@
             </Grid>
 
             <!-- Workspace Browser -->
-            <Grid x:Name="WorkspaceBrowserPanel"
+            <Grid x:Name="WorkspaceBrowserPanel" MinWidth="250"
                   Grid.Row="0" Grid.Column="2"
                   Visibility="Visible" Background="#101010">
                 <Grid.RowDefinitions>
@@ -201,7 +201,7 @@
             </Grid>
             
             <!-- Playlist Editor -->
-            <Grid x:Name="PlaylistEditorPanel"
+            <Grid x:Name="PlaylistEditorPanel" MinWidth="250" MinHeight="250"
                   Grid.Row="2" Grid.Column="2"
                   Visibility="Visible" Background="#101010">
                 <Grid.RowDefinitions>
@@ -222,7 +222,7 @@
             </Grid>
             
             <!-- Media Properties -->
-            <Grid x:Name="MediaPropertiesPanel"
+            <Grid x:Name="MediaPropertiesPanel" MinWidth="250" MinHeight="250"
                   Grid.Row="0" Grid.RowSpan="3" Grid.Column="4"
                   Visibility="Visible" Background="#101010">
                 <Grid.RowDefinitions>
@@ -246,54 +246,27 @@
                                   FontFamily="Consolas" FontSize="32" FontWeight="Bold"
                                   Source="{x:Bind ViewModel.ActiveMediaSource, Mode=OneWay}"/>
 
-            <!-- Grid Splitters -->
-            <toolkit:GridSplitter x:Name="SystemBrowserGridSplitter"
+            <!-- Content Sizers -->
+            <toolkit:ContentSizer x:Name="SystemBrowserContentSizer"
                                   Grid.Row="0" Grid.RowSpan="3" Grid.Column="1"
-                                  Background="#606060" MinWidth="6" Width="6" Margin="0,0,5,0"
-                                  ResizeBehavior="PreviousAndNext" ResizeDirection="Columns"
-                                  CursorBehavior="ChangeOnSplitterHover" GripperCursor="SizeWestEast">
-                <toolkit:GridSplitter.Element>
-                    <Line X1="1" X2="1" Y1="0" Y2="64" StrokeThickness="4" Stroke="#101010"
-                          HorizontalAlignment="Center" VerticalAlignment="Center"
-                          StrokeDashArray="3,1"/>
-                </toolkit:GridSplitter.Element>
-            </toolkit:GridSplitter>
+                                  TargetControl="{x:Bind SystemBrowserPanel}"
+                                  Background="#606060" Foreground="#101010"/>
 
-            <toolkit:GridSplitter x:Name="WorkspaceBrowserGridSplitter"
+            <toolkit:ContentSizer x:Name="WorkspaceBrowserContentSizer"
                                   Grid.Row="0" Grid.RowSpan="3" Grid.Column="3"
-                                  Background="#606060" MinWidth="6" Width="6" Margin="0,0,5,0"
-                                  ResizeBehavior="PreviousAndNext" ResizeDirection="Columns"
-                                  CursorBehavior="ChangeOnSplitterHover" GripperCursor="SizeWestEast">
-                <toolkit:GridSplitter.Element>
-                    <Line X1="1" X2="1" Y1="0" Y2="64" StrokeThickness="4" Stroke="#101010"
-                          HorizontalAlignment="Center" VerticalAlignment="Center"
-                          StrokeDashArray="3,1"/>
-                </toolkit:GridSplitter.Element>
-            </toolkit:GridSplitter>
+                                  TargetControl="{x:Bind WorkspaceBrowserPanel}"
+                                  Background="#606060" Foreground="#101010"/>
 
-            <toolkit:GridSplitter x:Name="PlaylistEditorGridSplitter"
+            <toolkit:ContentSizer x:Name="PlaylistEditorContentSizer"
                                   Grid.Row="1" Grid.Column="2"
-                                  Background="#606060" MinHeight="6" Height="6" Margin="0,5,0,0"
-                                  ResizeBehavior="PreviousAndNext" ResizeDirection="Rows"
-                                  CursorBehavior="ChangeOnSplitterHover" GripperCursor="SizeNorthSouth">
-                <toolkit:GridSplitter.Element>
-                    <Line X1="0" X2="64" Y1="1" Y2="1" StrokeThickness="4" Stroke="#101010"
-                          HorizontalAlignment="Center" VerticalAlignment="Center"
-                          StrokeDashArray="3,1"/>
-                </toolkit:GridSplitter.Element>
-            </toolkit:GridSplitter>
+                                  Orientation="Horizontal"
+                                  TargetControl="{x:Bind PlaylistEditorPanel}"
+                                  Background="#606060" Foreground="#101010"/>
 
-            <toolkit:GridSplitter x:Name="MediaPropertiesGridSplitter"
+            <toolkit:ContentSizer x:Name="MediaPropertiesContentSizer"
                                   Grid.Row="0" Grid.RowSpan="3" Grid.Column="5"
-                                  Background="#606060" MinWidth="6" Width="6" Margin="0,0,5,0"
-                                  ResizeBehavior="PreviousAndNext" ResizeDirection="Columns"
-                                  CursorBehavior="ChangeOnSplitterHover" GripperCursor="SizeWestEast">
-                <toolkit:GridSplitter.Element>
-                    <Line X1="1" X2="1" Y1="0" Y2="64" StrokeThickness="4" Stroke="#101010"
-                          HorizontalAlignment="Center" VerticalAlignment="Center"
-                          StrokeDashArray="3,1"/>
-                </toolkit:GridSplitter.Element>
-            </toolkit:GridSplitter>
+                                  TargetControl="{x:Bind MediaPropertiesPanel}"
+                                  Background="#606060" Foreground="#101010"/>
         </Grid>
 
         <!-- Info Bar -->

@@ -8,12 +8,12 @@
 
   <Identity
     Name="48038201-8522-4510-80d3-d8245beaf15e"
-    Publisher="CN=Jonathan Ruisi"
+    Publisher="CN=Jon Ruisi"
     Version="1.0.0.0" />
 
   <Properties>
     <DisplayName>MediaBase</DisplayName>
-    <PublisherDisplayName>Jonathan Ruisi</PublisherDisplayName>
+    <PublisherDisplayName>Jon Ruisi</PublisherDisplayName>
     <Logo>Assets\Logo_Package.png</Logo>
   </Properties>
 

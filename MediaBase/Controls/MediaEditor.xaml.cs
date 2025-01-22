@@ -33,12 +33,17 @@ using Windows.Graphics.Imaging;
 using Windows.Media.Playback;
 using Windows.UI;
 using Windows.UI.Core;
+using Windows.Win32;
 
 namespace MediaBase.Controls
 {
     public sealed partial class MediaEditor : UserControl
     {
         #region Constants
+        // Image Cache
+        private const int ImageCacheSize = 550;
+        private const int ImageCacheThreshold = 50;
+
         // Playback Rate (Animated Image)
         private const double AnimatedImage_MinimumPlaybackRate = 0.25;
         private const double AnimatedImage_MaximumPlaybackRate = 4.0;
@@ -73,7 +78,8 @@ namespace MediaBase.Controls
         private DateTime _progressBarDisplayedTimestamp;
         private double _textFadeOpacity, _textFadeOpacityIncrement, _progressThumbWidth;
         private int? _hoverSourceIndex;
-        private List<MultimediaSource> _activeMediaSourceSiblings;
+        private readonly List<MultimediaSource> _activeMediaSourceSiblings;
+        private readonly Queue<ViewModel.ImageSource> _cachedImageQueue;
         private float[] _prevHistR, _prevHistG, _prevHistB;
         //private readonly object _frameLock;
 
@@ -517,6 +523,7 @@ namespace MediaBase.Controls
             _dragCursor = InputSystemCursor.Create(DragCursorShape);
 
             // Misc
+            _cachedImageQueue = new Queue<ViewModel.ImageSource>();
             _activeMediaSourceSiblings = new List<MultimediaSource>();
 
             // Initialize commands
@@ -680,7 +687,7 @@ namespace MediaBase.Controls
             SwapChainCanvas.SwapChain = new CanvasSwapChain(CanvasDevice.GetSharedDevice(),
                                                             (float)SwapChainCanvas.ActualWidth,
                                                             (float)SwapChainCanvas.ActualHeight,
-                                                            PInvoke.User32.GetDpiForWindow(App.WindowHandle)/*,
+                                                            PInvoke.GetDpiForWindow((Windows.Win32.Foundation.HWND)App.WindowHandle)/*,
                                                             Windows.Graphics.DirectX.DirectXPixelFormat.R10G10B10A2UIntNormalized,
                                                             2, CanvasAlphaMode.Ignore*/);
 
@@ -861,7 +868,7 @@ namespace MediaBase.Controls
 
             // Draw the image
             try { ds.DrawImage(_frameBitmap, _destRect, _sourceRect, (float)FrameOpacity); }
-            catch (ObjectDisposedException) { ds.Clear(Colors.Purple); }
+            catch (ObjectDisposedException) { ds.Clear(Colors.HotPink); }
 
             // Determine the number of groups
             var groupOffset = 0;
@@ -1347,7 +1354,7 @@ namespace MediaBase.Controls
                 FrameOffsetY = 0;
                 if (Source != null)
                     FrameScale = decimal.ToDouble(CalculateFrameScaleToFit(Source.WidthInPixels,
-                                                                       Source.HeightInPixels));
+                                                                           Source.HeightInPixels));
             }
         }
         #endregion
@@ -2135,11 +2142,11 @@ namespace MediaBase.Controls
                 _player.Source = null;
             }
 
-            if (_frameBitmap != null)
+            /*if (_frameBitmap != null)
             {
                 _frameBitmap.Dispose();
                 _frameBitmap = null;
-            }
+            }*/
 
             if (_frameSizingBitmap != null)
             {
@@ -2170,6 +2177,7 @@ namespace MediaBase.Controls
             {
                 RefreshRate = App.RefreshRate;
                 TimeDisplayMode = TimeDisplayFormat.None;
+                ClearImageCache();
                 return;
             }
 
@@ -2190,8 +2198,15 @@ namespace MediaBase.Controls
                 IsPanAndZoomEnabled = true;
                 TimeDisplayMode = TimeDisplayFormat.FrameNumber;
 
-                _frameBitmap = await CanvasBitmap.LoadAsync(SwapChainCanvas.SwapChain.Device,
-                    await (image.Source as ImageFile).File.OpenReadAsync());
+                var imageFile = image.Source as ImageFile;
+                if (!imageFile.IsCached)
+                {
+                    if (_cachedImageQueue.Count >= ImageCacheSize - ImageCacheThreshold)
+                        ClearImageCache();
+                    await imageFile.Cache(SwapChainCanvas.SwapChain.Device, SwapChainCanvas.SwapChain.Dpi);
+                    _cachedImageQueue.Enqueue(image);
+                }
+                _frameBitmap = imageFile.RenderTarget;
 
                 if (!IsHoldCurrentPanAndZoom)
                     FrameScale = decimal.ToDouble(CalculateFrameScaleToFit(Source.WidthInPixels, Source.HeightInPixels));
@@ -2244,6 +2259,18 @@ namespace MediaBase.Controls
             _progressBarRect = Rect.Empty;
             _markerBarRect = Rect.Empty;
             _progressBarDisplayedTimestamp = DateTime.Now;
+        }
+
+        private void ClearImageCache(bool purge = false)
+        {
+            while (_cachedImageQueue.TryDequeue(out ViewModel.ImageSource image))
+            {
+                var imageFile = image.Source as ImageFile;
+                imageFile.FreeCache();
+
+                if (!purge && _cachedImageQueue.Count == ImageCacheSize - ImageCacheThreshold)
+                    break;
+            }
         }
 
         private void SeekToMarker(ITimelineMarker marker)
@@ -2716,7 +2743,7 @@ namespace MediaBase.Controls
                 if (m.NewValue == null || m.NewValue?.Parent != m.OldValue?.Parent)
                 {
                     _activeMediaSourceSiblings.Clear();
-                    //ClearImageCache(true);
+                    ClearImageCache(true);
                 }
             });
         }

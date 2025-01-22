@@ -8,6 +8,7 @@ using System.Xml;
 using JLR.Utility.WinUI.ViewModel;
 
 using Microsoft.Graphics.Canvas;
+using Microsoft.UI;
 
 using Windows.Storage;
 
@@ -22,6 +23,7 @@ namespace MediaBase.ViewModel
         #region Fields
         private bool _isCached;
         private uint _widthInPixels, _heightInPixels;
+        private CanvasRenderTarget _renderTarget;
         #endregion
 
         #region Properties
@@ -43,6 +45,12 @@ namespace MediaBase.ViewModel
             private set => SetProperty(ref _isCached, value);
         }
 
+        public CanvasRenderTarget RenderTarget
+        {
+            get => _renderTarget;
+            private set => SetProperty(ref _renderTarget, value);
+        }
+
         public override MediaContentType ContentType => MediaContentType.Image;
         #endregion
 
@@ -54,6 +62,7 @@ namespace MediaBase.ViewModel
             _widthInPixels = 0;
             _heightInPixels = 0;
             _isCached = false;
+            _renderTarget = null;
         }
 
         public ImageFile(StorageFile file) : base(file)
@@ -61,6 +70,43 @@ namespace MediaBase.ViewModel
             _widthInPixels = 0;
             _heightInPixels = 0;
             _isCached = false;
+            _renderTarget = null;
+        }
+        #endregion
+
+        #region Public Methods
+        public async Task<bool> Cache(ICanvasResourceCreator resourceCreator, float dpi)
+        {
+            if (await MakeReady() == false)
+                return false;
+
+            try
+            {
+                using var bitmap = await CanvasBitmap.LoadAsync(resourceCreator, await File.OpenReadAsync());
+                RenderTarget = new CanvasRenderTarget(resourceCreator, bitmap.SizeInPixels.Width, bitmap.SizeInPixels.Height, dpi);
+                using CanvasDrawingSession ds = RenderTarget.CreateDrawingSession();
+                ds.Clear(Colors.Black);
+                ds.DrawImage(bitmap);
+            }
+            catch (Exception)
+            {
+                IsCached = false;
+                return false;
+            }
+
+            IsCached = true;
+            return true;
+        }
+
+        public void FreeCache()
+        {
+            if (RenderTarget != null)
+            {
+                RenderTarget.Dispose();
+                RenderTarget = null;
+            }
+
+            IsCached = false;
         }
         #endregion
 
