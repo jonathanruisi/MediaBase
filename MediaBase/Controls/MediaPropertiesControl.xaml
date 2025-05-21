@@ -368,7 +368,7 @@
                                        TokenDelimiter="," Margin="5,0" SelectionMode="Extended"
                                        HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                                        ItemsSource="{x:Bind ViewModel.ActiveMediaSource.Tags, Mode=OneWay}"
-                                       SuggestedItemsSource="{x:Bind ViewModel.TagDatabase, Mode=OneTime}"/>
+                                       SuggestedItemsSource="{x:Bind ViewModel.TagDatabase, Mode=OneWay}"/>
         </Expander>
 
         <!-- Related Media -->
