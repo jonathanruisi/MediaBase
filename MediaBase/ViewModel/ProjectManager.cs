@@ -2230,7 +2230,7 @@ namespace MediaBase.ViewModel
 
             ToolsToggleGroup1SeriesCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
-                Key = VirtualKey.NumberPad0,
+                Key = VirtualKey.S,
                 IsEnabled = true
             });
 
@@ -2579,7 +2579,6 @@ namespace MediaBase.ViewModel
             EditorTogglePanAndZoomLockCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
                 Key = VirtualKey.L,
-                Modifiers = VirtualKeyModifiers.Control,
                 IsEnabled = true
             });
 
@@ -2607,7 +2606,7 @@ namespace MediaBase.ViewModel
 
             EditorFrameZoomFitCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
-                Key = VirtualKey.Number0,
+                Key = VirtualKey.Z,
                 Modifiers = VirtualKeyModifiers.Control,
                 IsEnabled = true
             });
@@ -2622,8 +2621,7 @@ namespace MediaBase.ViewModel
 
             EditorFrameZoomFullCommand.KeyboardAccelerators.Add(new KeyboardAccelerator
             {
-                Key = VirtualKey.Number1,
-                Modifiers = VirtualKeyModifiers.Control,
+                Key = VirtualKey.Z,
                 IsEnabled = true
             });
 

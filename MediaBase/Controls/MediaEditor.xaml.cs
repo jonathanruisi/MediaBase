@@ -868,7 +868,7 @@ namespace MediaBase.Controls
 
             // Draw the image
             try { ds.DrawImage(_frameBitmap, _destRect, _sourceRect, (float)FrameOpacity); }
-            catch (ObjectDisposedException) { ds.Clear(Colors.HotPink); }
+            catch (ObjectDisposedException) { ds.Clear(Colors.Black); }
 
             // Determine the number of groups
             var groupOffset = 0;
