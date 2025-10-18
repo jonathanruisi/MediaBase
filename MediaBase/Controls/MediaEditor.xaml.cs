@@ -841,8 +841,6 @@ namespace MediaBase.Controls
                 return;
 
             using var ds = SwapChainCanvas.SwapChain.CreateDrawingSession(Colors.Black);
-            ds.Transform = Matrix3x2.CreateRotation((float)(Math.PI * FrameRotate / 180.0),
-                                                    new Vector2((float)_fullDestRect.Width / 2.0f, (float)_fullDestRect.Height / 2.0f));
             var isAnimatedImagePlaying = Source.ContentType == MediaContentType.Image &&
                                          PlaybackState == MediaPlaybackState.Playing &&
                                          CurrentFrame < Source.TotalFrames;
@@ -867,8 +865,11 @@ namespace MediaBase.Controls
             ApplyFrameScaleAndPosition();
 
             // Draw the image
+            ds.Transform = Matrix3x2.CreateRotation((float)(Math.PI * FrameRotate / 180.0),
+                new Vector2((float)_fullDestRect.Width / 2.0f, (float)_fullDestRect.Height / 2.0f));
             try { ds.DrawImage(_frameBitmap, _destRect, _sourceRect, (float)FrameOpacity); }
             catch (ObjectDisposedException) { ds.Clear(Colors.Black); }
+            ds.Transform = Matrix3x2.Identity;
 
             // Determine the number of groups
             var groupOffset = 0;
@@ -1007,7 +1008,7 @@ namespace MediaBase.Controls
                         ds.DrawGeometry(timeToLastMarkerTextGeometry, -15, -15, TextOverlayOutlineColor, (float)TextOverlayOutlineThickness);
                     }
 
-                    var currentMarker = Timeline.GetClosestMarkerBeforeCurrentPosition<Marker>();
+                    var currentMarker = Timeline.GetClosestMarkerAtOrBeforeCurrentPosition<Marker>();
                     if (currentMarker != null)
                     {
                         using var markerNameTextFormat = new CanvasTextFormat
@@ -1649,10 +1650,10 @@ namespace MediaBase.Controls
 
                 try
                 {
-                    var newScaledWidth = Math.Round(_frameBitmap.SizeInPixels.Width * newScaleFactor, 6);
+                    var newScaledWidth = Math.Round(_frameBitmap.Size.Width * newScaleFactor, 6);
                     widthDelta = newScaledWidth - _fullDestRect.Width;
 
-                    var newScaledHeight = Math.Round(_frameBitmap.SizeInPixels.Height * newScaleFactor, 6);
+                    var newScaledHeight = Math.Round(_frameBitmap.Size.Height * newScaleFactor, 6);
                     heightDelta = newScaledHeight - _fullDestRect.Height;
                 }
                 catch (ObjectDisposedException)
@@ -1701,7 +1702,7 @@ namespace MediaBase.Controls
         private void EditorPreviousMarkerCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
         {
             args.CanExecute = IsPlaybackPossible &&
-                              Timeline.GetClosestMarkerBeforeCurrentPosition<Marker>(0.5M) != null;
+                              Timeline.GetClosestMarkerAtOrBeforeCurrentPosition<Marker>(0.5M) != null;
         }
 
         private void EditorNextMarkerCommand_CanExecuteRequested(XamlUICommand sender, CanExecuteRequestedEventArgs args)
@@ -1839,7 +1840,7 @@ namespace MediaBase.Controls
 
         private void EditorPreviousMarkerCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            SeekToMarker(Timeline.GetClosestMarkerBeforeCurrentPosition<Marker>(0.5M));
+            SeekToMarker(Timeline.GetClosestMarkerAtOrBeforeCurrentPosition<Marker>(0.5M));
         }
 
         private void EditorNextMarkerCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
@@ -2541,13 +2542,13 @@ namespace MediaBase.Controls
         // This is better than Photoshop
         private void ApplyFrameScaleAndPosition()
         {
-            uint sourceWidth = 0;
-            uint sourceHeight = 0;
+            var sourceWidth = 0.0;
+            var sourceHeight = 0.0;
 
             try
             {
-                sourceWidth = _frameBitmap.SizeInPixels.Width;
-                sourceHeight = _frameBitmap.SizeInPixels.Height;
+                sourceWidth = _frameBitmap.Size.Width;
+                sourceHeight = _frameBitmap.Size.Height;
             }
             catch (ObjectDisposedException) { return; }
 
